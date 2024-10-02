@@ -1,16 +1,24 @@
-from google.cloud import bigquery
-import polars as pl
 
-def insert_data_into_bigquery(data):
-    client = bigquery.Client()
-    #TODO
-    table_id = 'project.dataset.table'
-    
-    if isinstance(data, pl.DataFrame):
-        data = data.to_dicts()
-    
+import os
+from google.cloud import bigquery
+from google.auth import default
+
+_, project_id = default()
+
+if project_id is None:
+    project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
+
+if not isinstance(project_id, str):
+    raise ValueError("Project ID must be a string. Please set GOOGLE_CLOUD_PROJECT environment variable.")
+
+client = bigquery.Client(project=project_id)
+
+def insert_data_into_bigquery(table_name, data):
+    table_id = f'{project_id}.sports_data.{table_name}'
     errors = client.insert_rows_json(table_id, data)
     if errors:
-        print(f"Errors occurred: {errors}")
+        print(f"Errors occurred while inserting into {table_name}: {errors}")
+        for error in errors:
+            print(error)
     else:
-        print("Data inserted successfully.")
+        print(f"Data inserted into {table_name} successfully.")
