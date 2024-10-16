@@ -3,6 +3,10 @@ from airflow.utils.dates import days_ago
 from airflow.operators.python import PythonOperator
 from datetime import timedelta
 import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 default_args = {
     'owner': 'airflow',
@@ -13,8 +17,12 @@ default_args = {
 }
 
 def invoke_cloud_function(**context):
-    url = 'https://fetch-sports-data-279923397259.europe-central2.run.app'
+    number = os.getenv('CLOUD_RUN_NUMBER')
+    
+    url = f'https://fetch-sports-data-{number}.europe-central2.run.app'
+    
     response = requests.get(url)
+    
     if response.status_code != 200:
         raise Exception(f'Failed to invoke Cloud Function: {response.text}')
 
@@ -26,7 +34,6 @@ with DAG(
     start_date=days_ago(1),
     catchup=False,
 ) as dag:
-
     invoke_function = PythonOperator(
         task_id='invoke_fetch_sports_data_function',
         python_callable=invoke_cloud_function,
