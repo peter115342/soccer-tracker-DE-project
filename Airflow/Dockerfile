@@ -5,6 +5,8 @@ ENV PYTHONPATH=/app
 ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
 ENV AIRFLOW__CORE__DAGS_FOLDER=/app/airflow/dags
 
+
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && apt-get clean \
