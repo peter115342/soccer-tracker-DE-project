@@ -1,8 +1,9 @@
+from typing import List, Dict, Any, Union
 
-def process_fixtures(fixtures):
-    data_to_insert = []
+def process_fixtures(fixtures: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    data_to_insert: List[Dict[str, Any]] = []
     for fixture in fixtures:
-        fixture_data = {
+        fixture_data: Dict[str, Any] = {
             "fixture_id": fixture['fixture']['id'],
             "league_id": fixture['league']['id'],
             "league_name": fixture['league']['name'],
@@ -24,18 +25,18 @@ def process_fixtures(fixtures):
         data_to_insert.append(fixture_data)
     return data_to_insert
 
-def process_match_statistics(stats_list, fixture_date):
-    data_to_insert = []
+def process_match_statistics(stats_list: List[Dict[str, Any]], fixture_date: str) -> List[Dict[str, Any]]:
+    data_to_insert: List[Dict[str, Any]] = []
     for team_stats in stats_list:
-        stats_data = {
+        stats_data: Dict[str, Any] = {
             "fixture_id": team_stats['fixture']['id'],
             "team_id": team_stats['team']['id'],
             "team_name": team_stats['team']['name'],
             "date": fixture_date,
         }
         for stat in team_stats['statistics']:
-            stat_name = stat['type'].lower().replace(' ', '_').replace('%', 'percentage')
-            stat_value = stat['value']
+            stat_name: str = stat['type'].lower().replace(' ', '_').replace('%', 'percentage')
+            stat_value: Union[str, int, float, None] = stat['value']
             if isinstance(stat_value, str) and stat_value.endswith('%'):
                 stat_value = stat_value.strip('%')
             stats_data[stat_name] = stat_value

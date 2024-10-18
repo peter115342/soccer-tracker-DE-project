@@ -5,15 +5,12 @@ from utils.data_processing import process_fixtures, process_match_statistics
 from utils.bigquery_helpers import insert_data_into_bigquery
 import datetime
 import logging
-import time
 
 def main(request):
     date = datetime.datetime.utcnow().strftime('%Y-%m-%d')
     logging.info(f"Fetching fixtures for date: {date}")
 
-    # Fetch all fixtures for the date
     all_fixtures = fetch_all_fixtures_by_date(date)
-    # Filter fixtures by selected leagues
     fixtures = filter_fixtures_by_leagues(all_fixtures, LEAGUE_IDS)
 
     if fixtures:
