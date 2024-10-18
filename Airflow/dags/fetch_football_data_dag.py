@@ -43,7 +43,6 @@ with DAG(
     start_date=days_ago(1),
     catchup=False,
 ) as dag:
-
     invoke_function = PythonOperator(
         task_id='invoke_fetch_sports_data_function',
         python_callable=invoke_cloud_function,
