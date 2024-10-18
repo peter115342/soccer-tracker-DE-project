@@ -18,9 +18,8 @@ default_args: Dict[str, Any] = {
 }
 
 def invoke_cloud_function(**context: Dict[str, Any]) -> str:
-    load_dotenv()
 
-    token = os.getenv('GCLOUD_AUTH')
+    token = os.environ.get('GCLOUD_AUTH')
 
     if not token:
         raise ValueError("GCLOUD_AUTH not found in .env file")
