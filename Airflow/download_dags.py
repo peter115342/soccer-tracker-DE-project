@@ -1,7 +1,11 @@
 from google.cloud import storage
 import os
+import shutil
 
 def download_dags_from_gcs(bucket_name, prefix, local_dag_folder):
+    shutil.rmtree(local_dag_folder, ignore_errors=True)
+    os.makedirs(local_dag_folder, exist_ok=True)
+
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=prefix)
@@ -13,4 +17,5 @@ def download_dags_from_gcs(bucket_name, prefix, local_dag_folder):
             print(f"Downloaded: {blob.name} to {destination_file_name}")
 
 if __name__ == "__main__":
-    download_dags_from_gcs('soccer-tracker-bucket', 'dags/', '/app/airflow/dags')
+    bucket_name = os.environ.get('GCS_BUCKET_NAME', 'soccer-tracker-bucket')
+    download_dags_from_gcs(bucket_name, 'dags/', '/app/airflow/dags')
