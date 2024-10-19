@@ -14,7 +14,7 @@ if not isinstance(project_id, str):
 client: bigquery.Client = bigquery.Client(project=project_id)
 
 def insert_data_into_bigquery(table_name: str, data: List[Dict[str, Any]]) -> None:
-    table_id: str = f'{project_id}.your_dataset.{table_name}'
+    table_id: str = f'{project_id}.sports_data.{table_name}'
     errors = client.insert_rows_json(table_id, data)
     if errors:
         print(f"Errors occurred while inserting into {table_name}: {errors}")

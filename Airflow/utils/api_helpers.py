@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 import os
 import time
 
-API_KEY = os.getenv('FOOTBALL_DATA_API_KEY')
+API_KEY = os.environ('API_FOOTBALL_KEY')
 BASE_URL = 'https://api.football-data.org/v4'
 HEADERS = {'X-Auth-Token': API_KEY}
 REQUEST_LIMIT = 10
