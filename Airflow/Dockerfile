@@ -1,11 +1,9 @@
 FROM python:3.12-slim-bullseye
 
 ENV AIRFLOW_HOME=/app/airflow
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:/app/airflow/dags
 ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
 ENV AIRFLOW__CORE__DAGS_FOLDER=/app/airflow/dags
-
-
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -16,7 +14,7 @@ COPY requirements_airflow.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 RUN pip install apache-airflow-providers-google
 
-RUN mkdir -p /app/airflow/dags /app/airflow/logs /app/airflow/plugins
+RUN mkdir -p /app/airflow/dags /app/airflow/logs /app/airflow/plugins /app/airflow/dags/utils
 RUN chmod -R 755 /app/airflow/dags
 
 WORKDIR /app
