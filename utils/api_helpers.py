@@ -3,11 +3,11 @@ from typing import List, Dict, Any
 import os
 import time
 
-API_KEY = os.environ('API_FOOTBALL_KEY')
+API_KEY = os.environ.get('API_FOOTBALL_KEY')
 BASE_URL = 'https://api.football-data.org/v4'
 HEADERS = {'X-Auth-Token': API_KEY}
 REQUEST_LIMIT = 10
-REQUEST_INTERVAL = 60 
+REQUEST_INTERVAL = 60
 
 COMPETITION_IDS = [2002, 2014, 2015, 2019, 2021]  # BL1, PD, FL1, SA, PL
 
