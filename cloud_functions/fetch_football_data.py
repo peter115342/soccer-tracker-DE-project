@@ -1,4 +1,3 @@
-# main.py
 
 import os
 from datetime import datetime, timedelta, timezone
