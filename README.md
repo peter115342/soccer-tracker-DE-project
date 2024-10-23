@@ -42,9 +42,7 @@ This project fetches daily match fixtures and statistics from API-FOOTBALL, stor
 
 [Include the project structure as previously detailed.]
 
-## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
