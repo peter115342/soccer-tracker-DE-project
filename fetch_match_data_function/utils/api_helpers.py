@@ -35,21 +35,3 @@ def fetch_match_data(match_ids: List[int]) -> List[Dict[str, Any]]:
         all_stats.append(match_data)
         request_count += 1
     return all_stats
-
-def get_league_data(league_code: str) -> Dict[str, Any]:
-    if not API_KEY:
-        raise ValueError('FOOTBALL_DATA_API_KEY is not set in environment variables.')
-    
-    league_url = f'{BASE_URL}/competitions/{league_code}'
-    league_response = requests.get(league_url, headers=HEADERS)
-    league_response.raise_for_status()
-    league_data = league_response.json()
-    
-    teams_url = f'{BASE_URL}/competitions/{league_code}/teams'
-    teams_response = requests.get(teams_url, headers=HEADERS)
-    teams_response.raise_for_status()
-    teams_data = teams_response.json()
-    
-    league_data['teams'] = teams_data.get('teams', [])
-    
-    return league_data
