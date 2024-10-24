@@ -24,9 +24,13 @@ jobs:
       run: |
         pip install mypy ruff types-requests
 
+    - name: Clear mypy cache
+      run: |
+        mypy --clear-cache
+
     - name: Run mypy
       run: |
-        mypy --explicit-package-bases .
+        mypy .
 
     - name: Run ruff
       run: |
