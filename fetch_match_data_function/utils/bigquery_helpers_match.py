@@ -1,7 +1,7 @@
 import os
 from google.cloud import bigquery
 from google.auth import default
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 _, project_id = default()
 
