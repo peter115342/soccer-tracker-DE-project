@@ -1,7 +1,6 @@
 import requests
-from typing import List, Dict, Any
+from typing import Dict, Any
 import os
-import time
 
 API_KEY = os.environ.get('API_FOOTBALL_KEY')
 BASE_URL = 'https://api.football-data.org/v4'

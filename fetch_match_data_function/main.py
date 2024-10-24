@@ -5,9 +5,9 @@ import requests
 import json
 import os
 
-from utils.api_helpers import fetch_fixtures_by_date, fetch_match_data
+from utils.api_helpers_match import fetch_fixtures_by_date, fetch_match_data
 from utils.data_processing import process_match_data
-from utils.bigquery_helpers import insert_data_into_bigquery
+from utils.bigquery_helpers_match import insert_data_into_bigquery
 
 def fetch_football_data(request: Request):
     """
