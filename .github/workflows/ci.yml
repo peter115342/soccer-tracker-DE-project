@@ -4,12 +4,10 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
-
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -23,10 +21,6 @@ jobs:
     - name: Install development dependencies
       run: |
         pip install mypy ruff types-requests
-
-    - name: Clear mypy cache
-      run: |
-        mypy --clear
 
     - name: Run mypy
       run: |
