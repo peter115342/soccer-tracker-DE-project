@@ -9,10 +9,10 @@ HEADERS = {'X-Auth-Token': API_KEY}
 REQUEST_LIMIT = 10
 REQUEST_INTERVAL = 60
 
-COMPETITION_IDS = [2002, 2014, 2015, 2019, 2021]  # BL1, PD, FL1, SA, PL
+COMPETITION_CODES = ['BL1', 'PD', 'FL1', 'SA', 'PL']  # BL1: Bundesliga, PD: La Liga, FL1: Ligue 1, SA: Serie A, PL: Premier League
 
 def fetch_fixtures_by_date(date_str: str) -> List[Dict[str, Any]]:
-    competitions = ','.join(str(comp_id) for comp_id in COMPETITION_IDS)
+    competitions = ','.join(COMPETITION_CODES)
     url = f"{BASE_URL}/matches?competitions={competitions}&dateFrom={date_str}&dateTo={date_str}"
     response = requests.get(url, headers=HEADERS)
     response.raise_for_status()

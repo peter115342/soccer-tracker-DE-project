@@ -17,3 +17,4 @@ service-account-key.json
 # Others
 .idea/
 .DS_Store
+api_test.py
