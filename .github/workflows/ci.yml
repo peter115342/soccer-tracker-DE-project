@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -29,7 +29,27 @@ jobs:
       run: |
         mypy --namespace-packages --explicit-package-bases .
 
-
     - name: Run ruff
       run: |
-        ruff check
+        ruff check .
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    # Set up Cloud SDK
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Deploy Cloud Function
+      run: |
+        gcloud functions deploy fetch_football_data \
+          --runtime python39 \
+          --trigger-http \
+          --entry-point fetch_football_data \
+          --timeout 540s \
+          --memory 1GiB \
+          --set-env-vars API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}
