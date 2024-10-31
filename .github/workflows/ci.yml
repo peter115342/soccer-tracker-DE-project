@@ -9,47 +9,64 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Install development dependencies
-      run: |
-        pip install mypy ruff types-requests
+      - name: Install development dependencies
+        run: |
+          pip install mypy ruff types-requests
 
-    - name: Run mypy
-      run: |
-        mypy --namespace-packages --explicit-package-bases .
+      - name: Run mypy
+        run: |
+          mypy --namespace-packages --explicit-package-bases .
 
-    - name: Run ruff
-      run: |
-        ruff check .
+      - name: Run ruff
+        run: |
+          ruff check .
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-    # Set up Cloud SDK
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
-      with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-    - name: Deploy Cloud Function
-      run: |
-        gcloud functions deploy fetch_football_data \
-          --runtime python39 \
-          --trigger-http \
-          --entry-point fetch_football_data \
-          --timeout 540s \
-          --memory 1GiB \
-          --set-env-vars API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: Deploy fetch_football_data Function
+        run: |
+          cd fetch_football_data_function
+          gcloud functions deploy fetch_football_data \
+            --runtime python39 \
+            --trigger-http \
+            --entry-point fetch_football_data \
+            --timeout 540s \
+            --memory 1GiB \
+            --set-env-vars \
+              API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},\
+              DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}
+          cd ..
+
+      - name: Deploy fetch_league_data Function
+        run: |
+          cd fetch_league_data_function
+          gcloud functions deploy fetch_league_data \
+            --runtime python39 \
+            --trigger-http \
+            --entry-point fetch_league_data \
+            --timeout 540s \
+            --memory 1GiB \
+            --set-env-vars \
+              API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},\
+              DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}
+          cd ..
