@@ -54,6 +54,7 @@ def load_data_into_bigquery(league_data_list: List[Dict[str, Any]]):
                 'tla': team.get('tla'),
                 'logo': team.get('crest'),
                 'venue': team.get('venue'),
+                'address': team.get('address'),
                 'league_id': league_data['id'],
             }
             teams.append(team_info)
