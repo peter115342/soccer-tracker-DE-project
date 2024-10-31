@@ -52,6 +52,7 @@ jobs:
             --entry-point fetch_football_data \
             --timeout 540s \
             --memory 1GiB \
+            --region europe-central2 \
             --set-env-vars "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
 
           cd ..
@@ -65,6 +66,7 @@ jobs:
             --entry-point fetch_league_data \
             --timeout 540s \
             --memory 1GiB \
+            --region europe-central2 \
             --set-env-vars "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
 
           cd ..
