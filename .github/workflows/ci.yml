@@ -45,7 +45,7 @@ jobs:
 
       - name: Deploy fetch_football_data Function
         run: |
-          cd fetch_football_data_function
+          cd fetch_match_data_function
           gcloud functions deploy fetch_football_data \
             --runtime python39 \
             --trigger-http \
