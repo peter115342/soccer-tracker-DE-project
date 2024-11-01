@@ -15,7 +15,7 @@ An automated pipeline to collect, store, and analyze football match statistics f
 
 ## Introduction
 
-This project fetches daily match fixtures and statistics from API-FOOTBALL, stores the data in Google BigQuery, and provides tools for data analysis and visualization.
+This project fetches daily match fixtures and statistics from football-data.org, stores the data in Google BigQuery, and provides tools for data analysis and visualization.
 
 ## Features
 
