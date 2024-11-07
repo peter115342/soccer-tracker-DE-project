@@ -6,6 +6,7 @@ __pycache__/
 .env
 
 # Virtual environment
+.venv/
 venv/
 
 # Credentials
@@ -17,4 +18,3 @@ service-account-key.json
 # Others
 .idea/
 .DS_Store
-api_test.py

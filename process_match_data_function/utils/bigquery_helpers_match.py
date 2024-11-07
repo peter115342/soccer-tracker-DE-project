@@ -3,6 +3,7 @@ from google.cloud import bigquery
 from google.auth import default
 from typing import List, Dict, Any, Set
 
+"""Initializes BigQuery client with project configuration."""
 _, project_id = default()
 
 if project_id is None:
@@ -14,6 +15,7 @@ if not isinstance(project_id, str):
 client: bigquery.Client = bigquery.Client(project=project_id)
 
 def get_existing_match_ids(table_name: str) -> Set[str]:
+    """Retrieves all existing match IDs from the specified BigQuery table."""
     table_id: str = f'{project_id}.sports_data.{table_name}'
     query = f"SELECT DISTINCT id FROM `{table_id}`"
     query_job = client.query(query)
@@ -24,13 +26,12 @@ def get_existing_match_ids(table_name: str) -> Set[str]:
     return existing_ids
 
 def insert_data_into_bigquery(table_name: str, data: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Inserts new match data records into BigQuery, skipping existing matches."""
     table_id: str = f'{project_id}.sports_data.{table_name}'
 
-    # Fetch existing match IDs
     existing_ids = get_existing_match_ids(table_name)
     print(f"Found {len(existing_ids)} existing match IDs in {table_name}.")
 
-    # Filter out matches that already exist
     new_data = [match for match in data if str(match['id']) not in existing_ids]
     skipped_count = len(data) - len(new_data)
     print(f"{len(new_data)} new matches to insert into {table_name}.")
