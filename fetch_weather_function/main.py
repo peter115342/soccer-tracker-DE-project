@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 from utils.api_helpers_weather import fetch_weather_by_coordinates
 from utils.bigquery_helpers_weather import insert_weather_data_into_bigquery
 from utils.geocoding_helper import get_coordinates
@@ -130,7 +131,7 @@ def get_match_data():
     return matches
 
 
-def get_country_code_from_competition(competition_code: str) -> str | None:
+def get_country_code_from_competition(competition_code: str) -> Union[str, None]:
     """
     Returns the country code given the competition code.
     """

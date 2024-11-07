@@ -2,7 +2,7 @@ import requests
 import logging
 import re
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 MAPBOX_ACCESS_TOKEN = os.environ.get('MAPBOX_ACCESS_TOKEN')
 
@@ -61,9 +61,8 @@ def get_coordinates_from_location(location: str, country_code: Optional[str] = N
 
     encoded_location = requests.utils.quote(location)
     
-    # Try with Mapbox first
     url = f'https://api.mapbox.com/geocoding/v5/mapbox.places/{encoded_location}.json'
-    params = {
+    params: Dict[str, Union[str, int, bool]] = {
         'access_token': MAPBOX_ACCESS_TOKEN,
         'limit': 1,
         'types': 'place,locality,neighborhood,address,postcode',
@@ -82,7 +81,7 @@ def get_coordinates_from_location(location: str, country_code: Optional[str] = N
         return coords
             
     osm_url = "https://nominatim.openstreetmap.org/search"
-    osm_params = {
+    osm_params: Dict[str, Union[str, int]] = {
         'q': location,
         'format': 'json',
         'limit': 1,
@@ -105,7 +104,7 @@ def get_coordinates_from_location(location: str, country_code: Optional[str] = N
     
     return None
 
-def try_mapbox_request(url: str, params: Dict) -> Optional[Dict[str, float]]:
+def try_mapbox_request(url: str, params: Dict[str, Union[str, int, bool]]) -> Optional[Dict[str, float]]:
     """Helper function to make Mapbox API requests"""
     try:
         response = requests.get(url, params=params)
@@ -121,7 +120,6 @@ def try_mapbox_request(url: str, params: Dict) -> Optional[Dict[str, float]]:
     except Exception as e:
         logging.error(f"Mapbox API error: {e}")
     return None
-
 
 def get_coordinates(address: str, country_code: Optional[str] = None) -> Optional[Dict[str, float]]:
     """

@@ -1,10 +1,9 @@
 import requests
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from datetime import datetime, timezone
 
 BASE_URL = 'https://archive-api.open-meteo.com/v1/archive'
-
 
 def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetime) -> Dict[str, Any]:
     """Fetches historical or forecast weather data from Open-Meteo API based on coordinates and match datetime."""
@@ -14,7 +13,7 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
 
     if match_datetime < current_datetime:
         base_url = 'https://archive-api.open-meteo.com/v1/archive'
-        params = {
+        archive_params: Dict[str, Union[str, float]] = {
             'latitude': lat,
             'longitude': lon,
             'start_date': date_str,
@@ -38,9 +37,10 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
             ]),
             'timezone': 'UTC',
         }
+        params = archive_params
     else:
         base_url = 'https://api.open-meteo.com/v1/forecast'
-        params = {
+        forecast_params: Dict[str, Union[str, float]] = {
             'latitude': lat,
             'longitude': lon,
             'start_date': date_str,
@@ -64,6 +64,7 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
             ]),
             'timezone': 'UTC',
         }
+        params = forecast_params
 
     try:
         response = requests.get(base_url, params=params)
@@ -77,4 +78,3 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
         logging.error(f"An error occurred while fetching weather data from Open-Meteo: {e}")
 
     return {}
-
