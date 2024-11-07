@@ -60,7 +60,7 @@ jobs:
 
       - name: Deploy process_football_data Function
         run: |
-          cd fetch_match_data_function
+          cd process_match_data_function
           gcloud functions deploy process_football_data \
             --runtime python39 \
             --trigger-http \
