@@ -53,20 +53,23 @@ def fetch_matches_for_competitions(date_from: str, date_to: str) -> List[Dict[st
     return all_matches
 
 def save_to_gcs(data: dict, match_id: int) -> None:
-    """Saves the match data to a GCS bucket as a JSON file."""
+    """Saves the match data to a GCS bucket as a JSON file if it doesn't already exist."""
     storage_client = storage.Client(project=GCP_PROJECT_ID)
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
     blob = bucket.blob(f"match_data/{match_id}.json")
     
-    try:
-        blob.upload_from_string(
-            data=json.dumps(data),
-            content_type='application/json'
-        )
-        logging.info(f"Saved match ID {match_id} data to GCS.")
-    except Exception as e:
-        logging.error(f"Error saving match ID {match_id} data to GCS: {e}")
-        raise
+    if not blob.exists():
+        try:
+            blob.upload_from_string(
+                data=json.dumps(data),
+                content_type='application/json'
+            )
+            logging.info(f"Saved match ID {match_id} data to GCS.")
+        except Exception as e:
+            logging.error(f"Error saving match ID {match_id} data to GCS: {e}")
+            raise
+    else:
+        logging.info(f"Match ID {match_id} already exists in GCS, skipping.")
 
 def validate_environment() -> bool:
     """Validates required environment variables."""

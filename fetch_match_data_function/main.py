@@ -8,7 +8,7 @@ from utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs,
 
 def fetch_football_data(request: Request):
     """
-    Cloud Function to fetch football match data from top 5 leagues and save to GCS,
+    Cloud Function to fetch football match data from top 5 leagues and save to bucket,
     with Discord notifications for success or failure.
     """
     try:
