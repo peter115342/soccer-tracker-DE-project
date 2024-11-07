@@ -19,7 +19,7 @@ jobs:
 
       - name: Install uv
         run: |
-          curl -sSL https://install.astral.sh | sh
+          pip install uv
 
       - name: Install dependencies
         run: |
