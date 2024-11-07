@@ -4,7 +4,7 @@ import json
 import os
 import logging
 from datetime import datetime, timedelta
-from utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs, validate_environment
+from utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs
 
 def fetch_football_data(request: Request):
     """
@@ -12,8 +12,6 @@ def fetch_football_data(request: Request):
     with Discord notifications for success or failure.
     """
     try:
-        if not validate_environment():
-            return "Missing required environment variables", 500
 
         date_to = datetime.now().strftime('%Y-%m-%d')
         date_from = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
