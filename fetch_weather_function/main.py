@@ -130,15 +130,15 @@ def get_match_data():
     return matches
 
 
-def get_country_code_from_competition(competition_code: str) -> str:
+def get_country_code_from_competition(competition_code: str) -> str | None:
     """
     Returns the country code given the competition code.
     """
-    competition_countries = {
+    competition_countries: dict[int, str] = {
         2021: "GB",  # Premier League - United Kingdom
         2002: "DE",  # Bundesliga - Germany
         2015: "ES",   # La Liga - Spain
         2019: "IT",   # Serie A - Italy
         2014: "FR",  # Ligue 1 - France
     }
-    return competition_countries.get(competition_code, None)
+    return competition_countries.get(int(competition_code))

@@ -25,8 +25,8 @@ def process_match_data(match_data_list: List[Dict[str, Any]]) -> pl.DataFrame:
     df = pl.DataFrame(match_data_list)
     
     df = df.with_columns([
-        pl.col('utcDate').str.strptime(pl.Datetime, fmt='%Y-%m-%dT%H:%M:%SZ'),
-        pl.col('lastUpdated').str.strptime(pl.Datetime, fmt='%Y-%m-%dT%H:%M:%SZ'),
+        pl.col('utcDate').str.strptime(pl.Datetime,  format='%Y-%m-%d'),
+        pl.col('lastUpdated').str.strptime(pl.Datetime,  format='%Y-%m-%d'),
     ])
     
     df = df.with_columns([
