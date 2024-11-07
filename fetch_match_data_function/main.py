@@ -14,7 +14,7 @@ def fetch_football_data(request: Request):
     try:
 
         date_to = datetime.now().strftime('%Y-%m-%d')
-        date_from = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+        date_from = date_to
 
         logging.info(f"Fetching matches from {date_from} to {date_to}")
         matches = fetch_matches_for_competitions(date_from, date_to)
@@ -37,7 +37,7 @@ def fetch_football_data(request: Request):
                 error_count += 1
                 logging.error(f"Error processing match ID {match_id}: {e}")
 
-        success_message = f"Processed {new_matches} new matches. Errors: {error_count}"
+        success_message = f"Fetched {new_matches} new matches. Errors: {error_count}"
         logging.info(success_message)
         send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
         return success_message, 200

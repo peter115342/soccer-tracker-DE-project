@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - dev
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -17,22 +16,21 @@ jobs:
         with:
           python-version: '3.9'
 
+      - name: Install uv
+        run: |
+          curl -sSL https://install.astral.sh | sh
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Install development dependencies
-        run: |
-          pip install mypy ruff types-requests
+          uv install
 
       - name: Run mypy
         run: |
-          mypy --namespace-packages --explicit-package-bases .
+          uv run mypy --namespace-packages --explicit-package-bases .
 
       - name: Run ruff
         run: |
-          ruff check .
+          uv run ruff check .
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
@@ -44,10 +42,10 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Deploy fetch_football_data
+      - name: Deploy fetch_football_data Function
         run: |
           cd fetch_match_data_function
-          gcloud functions deploy fetch_football_data \
+          uv run gcloud functions deploy fetch_football_data \
             --runtime python39 \
             --trigger-http \
             --entry-point fetch_football_data \
@@ -55,13 +53,12 @@ jobs:
             --memory 1GiB \
             --region europe-central2 \
             --set-env-vars "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},BUCKET_NAME=${{ secrets.BUCKET_NAME }}"
-
           cd ..
 
       - name: Deploy process_football_data Function
         run: |
           cd process_match_data_function
-          gcloud functions deploy process_football_data \
+          uv run gcloud functions deploy process_football_data \
             --runtime python39 \
             --trigger-http \
             --entry-point process_football_data \
@@ -69,13 +66,12 @@ jobs:
             --memory 1GiB \
             --region europe-central2 \
             --set-env-vars "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
-
           cd ..
 
       - name: Deploy fetch_league_data Function
         run: |
           cd fetch_league_data_function
-          gcloud functions deploy fetch_league_data \
+          uv run gcloud functions deploy fetch_league_data \
             --runtime python39 \
             --trigger-http \
             --entry-point fetch_league_data \
@@ -83,5 +79,4 @@ jobs:
             --memory 1GiB \
             --region europe-central2 \
             --set-env-vars "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
-
           cd ..
