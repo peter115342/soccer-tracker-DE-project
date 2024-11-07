@@ -43,7 +43,7 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Deploy fetch_football_data Function
+      - name: Deploy fetch_football_data
         run: |
           cd fetch_match_data_function
           gcloud functions deploy fetch_football_data \
@@ -53,7 +53,21 @@ jobs:
             --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
-            --set-env-vars "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
+            --set-env-vars "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},BUCKET_NAME=${{ secrets.BUCKET_NAME }}"
+
+          cd ..
+
+      - name: Deploy process_football_data Function
+        run: |
+          cd fetch_match_data_function
+          gcloud functions deploy process_football_data \
+            --runtime python39 \
+            --trigger-http \
+            --entry-point process_football_data \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
 
           cd ..
 

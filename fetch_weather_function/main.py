@@ -1,12 +1,13 @@
 import logging
 from utils.api_helpers_weather import fetch_weather_by_coordinates
 from utils.bigquery_helpers_weather import insert_weather_data_into_bigquery
-from utils.geocoding_helper import get_coordinates_from_postcode, extract_postcode
+from utils.geocoding_helper import get_coordinates
 from google.cloud import bigquery
-from datetime import datetime, timezone
-
+from datetime import datetime
 
 def fetch_weather_data(request):
+    """Fetches and stores weather data for football match locations."""
+
     if request.method not in ["GET", "POST"]:
         return ("Method not allowed", 405)
 
@@ -27,20 +28,17 @@ def fetch_weather_data(request):
             logging.warning(f"No address found for match {match_id}")
             continue
 
-        postcode = extract_postcode(address)
-        if not postcode:
-            logging.warning(
-                f"No postcode found in address '{address}' for match {match_id}"
-            )
-            continue
-
         competition = match.get("competition", {}).get("code", "")
         country_code = get_country_code_from_competition(competition)
-
-        coords = get_coordinates_from_postcode(postcode, country_code)
-        if not coords:
-            logging.warning(f"Could not get coordinates for postcode '{postcode}'")
+        if not country_code:
+            logging.warning(f"No country code found for competition '{competition}'")
             continue
+
+        coords = get_coordinates(address, country_code)
+        if not coords:
+            logging.warning(f"Could not get coordinates for address '{address}' for match {match_id}")
+            continue
+
         lat = coords["lat"]
         lon = coords["lon"]
 
@@ -57,7 +55,10 @@ def fetch_weather_data(request):
                 if match_time_str in times:
                     index = times.index(match_time_str)
                 else:
-                    index = min(range(len(times)), key=lambda i: abs(datetime.strptime(times[i], '%Y-%m-%dT%H:%M') - match_datetime))
+                    index = min(
+                        range(len(times)),
+                        key=lambda i: abs(datetime.strptime(times[i], '%Y-%m-%dT%H:%M') - match_datetime)
+                    )
                 weather_record = {
                     "match_id": match_id,
                     "lat": lat,
@@ -100,7 +101,7 @@ def get_match_data():
         SELECT
             m.id AS match_id,
             m.utcDate AS utcDate,
-            m.competition.code AS competition_code,
+            m.competition.id AS competition_code,
             m.competition.name AS competition_name,
             m.homeTeam.id AS home_team_id,
             m.homeTeam.name AS home_team_name,
@@ -134,10 +135,10 @@ def get_country_code_from_competition(competition_code: str) -> str:
     Returns the country code given the competition code.
     """
     competition_countries = {
-        "PL": "GB",  # Premier League - United Kingdom
-        "BL1": "DE",  # Bundesliga - Germany
-        "PD": "ES",   # La Liga - Spain
-        "SA": "IT",   # Serie A - Italy
-        "FL1": "FR",  # Ligue 1 - France
+        2021: "GB",  # Premier League - United Kingdom
+        2002: "DE",  # Bundesliga - Germany
+        2015: "ES",   # La Liga - Spain
+        2019: "IT",   # Serie A - Italy
+        2014: "FR",  # Ligue 1 - France
     }
     return competition_countries.get(competition_code, None)

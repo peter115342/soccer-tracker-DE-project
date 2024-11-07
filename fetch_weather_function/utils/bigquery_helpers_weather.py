@@ -4,6 +4,7 @@ from google.auth import default
 from typing import List, Dict, Any
 import logging
 
+"""Initializes BigQuery client with project configuration."""
 _, project_id = default()
 
 if project_id is None:
@@ -15,6 +16,7 @@ if not isinstance(project_id, str):
 client: bigquery.Client = bigquery.Client(project=project_id)
 
 def insert_weather_data_into_bigquery(table_name: str, data: List[Dict[str, Any]]) -> Dict[str, int]:
+    """Inserts weather data records into the specified BigQuery table."""
     table_id: str = f'{project_id}.sports_data.{table_name}'
 
     if not data:

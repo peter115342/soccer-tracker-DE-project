@@ -3,6 +3,7 @@ from google.cloud import bigquery
 from google.auth import default
 from typing import List, Dict, Any
 
+"""Initializes BigQuery client with project configuration."""
 _, project_id = default()
 
 if project_id is None:
@@ -14,12 +15,12 @@ if not isinstance(project_id, str):
 client: bigquery.Client = bigquery.Client(project=project_id)
 
 def insert_data_into_bigquery(table_name: str, data: List[Dict[str, Any]]) -> None:
+    """Truncates and loads new league data into the specified BigQuery table."""
     table_id: str = f'{project_id}.sports_data.{table_name}'
 
     job_config = bigquery.LoadJobConfig(
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
         source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
-
     )
 
     load_job = client.load_table_from_json(
