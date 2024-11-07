@@ -3,6 +3,7 @@ import requests
 import json
 import os
 import logging
+from google.auth import default
 
 from utils.data_processing import get_json_files_from_gcs, process_match_data, transform_to_bigquery_rows
 from utils.bigquery_helpers_match import insert_data_into_bigquery
@@ -14,7 +15,10 @@ def process_football_data(request: Request):
     """
     try:
         bucket_name = os.environ.get('BUCKET_NAME')
-        project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
+        _, project_id = default()
+
+        if project_id is None:
+           project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
 
         logging.info("Starting to process football data from GCS")
 
