@@ -23,7 +23,7 @@ jobs:
 
       - name: Install development dependencies
         run: |
-          pip install mypy ruff types-requests google-cloud-storage-stubs
+          pip install mypy ruff types-requests
 
       - name: Run mypy
         run: |
