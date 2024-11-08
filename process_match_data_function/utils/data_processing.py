@@ -9,7 +9,8 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
     storage_client = storage.Client(project=project_id)
     bucket = storage_client.bucket(bucket_name)
     blobs = bucket.list_blobs(prefix='match_data/')
-    
+    logging.info(f"Accessing bucket: {bucket_name}")
+
     match_data = []
     for blob in blobs:
         if blob.name.endswith('.json'):

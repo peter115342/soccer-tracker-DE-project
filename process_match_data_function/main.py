@@ -18,7 +18,7 @@ def process_football_data(request: Request):
         _, project_id = default()
 
         if project_id is None:
-           project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
+           project_id = os.environ.get('GCP_PROJECT_ID')
 
         logging.info("Starting to process football data from GCS")
 
