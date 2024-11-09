@@ -40,12 +40,12 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          credentials_json: '${{secrets.GCP_SA_KEY}}'
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          project_id: ${{secrets.GCP_PROJECT_ID}}
 
       - name: Deploy fetch_football_data Function
         run: |
@@ -57,7 +57,7 @@ jobs:
             --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
-            --set-env-vars "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},BUCKET_NAME=${{ secrets.BUCKET_NAME }}"
+            --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},BUCKET_NAME=${{secrets.BUCKET_NAME}}"
           cd ..
 
       - name: Deploy process_football_data Function
@@ -70,7 +70,7 @@ jobs:
             --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
-            --set-env-vars "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }},BUCKET_NAME=${{ secrets.BUCKET_NAME }}"
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}}"
           cd ..
 
       - name: Deploy fetch_league_data Function
@@ -83,5 +83,5 @@ jobs:
             --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
-            --set-env-vars "API_FOOTBALL_KEY=${{ secrets.API_FOOTBALL_KEY }},DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
+            --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}}"
           cd ..
