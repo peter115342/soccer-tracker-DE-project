@@ -85,3 +85,16 @@ jobs:
             --region europe-central2 \
             --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}}"
           cd ..
+
+      - name: Deploy fetch_weather_data Function
+        run: |
+          cd fetch_weather_data_function
+          uv run gcloud functions deploy fetch_weather_data \
+            --runtime python39 \
+            --trigger-http \
+            --entry-point fetch_weather_data \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},MAPBOX_ACCESS_TOKEN=${{secrets.MAPBOX_ACCESS_TOKEN}}"
+          cd ..
