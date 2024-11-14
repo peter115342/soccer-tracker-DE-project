@@ -2,7 +2,6 @@ import os
 import requests
 import logging
 from typing import Dict, Any, Optional
-from functools import lru_cache
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +16,6 @@ if not GOOGLE_MAPS_API_KEY:
 BASE_URL = 'https://api.football-data.org/v4'
 HEADERS = {'X-Auth-Token': API_KEY}
 
-@lru_cache(maxsize=None)
 def get_stadium_coordinates(venue: str, team_name: str, team_city: str, team_country: str) -> Optional[str]:
     """
     Get stadium coordinates using Google Maps Geocoding API with enhanced search queries and fallbacks.
