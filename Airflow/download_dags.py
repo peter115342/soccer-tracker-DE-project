@@ -16,9 +16,8 @@ def download_from_gcs(bucket_name, prefix, local_folder):
             destination_file_name = os.path.join(local_folder, relative_path)
             os.makedirs(os.path.dirname(destination_file_name), exist_ok=True)
             blob.download_to_filename(destination_file_name)
-            print(f"Downloaded: {blob.name} to {destination_file_name}")
 
 if __name__ == "__main__":
-    bucket_name = os.environ.get('GCS_BUCKET_NAME', 'soccer-tracker-bucket')
+    bucket_name = os.environ.get('BUCKET_NAME')
     download_from_gcs(bucket_name, 'dags/', '/app/airflow/dags')
     download_from_gcs(bucket_name, 'utils/', '/app/airflow/dags/utils')

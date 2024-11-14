@@ -6,6 +6,8 @@ from utils.bigquery_helpers_league import insert_data_into_bigquery
 import requests
 import json
 import os
+import logging
+
 
 def fetch_league_data(request: Request):
     """
@@ -65,7 +67,7 @@ def load_data_into_bigquery(league_data_list: List[Dict[str, Any]]):
 def send_discord_notification(title: str, message: str):
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
     if not webhook_url:
-        print("Discord webhook URL not set.")
+        logging.warning("Discord webhook URL not set.")
         return
     discord_data = {
         "content": None,
@@ -82,4 +84,5 @@ def send_discord_notification(title: str, message: str):
     }
     response = requests.post(webhook_url, data=json.dumps(discord_data), headers=headers)
     if response.status_code != 204:
-        print(f"Failed to send Discord notification: {response.status_code}, {response.text}")
+        logging.error(f"Failed to send Discord notification: {response.status_code}, {response.text}")
+
