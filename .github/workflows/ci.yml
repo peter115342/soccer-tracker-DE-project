@@ -96,5 +96,5 @@ jobs:
             --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
-            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},"
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}}"
           cd ../..
