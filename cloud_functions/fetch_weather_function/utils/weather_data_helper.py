@@ -2,8 +2,13 @@ import requests
 import logging
 from typing import Dict, Any, Union
 from datetime import datetime, timezone
+import json
+from google.cloud import storage
+import os
 
 BASE_URL = 'https://archive-api.open-meteo.com/v1/archive'
+GCP_PROJECT_ID = os.environ.get('GCP_PROJECT_ID')
+GCS_BUCKET_NAME = os.environ.get('BUCKET_NAME')
 
 def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetime) -> Dict[str, Any]:
     """Fetches historical or forecast weather data from Open-Meteo API based on coordinates and match datetime."""
@@ -78,3 +83,22 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
         logging.error(f"An error occurred while fetching weather data from Open-Meteo: {e}")
 
     return {}
+
+def save_weather_to_gcs(data: dict, match_id: int) -> None:
+    """Saves the weather data to a GCS bucket as a JSON file if it doesn't already exist."""
+    storage_client = storage.Client(project=GCP_PROJECT_ID)
+    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+    blob = bucket.blob(f"weather_data/{match_id}.json")
+    
+    if not blob.exists():
+        try:
+            blob.upload_from_string(
+                data=json.dumps(data),
+                content_type='application/json'
+            )
+            logging.info(f"Saved weather data for match ID {match_id} to GCS")
+        except Exception as e:
+            logging.error(f"Error saving weather data for match ID {match_id} to GCS: {e}")
+            raise
+    else:
+        logging.info(f"Weather data for match ID {match_id} already exists in GCS, skipping")
