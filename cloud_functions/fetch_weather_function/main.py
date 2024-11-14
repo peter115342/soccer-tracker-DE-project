@@ -1,5 +1,4 @@
 import logging
-from typing import Union
 import os
 import json
 import requests

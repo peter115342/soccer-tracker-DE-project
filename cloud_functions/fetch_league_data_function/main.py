@@ -1,6 +1,5 @@
 from typing import List, Dict, Any
 from flask import Request
-from datetime import datetime
 
 from utils.api_helpers_league import get_league_data
 from utils.bigquery_helpers_league import insert_data_into_bigquery
