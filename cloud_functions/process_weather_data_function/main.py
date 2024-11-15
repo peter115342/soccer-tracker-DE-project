@@ -14,7 +14,7 @@ def process_weather_data(request: Request):
     with Discord notifications for processing status.
     """
     try:
-        bucket_name = os.environ.get('BUCKET_NAME')
+        bucket_name = os.environ.get['BUCKET_NAME']
         if bucket_name is None:
             raise ValueError("BUCKET_NAME environment variable is not set")
 

@@ -10,6 +10,7 @@ API_KEY = os.environ.get('API_FOOTBALL_KEY')
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY')
 GCP_PROJECT_ID = os.environ.get('GCP_PROJECT_ID')
 
+
 if not API_KEY:
     raise ValueError('API_FOOTBALL_KEY is not set in environment variables.')
 if not GOOGLE_MAPS_API_KEY:
@@ -80,6 +81,8 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
     teams_response = requests.get(teams_url, headers=HEADERS)
     teams_response.raise_for_status()
     teams_data = teams_response.json()
+    
+    assert GCP_PROJECT_ID is not None
 
     existing_teams = get_existing_teams_from_bq(GCP_PROJECT_ID, 'soccer_data')
     

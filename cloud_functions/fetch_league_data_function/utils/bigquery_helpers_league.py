@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 _, project_id = default()
 
 if project_id is None:
-    project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
+    project_id = os.environ.get['GOOGLE_CLOUD_PROJECT']
 
 if not isinstance(project_id, str):
     raise ValueError("Project ID must be a string. Please set GOOGLE_CLOUD_PROJECT environment variable.")
