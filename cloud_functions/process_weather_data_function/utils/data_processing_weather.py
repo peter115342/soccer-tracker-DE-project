@@ -86,39 +86,33 @@ def transform_weather_data(weather_data_list: List[Dict[str, Any]], project_id: 
             logging.warning(f"Unable to get both match hour and next hour for match {match_id} at time {match_time}")
             continue
 
+        def get_avg_value(metric: str, default: float = 0.0) -> float:
+            try:
+                val1 = weather_data['hourly'][metric][match_hour_index] or default
+                val2 = weather_data['hourly'][metric][next_hour_index] or default
+                return (float(val1) + float(val2)) / 2
+            except (KeyError, TypeError, IndexError):
+                return default
+
         record = {
             'match_id': match_id,
-            'lat': weather_data['latitude'],
-            'lon': weather_data['longitude'],
+            'lat': weather_data.get('latitude', 0.0),
+            'lon': weather_data.get('longitude', 0.0),
             'timestamp': weather_data['hourly']['time'][match_hour_index],
-            'temperature_2m': (weather_data['hourly']['temperature_2m'][match_hour_index] + 
-                             weather_data['hourly']['temperature_2m'][next_hour_index]) / 2,
-            'relativehumidity_2m': (weather_data['hourly']['relativehumidity_2m'][match_hour_index] + 
-                                   weather_data['hourly']['relativehumidity_2m'][next_hour_index]) / 2,
-            'dewpoint_2m': (weather_data['hourly']['dewpoint_2m'][match_hour_index] + 
-                           weather_data['hourly']['dewpoint_2m'][next_hour_index]) / 2,
-            'apparent_temperature': (weather_data['hourly']['apparent_temperature'][match_hour_index] + 
-                                   weather_data['hourly']['apparent_temperature'][next_hour_index]) / 2,
-            'precipitation': (weather_data['hourly']['precipitation'][match_hour_index] + 
-                            weather_data['hourly']['precipitation'][next_hour_index]) / 2,
-            'rain': (weather_data['hourly']['rain'][match_hour_index] + 
-                    weather_data['hourly']['rain'][next_hour_index]) / 2,
-            'snowfall': (weather_data['hourly']['snowfall'][match_hour_index] + 
-                        weather_data['hourly']['snowfall'][next_hour_index]) / 2,
-            'snow_depth': (weather_data['hourly']['snow_depth'][match_hour_index] + 
-                          weather_data['hourly']['snow_depth'][next_hour_index]) / 2,
-            'weathercode': round((weather_data['hourly']['weathercode'][match_hour_index] + 
-                                weather_data['hourly']['weathercode'][next_hour_index]) / 2),
-            'pressure_msl': (weather_data['hourly']['pressure_msl'][match_hour_index] + 
-                           weather_data['hourly']['pressure_msl'][next_hour_index]) / 2,
-            'cloudcover': (weather_data['hourly']['cloudcover'][match_hour_index] + 
-                         weather_data['hourly']['cloudcover'][next_hour_index]) / 2,
-            'windspeed_10m': (weather_data['hourly']['windspeed_10m'][match_hour_index] + 
-                            weather_data['hourly']['windspeed_10m'][next_hour_index]) / 2,
-            'winddirection_10m': (weather_data['hourly']['winddirection_10m'][match_hour_index] + 
-                                 weather_data['hourly']['winddirection_10m'][next_hour_index]) / 2,
-            'windgusts_10m': (weather_data['hourly']['windgusts_10m'][match_hour_index] + 
-                             weather_data['hourly']['windgusts_10m'][next_hour_index]) / 2
+            'temperature_2m': get_avg_value('temperature_2m'),
+            'relativehumidity_2m': get_avg_value('relativehumidity_2m'),
+            'dewpoint_2m': get_avg_value('dewpoint_2m'),
+            'apparent_temperature': get_avg_value('apparent_temperature'),
+            'precipitation': get_avg_value('precipitation'),
+            'rain': get_avg_value('rain'),
+            'snowfall': get_avg_value('snowfall'),
+            'snow_depth': get_avg_value('snow_depth'),
+            'weathercode': round(get_avg_value('weathercode')),
+            'pressure_msl': get_avg_value('pressure_msl'),
+            'cloudcover': get_avg_value('cloudcover'),
+            'windspeed_10m': get_avg_value('windspeed_10m'),
+            'winddirection_10m': get_avg_value('winddirection_10m'),
+            'windgusts_10m': get_avg_value('windgusts_10m')
         }
         processed_records.append(record)
 
