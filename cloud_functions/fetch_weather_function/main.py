@@ -16,8 +16,8 @@ def fetch_weather_data(request):
         match_data = get_match_data()
 
         if not match_data:
-            message = "No match data found to process weather information."
-            send_discord_notification("ℹ️ Weather Data: No Matches", message, 16776960)
+            message = "⚠️ No matches to process"
+            send_discord_notification("🌤️ Weather Data Update", message, 16776960)
             return message, 200
 
         processed_count = 0
@@ -57,18 +57,18 @@ def fetch_weather_data(request):
                 logging.error(f"Error processing match {match_id}: {e}")
 
         if processed_count > 0:
-            success_message = f"Successfully stored weather data for {processed_count} matches. Errors: {error_count}"
-            send_discord_notification("✅ Weather Data: Success", success_message, 65280)
+            success_message = f"✅ Added weather data for {processed_count} matches"
+            send_discord_notification("🌤️ Weather Data Update", success_message, 65280)
         else:
-            message = "No weather data was collected for processing"
-            send_discord_notification("⚠️ Weather Data: No Data", message, 16776960)
+            message = "⚠️ No new weather data added"
+            send_discord_notification("🌤️ Weather Data Update", message, 16776960)
             return message, 200
 
         return success_message, 200
 
     except Exception as e:
-        error_message = f"An error occurred while fetching weather data: {str(e)}"
-        send_discord_notification("❌ Weather Data: Failure", error_message, 16711680)
+        error_message = f"❌ Weather data update failed: {str(e)}"
+        send_discord_notification("🌤️ Weather Data Update", error_message, 16711680)
         logging.exception(error_message)
         return error_message, 500
 
