@@ -8,49 +8,41 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
     """Fetches new JSON files from the GCS bucket and returns their contents as a list."""
     storage_client = storage.Client(project=project_id)
     bucket = storage_client.bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix='weather_data/')
-    logging.info(f"Accessing bucket: {bucket_name}")
-
+    
     bq_client = bigquery.Client(project=project_id)
-    processed_files_table = f"{project_id}.sports_data.processed_weather_files"
-
-    create_table_query = f"""
-    CREATE TABLE IF NOT EXISTS `{processed_files_table}` (
-        file_name STRING,
-        processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
+    existing_matches_query = f"""
+    SELECT DISTINCT match_id 
+    FROM `{project_id}.sports_data.weather_data`
     """
-    bq_client.query(create_table_query).result()
+    existing_matches = set(row.match_id for row in bq_client.query(existing_matches_query).result())
+    logging.info(f"Found {len(existing_matches)} existing matches in weather_data table")
 
-    query = f"SELECT file_name FROM `{processed_files_table}`"
-    processed_files = set(row.file_name for row in bq_client.query(query).result())
-    logging.info(f"Retrieved {len(processed_files)} processed files from BigQuery")
+    match_ids_query = f"""
+    SELECT id 
+    FROM `{project_id}.sports_data.match_data`
+    """
+    match_ids = set(row.id for row in bq_client.query(match_ids_query).result())
+    logging.info(f"Found {len(match_ids)} matches in match_data table")
 
+    new_match_ids = match_ids - existing_matches
     weather_data = []
-    new_file_names = []
 
-    for blob in blobs:
-        if blob.name.endswith('.json') and blob.name not in processed_files:
+    for match_id in new_match_ids:
+        blob_path = f'weather_data/{match_id}.json'
+        blob = bucket.blob(blob_path)
+        
+        if blob.exists():
             content = json.loads(blob.download_as_string())
-            match_id = int(blob.name.split('/')[-1].replace('.json', ''))
             content['match_id'] = match_id
             weather_data.append(content)
-            new_file_names.append(blob.name)
+            logging.info(f"Retrieved weather data for match {match_id}")
         else:
-            logging.info(f"Skipping already processed file: {blob.name}")
+            logging.warning(f"No weather data file found for match {match_id}")
 
-    logging.info(f"Retrieved {len(weather_data)} new JSON files from GCS")
-    
-    if new_file_names:
-        rows_to_insert = [{'file_name': name} for name in new_file_names]
-        errors = bq_client.insert_rows_json(processed_files_table, rows_to_insert)
-        if errors:
-            logging.error(f"Failed to insert processed file names into BigQuery: {errors}")
-            raise RuntimeError(f"Failed to update processed files in BigQuery: {errors}")
-
+    logging.info(f"Retrieved {len(weather_data)} new weather data files for processing")
     return weather_data
 
-def transform_weather_data(weather_data_list: List[Dict[str, Any]], project_id: str) -> pl.DataFrame:
+def process_weather_data(weather_data_list: List[Dict[str, Any]], project_id: str) -> pl.DataFrame:
     """Transforms weather data into a Polars DataFrame with the correct schema."""
     if not weather_data_list:
         logging.info("No new weather data to process")
