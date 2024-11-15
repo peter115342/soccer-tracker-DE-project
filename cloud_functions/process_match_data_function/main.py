@@ -19,6 +19,9 @@ def process_football_data(request: Request):
 
         if project_id is None:
            project_id = os.environ.get('GCP_PROJECT_ID')
+           
+        if bucket_name is None:
+            raise ValueError("BUCKET_NAME environment variable is not set")
 
         logging.info("Starting to process new football data from GCS")
 
