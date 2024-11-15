@@ -5,12 +5,12 @@ import os
 import logging
 from google.auth import default
 
-from cloud_functions.process_match_data_function.utils.data_processing_match import get_json_files_from_gcs, process_match_data, transform_to_bigquery_rows
-from utils.bigquery_helpers_match import insert_data_into_bigquery
+from utils.data_processing import get_json_files_from_gcs, transform_weather_data, transform_to_bigquery_rows
+from utils.bigquery_helpers_weather import insert_data_into_bigquery
 
-def process_football_data(request: Request):
+def process_weather_data(request: Request):
     """
-    Cloud Function to process new football match data from GCS and load into BigQuery,
+    Cloud Function to process new weather data from GCS and load into BigQuery,
     with Discord notifications for processing status.
     """
     try:
@@ -20,45 +20,45 @@ def process_football_data(request: Request):
         if project_id is None:
            project_id = os.environ.get('GCP_PROJECT_ID')
 
-        logging.info("Starting to process new football data from GCS")
+        logging.info("Starting to process new weather data from GCS")
 
-        match_data = get_json_files_from_gcs(bucket_name, project_id)
+        weather_data = get_json_files_from_gcs(bucket_name, project_id)
 
-        if not match_data:
-            message = "No new match data files found for processing."
+        if not weather_data:
+            message = "No new weather data files found for processing."
             send_discord_notification(
-                "📝 Football Data Processing: No Updates", 
-                "All match data files have already been processed. No new updates required.", 
+                "🌤️ Weather Data Processing: No Updates", 
+                "All weather data files have already been processed.", 
                 16776960  # Yellow
             )
             return message, 200
 
-        df = process_match_data(match_data)
+        df = transform_weather_data(weather_data)
         if df.is_empty():
-            message = "No valid matches found in the new data files."
+            message = "No valid weather records found in the new data files."
             send_discord_notification(
-                "⚠️ Football Data Processing: Empty Data", 
-                "New files were found but contained no valid match data.", 
+                "⚠️ Weather Data Processing: Empty Data", 
+                "New files were found but contained no valid weather data.", 
                 16776960  # Yellow
             )
             return message, 200
 
         bq_rows = transform_to_bigquery_rows(df)
-        result = insert_data_into_bigquery('match_data', bq_rows)
+        result = insert_data_into_bigquery('weather_data', bq_rows)
 
         if result['inserted_count'] == 0:
-            notification_title = "ℹ️ Football Data Processing: No New Matches"
+            notification_title = "ℹ️ Weather Data Processing: No New Records"
             success_message = (
-                f"⚠️ Found {len(match_data)} new files.\n"
-                f"All {result['skipped_count']} matches already exist in the database."
+                f"⚠️ Found {len(weather_data)} new files.\n"
+                f"All {result['skipped_count']} weather records already exist in the database."
             )
             color = 16776960  # Yellow
         else:
-            notification_title = "✅ Football Data Processing: Success"
+            notification_title = "✅ Weather Data Processing: Success"
             success_message = (
-                f"Successfully processed {len(match_data)} new files:\n"
-                f"• {result['inserted_count']} new matches added\n"
-                f"• {result['skipped_count']} existing matches skipped"
+                f"Successfully processed {len(weather_data)} new files:\n"
+                f"• {result['inserted_count']} new weather records added\n"
+                f"• {result['skipped_count']} existing records skipped"
             )
             color = 65280  # Green
 
@@ -66,10 +66,10 @@ def process_football_data(request: Request):
         return success_message, 200
 
     except Exception as e:
-        error_message = f"Error during football data processing: {str(e)}"
+        error_message = f"Error during weather data processing: {str(e)}"
         send_discord_notification(
-            "❌ Football Data Processing: Error", 
-            f"Processing failed with error:\n```{error_message}```", 
+            "❌ Weather Data Processing: Error",
+            f"Processing failed with error:\n```{error_message}```",
             16711680  # Red
         )
         logging.exception(error_message)
@@ -90,7 +90,7 @@ def send_discord_notification(title: str, message: str, color: int):
                 "description": message,
                 "color": color,
                 "footer": {
-                    "text": "Football Data Processing Service"
+                    "text": "Weather Data Processing Service"
                 }
             }
         ]

@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 from flask import Request
+from datetime import datetime
 
 from utils.api_helpers_league import get_league_data
 from utils.bigquery_helpers_league import insert_data_into_bigquery
@@ -8,12 +9,17 @@ import json
 import os
 import logging
 
+def is_odd_week():
+    return datetime.now().isocalendar()[1] % 2 == 1
 
 def fetch_league_data(request: Request):
     """
     Cloud Function to fetch leagues and teams data and load into BigQuery,
     runs only on odd weeks with Discord notifications.
     """
+    if not is_odd_week():
+        send_discord_notification("⏭️ Fetch League Data: Skipped", "Run skipped - scheduled for odd weeks only.")
+        return 'Run skipped - scheduled for odd weeks only.', 200
 
     try:
         league_codes = ['PL', 'FL1', 'BL1', 'SA', 'PD']  # Premier League, Ligue 1, Bundesliga, Serie A, La Liga
