@@ -5,8 +5,8 @@ import os
 import logging
 from google.auth import default
 
-from utils.data_processing import get_json_files_from_gcs, transform_weather_data, transform_to_bigquery_rows
-from utils.bigquery_helpers_weather import insert_data_into_bigquery
+from utils.data_processing_weather import get_json_files_from_gcs, transform_weather_data, transform_to_bigquery_rows
+from cloud_functions.process_weather_data_function.utils.bigquery_helpers_weather import insert_data_into_bigquery
 
 def process_weather_data(request: Request):
     """
