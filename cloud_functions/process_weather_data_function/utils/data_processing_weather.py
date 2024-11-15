@@ -69,18 +69,20 @@ def transform_weather_data(weather_data_list: List[Dict[str, Any]], project_id: 
             continue
 
         match_time = match_time_series.item()
+        match_date = match_time.strftime('%Y-%m-%d')
+        match_hour = match_time.hour
 
-        match_hour = None
-        next_hour = None
+        match_hour_index = None
+        next_hour_index = None
         for i, timestamp in enumerate(weather_data['hourly']['time']):
-            if timestamp.startswith(match_time.split()[0]):
+            if timestamp.startswith(match_date):
                 hour = int(timestamp.split('T')[1].split(':')[0])
-                if hour == int(match_time.split()[1].split(':')[0]):
-                    match_hour = i
-                    next_hour = i + 1 if i + 1 < len(weather_data['hourly']['time']) else None
+                if hour == match_hour:
+                    match_hour_index = i
+                    next_hour_index = i + 1 if i + 1 < len(weather_data['hourly']['time']) else None
                     break
 
-        if match_hour is None or next_hour is None:
+        if match_hour_index is None or next_hour_index is None:
             logging.warning(f"Unable to get both match hour and next hour for match {match_id} at time {match_time}")
             continue
 
@@ -88,35 +90,35 @@ def transform_weather_data(weather_data_list: List[Dict[str, Any]], project_id: 
             'match_id': match_id,
             'lat': weather_data['latitude'],
             'lon': weather_data['longitude'],
-            'timestamp': weather_data['hourly']['time'][match_hour],
-            'temperature_2m': (weather_data['hourly']['temperature_2m'][match_hour] + 
-                             weather_data['hourly']['temperature_2m'][next_hour]) / 2,
-            'relativehumidity_2m': (weather_data['hourly']['relativehumidity_2m'][match_hour] + 
-                                   weather_data['hourly']['relativehumidity_2m'][next_hour]) / 2,
-            'dewpoint_2m': (weather_data['hourly']['dewpoint_2m'][match_hour] + 
-                           weather_data['hourly']['dewpoint_2m'][next_hour]) / 2,
-            'apparent_temperature': (weather_data['hourly']['apparent_temperature'][match_hour] + 
-                                   weather_data['hourly']['apparent_temperature'][next_hour]) / 2,
-            'precipitation': (weather_data['hourly']['precipitation'][match_hour] + 
-                            weather_data['hourly']['precipitation'][next_hour]) / 2,
-            'rain': (weather_data['hourly']['rain'][match_hour] + 
-                    weather_data['hourly']['rain'][next_hour]) / 2,
-            'snowfall': (weather_data['hourly']['snowfall'][match_hour] + 
-                        weather_data['hourly']['snowfall'][next_hour]) / 2,
-            'snow_depth': (weather_data['hourly']['snow_depth'][match_hour] + 
-                          weather_data['hourly']['snow_depth'][next_hour]) / 2,
-            'weathercode': round((weather_data['hourly']['weathercode'][match_hour] + 
-                                weather_data['hourly']['weathercode'][next_hour]) / 2),
-            'pressure_msl': (weather_data['hourly']['pressure_msl'][match_hour] + 
-                           weather_data['hourly']['pressure_msl'][next_hour]) / 2,
-            'cloudcover': (weather_data['hourly']['cloudcover'][match_hour] + 
-                         weather_data['hourly']['cloudcover'][next_hour]) / 2,
-            'windspeed_10m': (weather_data['hourly']['windspeed_10m'][match_hour] + 
-                            weather_data['hourly']['windspeed_10m'][next_hour]) / 2,
-            'winddirection_10m': (weather_data['hourly']['winddirection_10m'][match_hour] + 
-                                 weather_data['hourly']['winddirection_10m'][next_hour]) / 2,
-            'windgusts_10m': (weather_data['hourly']['windgusts_10m'][match_hour] + 
-                             weather_data['hourly']['windgusts_10m'][next_hour]) / 2
+            'timestamp': weather_data['hourly']['time'][match_hour_index],
+            'temperature_2m': (weather_data['hourly']['temperature_2m'][match_hour_index] + 
+                             weather_data['hourly']['temperature_2m'][next_hour_index]) / 2,
+            'relativehumidity_2m': (weather_data['hourly']['relativehumidity_2m'][match_hour_index] + 
+                                   weather_data['hourly']['relativehumidity_2m'][next_hour_index]) / 2,
+            'dewpoint_2m': (weather_data['hourly']['dewpoint_2m'][match_hour_index] + 
+                           weather_data['hourly']['dewpoint_2m'][next_hour_index]) / 2,
+            'apparent_temperature': (weather_data['hourly']['apparent_temperature'][match_hour_index] + 
+                                   weather_data['hourly']['apparent_temperature'][next_hour_index]) / 2,
+            'precipitation': (weather_data['hourly']['precipitation'][match_hour_index] + 
+                            weather_data['hourly']['precipitation'][next_hour_index]) / 2,
+            'rain': (weather_data['hourly']['rain'][match_hour_index] + 
+                    weather_data['hourly']['rain'][next_hour_index]) / 2,
+            'snowfall': (weather_data['hourly']['snowfall'][match_hour_index] + 
+                        weather_data['hourly']['snowfall'][next_hour_index]) / 2,
+            'snow_depth': (weather_data['hourly']['snow_depth'][match_hour_index] + 
+                          weather_data['hourly']['snow_depth'][next_hour_index]) / 2,
+            'weathercode': round((weather_data['hourly']['weathercode'][match_hour_index] + 
+                                weather_data['hourly']['weathercode'][next_hour_index]) / 2),
+            'pressure_msl': (weather_data['hourly']['pressure_msl'][match_hour_index] + 
+                           weather_data['hourly']['pressure_msl'][next_hour_index]) / 2,
+            'cloudcover': (weather_data['hourly']['cloudcover'][match_hour_index] + 
+                         weather_data['hourly']['cloudcover'][next_hour_index]) / 2,
+            'windspeed_10m': (weather_data['hourly']['windspeed_10m'][match_hour_index] + 
+                            weather_data['hourly']['windspeed_10m'][next_hour_index]) / 2,
+            'winddirection_10m': (weather_data['hourly']['winddirection_10m'][match_hour_index] + 
+                                 weather_data['hourly']['winddirection_10m'][next_hour_index]) / 2,
+            'windgusts_10m': (weather_data['hourly']['windgusts_10m'][match_hour_index] + 
+                             weather_data['hourly']['windgusts_10m'][next_hour_index]) / 2
         }
         processed_records.append(record)
 
