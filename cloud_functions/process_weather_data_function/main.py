@@ -15,10 +15,14 @@ def process_weather_data(request: Request):
     """
     try:
         bucket_name = os.environ.get('BUCKET_NAME')
-        _, project_id = default()
+        if bucket_name is None:
+            raise ValueError("BUCKET_NAME environment variable is not set")
 
+        _, project_id = default()
         if project_id is None:
-           project_id = os.environ.get('GCP_PROJECT_ID')
+            project_id = os.environ.get('GCP_PROJECT_ID')
+            if project_id is None:
+                raise ValueError("GCP_PROJECT_ID environment variable is not set")
 
         logging.info("Starting to process new weather data from GCS")
 
