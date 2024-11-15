@@ -36,7 +36,8 @@ def fetch_weather_data(request):
                     continue
 
                 try:
-                    lat, lon = map(float, coords_str.split(','))
+                    lat, lon = map(lambda x: float(x.strip()), coords_str.split(','))
+
                 except ValueError as e:
                     logging.warning(f"Invalid coordinates format '{coords_str}' for match {match_id}: {e}")
                     error_count += 1
