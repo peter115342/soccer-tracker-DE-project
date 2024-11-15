@@ -33,7 +33,7 @@ def process_weather_data(request: Request):
             )
             return message, 200
 
-        df = transform_weather_data(weather_data)
+        df = transform_weather_data(weather_data, project_id)
         if df.is_empty():
             message = "No valid weather records found in the new data files."
             send_discord_notification(
