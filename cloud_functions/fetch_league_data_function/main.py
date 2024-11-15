@@ -18,7 +18,11 @@ def fetch_league_data(request: Request):
     runs only on odd weeks with Discord notifications.
     """
     if not is_odd_week():
-        send_discord_notification("⏭️ Fetch League Data: Skipped", "Run skipped - scheduled for odd weeks only.")
+        send_discord_notification(
+            "⏭️ Fetch League Data: Skipped", 
+            "Run skipped - scheduled for odd weeks only.",
+            16776960  # Yellow color for skipped status
+        )
         return 'Run skipped - scheduled for odd weeks only.', 200
 
     try:
