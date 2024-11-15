@@ -21,7 +21,7 @@ def fetch_league_data(request: Request):
         send_discord_notification(
             "⏭️ Fetch League Data: Skipped", 
             "Run skipped - scheduled for odd weeks only.",
-            16776960  # Yellow color for skipped status
+            16776960
         )
         return 'Run skipped - scheduled for odd weeks only.', 200
 

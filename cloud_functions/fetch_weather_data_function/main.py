@@ -47,8 +47,8 @@ def fetch_weather_data(request):
                 weather_data = fetch_weather_by_coordinates(lat, lon, match_datetime)
 
                 if weather_data:
-                    save_weather_to_gcs(weather_data, match_id)
-                    processed_count += 1
+                    if save_weather_to_gcs(weather_data, match_id):
+                        processed_count += 1
                 else:
                     logging.warning(f"No weather data fetched for match {match_id}")
                     error_count += 1
@@ -58,10 +58,10 @@ def fetch_weather_data(request):
                 logging.error(f"Error processing match {match_id}: {e}")
 
         if processed_count > 0:
-            success_message = f"🌤️ Successfully fetched weather data for {processed_count} new matches"
+            success_message = f"🌤️ Successfully saved weather data for {processed_count} new matches"
             send_discord_notification("Weather Data Update", success_message, 65280)
         else:
-            message = "📝 No new matches to fetch weather data for"
+            message = "📝 No new weather data needed to be saved"
             send_discord_notification("Weather Data Update", message, 16776960)
             return message, 200
 

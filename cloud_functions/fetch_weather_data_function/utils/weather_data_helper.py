@@ -84,8 +84,9 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
 
     return {}
 
-def save_weather_to_gcs(data: dict, match_id: int) -> None:
-    """Saves the weather data to a GCS bucket as a JSON file if it doesn't already exist."""
+def save_weather_to_gcs(data: dict, match_id: int) -> bool:
+    """Saves the weather data to a GCS bucket as a JSON file if it doesn't already exist.
+    Returns True if new data was saved, False if data already existed."""
     storage_client = storage.Client(project=GCP_PROJECT_ID)
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
     blob = bucket.blob(f"weather_data/{match_id}.json")
@@ -97,8 +98,10 @@ def save_weather_to_gcs(data: dict, match_id: int) -> None:
                 content_type='application/json'
             )
             logging.info(f"Saved weather data for match ID {match_id} to GCS")
+            return True
         except Exception as e:
             logging.error(f"Error saving weather data for match ID {match_id} to GCS: {e}")
             raise
     else:
         logging.info(f"Weather data for match ID {match_id} already exists in GCS, skipping")
+        return False
