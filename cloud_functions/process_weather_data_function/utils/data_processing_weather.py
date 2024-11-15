@@ -42,7 +42,7 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
     logging.info(f"Retrieved {len(weather_data)} new weather data files for processing")
     return weather_data
 
-def process_weather_data(weather_data_list: List[Dict[str, Any]], project_id: str) -> pl.DataFrame:
+def transform_weather_data(weather_data_list: List[Dict[str, Any]], project_id: str) -> pl.DataFrame:
     """Transforms weather data into a Polars DataFrame with the correct schema."""
     if not weather_data_list:
         logging.info("No new weather data to process")
@@ -59,7 +59,7 @@ def process_weather_data(weather_data_list: List[Dict[str, Any]], project_id: st
 
     for weather_data in weather_data_list:
         match_id = weather_data['match_id']
-        
+
         match_time = match_times_df.filter(pl.col('id') == match_id).select('utcDate').item()
         if not match_time:
             logging.warning(f"No match time found for match_id {match_id}")
