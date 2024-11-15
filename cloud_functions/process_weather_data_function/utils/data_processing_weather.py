@@ -9,6 +9,7 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
     storage_client = storage.Client(project=project_id)
     bucket = storage_client.bucket(bucket_name)
     
+    # Get existing match_ids from BigQuery weather_data table
     bq_client = bigquery.Client(project=project_id)
     existing_matches_query = f"""
     SELECT DISTINCT match_id 
@@ -17,6 +18,7 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
     existing_matches = set(row.match_id for row in bq_client.query(existing_matches_query).result())
     logging.info(f"Found {len(existing_matches)} existing matches in weather_data table")
 
+    # Get match_ids from match_data table
     match_ids_query = f"""
     SELECT id 
     FROM `{project_id}.sports_data.match_data`
@@ -24,6 +26,7 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
     match_ids = set(row.id for row in bq_client.query(match_ids_query).result())
     logging.info(f"Found {len(match_ids)} matches in match_data table")
 
+    # Process only new matches
     new_match_ids = match_ids - existing_matches
     weather_data = []
 
@@ -59,12 +62,13 @@ def transform_weather_data(weather_data_list: List[Dict[str, Any]], project_id: 
 
     for weather_data in weather_data_list:
         match_id = weather_data['match_id']
-
+        
         match_time = match_times_df.filter(pl.col('id') == match_id).select('utcDate').item()
         if not match_time:
             logging.warning(f"No match time found for match_id {match_id}")
             continue
 
+        # Find both match hour and next hour indices
         match_hour = None
         next_hour = None
         for i, timestamp in enumerate(weather_data['hourly']['time']):
@@ -79,6 +83,7 @@ def transform_weather_data(weather_data_list: List[Dict[str, Any]], project_id: 
             logging.warning(f"Unable to get both match hour and next hour for match {match_id} at time {match_time}")
             continue
 
+        # Calculate averages for all weather metrics
         record = {
             'match_id': match_id,
             'lat': weather_data['latitude'],
