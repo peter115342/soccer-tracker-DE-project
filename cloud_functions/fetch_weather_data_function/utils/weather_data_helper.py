@@ -1,10 +1,14 @@
 import requests
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from datetime import datetime, timezone
+import json
+from google.cloud import storage
+import os
 
 BASE_URL = 'https://archive-api.open-meteo.com/v1/archive'
-
+GCP_PROJECT_ID = os.environ.get('GCP_PROJECT_ID')
+GCS_BUCKET_NAME = os.environ.get('BUCKET_NAME')
 
 def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetime) -> Dict[str, Any]:
     """Fetches historical or forecast weather data from Open-Meteo API based on coordinates and match datetime."""
@@ -14,7 +18,7 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
 
     if match_datetime < current_datetime:
         base_url = 'https://archive-api.open-meteo.com/v1/archive'
-        params = {
+        archive_params: Dict[str, Union[str, float]] = {
             'latitude': lat,
             'longitude': lon,
             'start_date': date_str,
@@ -38,11 +42,12 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
             ]),
             'timezone': 'UTC',
         }
+        params = archive_params
     else:
         base_url = 'https://api.open-meteo.com/v1/forecast'
-        params = {
-            'latitude': lat,
-            'longitude': lon,
+        forecast_params: Dict[str, Union[str, float]] = {
+            'latitude': f"{lat:.7f}",
+            'longitude': f"{lon:.7f}",
             'start_date': date_str,
             'end_date': date_str,
             'hourly': ','.join([
@@ -64,6 +69,7 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
             ]),
             'timezone': 'UTC',
         }
+        params = forecast_params
 
     try:
         response = requests.get(base_url, params=params)
@@ -78,3 +84,24 @@ def fetch_weather_by_coordinates(lat: float, lon: float, match_datetime: datetim
 
     return {}
 
+def save_weather_to_gcs(data: dict, match_id: int) -> bool:
+    """Saves the weather data to a GCS bucket as a JSON file if it doesn't already exist.
+    Returns True if new data was saved, False if data already existed."""
+    storage_client = storage.Client(project=GCP_PROJECT_ID)
+    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+    blob = bucket.blob(f"weather_data/{match_id}.json")
+    
+    if not blob.exists():
+        try:
+            blob.upload_from_string(
+                data=json.dumps(data),
+                content_type='application/json'
+            )
+            logging.info(f"Saved weather data for match ID {match_id} to GCS")
+            return True
+        except Exception as e:
+            logging.error(f"Error saving weather data for match ID {match_id} to GCS: {e}")
+            raise
+    else:
+        logging.info(f"Weather data for match ID {match_id} already exists in GCS, skipping")
+        return False
