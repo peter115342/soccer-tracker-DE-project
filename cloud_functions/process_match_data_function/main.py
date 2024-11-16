@@ -4,21 +4,22 @@ import os
 import logging
 import base64
 from google.auth import default
+from datetime import datetime
+from google.cloud import pubsub_v1
 from utils.data_processing_match import get_json_files_from_gcs, process_match_data, transform_to_bigquery_rows
 from utils.bigquery_helpers_match import insert_data_into_bigquery
-from google.cloud import pubsub_v1
-from datetime import datetime
 
-
-def process_football_data(event, context):
+def process_football_data(data, context):
     """
     Cloud Function to process new football match data from GCS and load into BigQuery,
     triggered by Pub/Sub message from fetch_match_data function.
     """
     try:
-
-        pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-        input_data = json.loads(pubsub_message)
+        if isinstance(data, str):
+            input_data = json.loads(data)
+        else:
+            input_data = json.loads(base64.b64decode(data['data']).decode('utf-8'))
+            
         logging.info(f"Received input data from fetch_match_data: {input_data}")
 
         bucket_name = os.environ.get('BUCKET_NAME')
@@ -74,23 +75,31 @@ def process_football_data(event, context):
             )
             color = 65280
 
+        send_discord_notification(notification_title, success_message, color)
+
+        # Initialize Pub/Sub publisher for next function
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(project_id, 'fetch_weather_data_topic')
         
+        # Prepare data for weather function
         publish_data = {
-            "processed_matches": result,
-            "stats": input_data.get('stats', {}),
-            "timestamp": datetime.now().isoformat()
+            "processed_matches": bq_rows,
+            "stats": {
+                "inserted_count": result['inserted_count'],
+                "skipped_count": result['skipped_count'],
+                "timestamp": datetime.now().isoformat()
+            }
         }
         
+        # Publish message to trigger fetch_weather_data function
         future = publisher.publish(
             topic_path,
             data=json.dumps(publish_data).encode('utf-8')
         )
+        
         publish_result = future.result()
         logging.info(f"Published message to fetch_weather_data_topic with ID: {publish_result}")
 
-        send_discord_notification(notification_title, success_message, color)
         return success_message, 200
 
     except Exception as e:

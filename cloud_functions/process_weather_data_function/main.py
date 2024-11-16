@@ -8,14 +8,16 @@ from google.auth import default
 from utils.data_processing_weather import get_json_files_from_gcs, transform_weather_data, transform_to_bigquery_rows
 from utils.bigquery_helpers_weather import insert_data_into_bigquery
 
-def process_weather_data(event, context):
+def process_weather_data(data, context):
     """
     Cloud Function to process new weather data from GCS and load into BigQuery,
     triggered by Pub/Sub message from fetch_weather_data function.
     """
     try:
-        pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-        input_data = json.loads(pubsub_message)
+        if isinstance(data, str):
+            input_data = json.loads(data)
+        else:
+            input_data = json.loads(base64.b64decode(data['data']).decode('utf-8'))
         logging.info(f"Received weather data from fetch_weather_data: {input_data}")
 
         bucket_name = os.environ.get('BUCKET_NAME')

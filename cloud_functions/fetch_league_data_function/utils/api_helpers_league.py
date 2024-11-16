@@ -84,7 +84,7 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
     
     assert GCP_PROJECT_ID is not None
 
-    existing_teams = get_existing_teams_from_bq(GCP_PROJECT_ID, 'soccer_data')
+    existing_teams = get_existing_teams_from_bq(GCP_PROJECT_ID, 'sports_data')
     
     for team in teams_data.get('teams', []):
         team_id = team.get('id')

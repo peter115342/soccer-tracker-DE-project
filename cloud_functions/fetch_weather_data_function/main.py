@@ -7,11 +7,13 @@ from utils.weather_data_helper import fetch_weather_by_coordinates, save_weather
 from google.cloud import bigquery, pubsub_v1
 from datetime import datetime
 
-def fetch_weather_data(event, context):
+def fetch_weather_data(data, context):
     """Fetches and stores weather data for football match locations in GCS."""
     try:
-        pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-        input_data = json.loads(pubsub_message)
+        if isinstance(data, str):
+            input_data = json.loads(data)
+        else:
+            input_data = json.loads(base64.b64decode(data['data']).decode('utf-8'))
         logging.info(f"Received processed match data: {input_data}")
 
         match_data = get_match_data()
