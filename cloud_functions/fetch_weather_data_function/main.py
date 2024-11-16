@@ -2,17 +2,18 @@ import logging
 import os
 import json
 import requests
+import base64
 from utils.weather_data_helper import fetch_weather_by_coordinates, save_weather_to_gcs
-from google.cloud import bigquery
+from google.cloud import bigquery, pubsub_v1
 from datetime import datetime
 
-def fetch_weather_data(request):
+def fetch_weather_data(event, context):
     """Fetches and stores weather data for football match locations in GCS."""
     try:
-        if request.method not in ["GET", "POST"]:
-            return ("Method not allowed", 405)
+        pubsub_message = base64.b64decode(event['data']).decode('utf-8')
+        input_data = json.loads(pubsub_message)
+        logging.info(f"Received processed match data: {input_data}")
 
-        logging.basicConfig(level=logging.INFO)
         match_data = get_match_data()
 
         if not match_data:
@@ -22,6 +23,7 @@ def fetch_weather_data(request):
 
         processed_count = 0
         error_count = 0
+        processed_weather_data = []
 
         for match in match_data:
             try:
@@ -37,7 +39,6 @@ def fetch_weather_data(request):
 
                 try:
                     lat, lon = map(lambda x: float(x.strip()), coords_str.split(','))
-
                 except ValueError as e:
                     logging.warning(f"Invalid coordinates format '{coords_str}' for match {match_id}: {e}")
                     error_count += 1
@@ -49,6 +50,7 @@ def fetch_weather_data(request):
                 if weather_data:
                     if save_weather_to_gcs(weather_data, match_id):
                         processed_count += 1
+                        processed_weather_data.append(weather_data)
                 else:
                     logging.warning(f"No weather data fetched for match {match_id}")
                     error_count += 1
@@ -64,6 +66,26 @@ def fetch_weather_data(request):
             message = "📝 No new weather data needed to be saved"
             send_discord_notification("Weather Data Update", message, 16776960)
             return message, 200
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'process_weather_data_topic')
+        
+        publish_data = {
+            "weather_data": processed_weather_data,
+            "stats": {
+                "processed_count": processed_count,
+                "error_count": error_count,
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        
+        future = publisher.publish(
+            topic_path,
+            data=json.dumps(publish_data).encode('utf-8')
+        )
+        
+        publish_result = future.result()
+        logging.info(f"Published message to process_weather_data_topic with ID: {publish_result}")
 
         return success_message, 200
 

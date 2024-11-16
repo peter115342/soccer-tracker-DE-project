@@ -1,6 +1,8 @@
 from typing import List, Dict, Any
 from flask import Request
 from datetime import datetime
+from google.cloud import pubsub_v1
+import base64
 
 from utils.api_helpers_league import get_league_data
 from utils.bigquery_helpers_league import insert_data_into_bigquery
@@ -9,21 +11,14 @@ import json
 import os
 import logging
 
-def is_odd_week():
-    return datetime.now().isocalendar()[1] % 2 == 1
 
-def fetch_league_data(request: Request):
+
+def fetch_league_data(event, context):
     """
     Cloud Function to fetch leagues and teams data and load into BigQuery,
     runs only on odd weeks with Discord notifications.
+    Triggers the next function in pipeline via Pub/Sub.
     """
-    if not is_odd_week():
-        send_discord_notification(
-            "⏭️ Fetch League Data: Skipped", 
-            "Run skipped - scheduled for odd weeks only.",
-            16776960
-        )
-        return 'Run skipped - scheduled for odd weeks only.', 200
 
     try:
         league_codes = ['PL', 'FL1', 'BL1', 'SA', 'PD']  # Premier League, Ligue 1, Bundesliga, Serie A, La Liga
@@ -34,12 +29,29 @@ def fetch_league_data(request: Request):
             league_data_list.append(league_data)
 
         load_data_into_bigquery(league_data_list)
+        
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_football_data_topic')
+        
+        pipeline_data = {
+            "league_data": league_data_list,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        future = publisher.publish(
+            topic_path, 
+            data=json.dumps(pipeline_data).encode('utf-8'),
+            origin="fetch_league_data"
+        )
+        future.result()
+
         send_discord_notification(
             "✅ Fetch League Data: Success", 
-            "League data fetched and loaded into BigQuery successfully.",
+            "League data fetched, loaded into BigQuery, and published to next function successfully.",
             65280  # Green
         )
-        return 'League data fetched and loaded into BigQuery successfully.', 200
+        return 'League data processed and pipeline triggered successfully.', 200
+    
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"
         send_discord_notification(

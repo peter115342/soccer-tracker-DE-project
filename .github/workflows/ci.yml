@@ -47,12 +47,20 @@ jobs:
         with:
           project_id: ${{secrets.GCP_PROJECT_ID}}
 
+      - name: Create Pub/Sub Topics
+        run: |
+          uv run gcloud pubsub topics create fetch_league_data_topic || true
+          uv run gcloud pubsub topics create fetch_football_data_topic || true
+          uv run gcloud pubsub topics create process_football_data_topic || true
+          uv run gcloud pubsub topics create fetch_weather_data_topic || true
+          uv run gcloud pubsub topics create process_weather_data_topic || true
+
       - name: Deploy fetch_league_data Function
         run: |
           cd cloud_functions/fetch_league_data_function
           uv run gcloud functions deploy fetch_league_data \
             --runtime python39 \
-            --trigger-http \
+            --trigger-topic fetch_league_data_topic \
             --entry-point fetch_league_data \
             --timeout 540s \
             --memory 1GiB \
@@ -65,7 +73,7 @@ jobs:
           cd cloud_functions/fetch_match_data_function
           uv run gcloud functions deploy fetch_football_data \
             --runtime python39 \
-            --trigger-http \
+            --trigger-topic fetch_football_data_topic \
             --entry-point fetch_football_data \
             --timeout 540s \
             --memory 1GiB \
@@ -78,7 +86,7 @@ jobs:
           cd cloud_functions/process_match_data_function
           uv run gcloud functions deploy process_football_data \
             --runtime python39 \
-            --trigger-http \
+            --trigger-topic process_football_data_topic \
             --entry-point process_football_data \
             --timeout 540s \
             --memory 1GiB \
@@ -91,7 +99,7 @@ jobs:
           cd cloud_functions/fetch_weather_data_function
           uv run gcloud functions deploy fetch_weather_data \
             --runtime python39 \
-            --trigger-http \
+            --trigger-topic fetch_weather_data_topic \
             --entry-point fetch_weather_data \
             --timeout 540s \
             --memory 1GiB \
@@ -104,10 +112,11 @@ jobs:
           cd cloud_functions/process_weather_data_function
           uv run gcloud functions deploy process_weather_data \
             --runtime python39 \
-            --trigger-http \
+            --trigger-topic process_weather_data_topic \
             --entry-point process_weather_data \
             --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
             --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
           cd ../..
+

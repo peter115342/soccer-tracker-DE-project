@@ -4,3 +4,4 @@ flask
 datetime
 google-cloud-storage
 polars
+google-cloud-pubsub

@@ -3,17 +3,22 @@ import requests
 import json
 import os
 import logging
+import base64
 from google.auth import default
 
 from utils.data_processing_weather import get_json_files_from_gcs, transform_weather_data, transform_to_bigquery_rows
 from utils.bigquery_helpers_weather import insert_data_into_bigquery
 
-def process_weather_data(request: Request):
+def process_weather_data(event, context):
     """
     Cloud Function to process new weather data from GCS and load into BigQuery,
-    with Discord notifications for processing status.
+    triggered by Pub/Sub message from fetch_weather_data function.
     """
     try:
+        pubsub_message = base64.b64decode(event['data']).decode('utf-8')
+        input_data = json.loads(pubsub_message)
+        logging.info(f"Received weather data from fetch_weather_data: {input_data}")
+
         bucket_name = os.environ.get('BUCKET_NAME')
         if bucket_name is None:
             raise ValueError("BUCKET_NAME environment variable is not set")
@@ -33,7 +38,7 @@ def process_weather_data(request: Request):
             send_discord_notification(
                 "🌤️ Weather Data Processing: No Updates", 
                 "All weather data files have already been processed.", 
-                16776960  # Yellow
+                16776960
             )
             return message, 200
 
@@ -43,7 +48,7 @@ def process_weather_data(request: Request):
             send_discord_notification(
                 "⚠️ Weather Data Processing: Empty Data", 
                 "New files were found but contained no valid weather data.", 
-                16776960  # Yellow
+                16776960
             )
             return message, 200
 
@@ -56,7 +61,7 @@ def process_weather_data(request: Request):
                 f"⚠️ Found {len(weather_data)} new files.\n"
                 f"All {result['skipped_count']} weather records already exist in the database."
             )
-            color = 16776960  # Yellow
+            color = 16776960
         else:
             notification_title = "✅ Weather Data Processing: Success"
             success_message = (
@@ -64,7 +69,7 @@ def process_weather_data(request: Request):
                 f"• {result['inserted_count']} new weather records added\n"
                 f"• {result['skipped_count']} existing records skipped"
             )
-            color = 65280  # Green
+            color = 65280
 
         send_discord_notification(notification_title, success_message, color)
         return success_message, 200
@@ -74,7 +79,7 @@ def process_weather_data(request: Request):
         send_discord_notification(
             "❌ Weather Data Processing: Error",
             f"Processing failed with error:\n```{error_message}```",
-            16711680  # Red
+            16711680
         )
         logging.exception(error_message)
         return error_message, 500

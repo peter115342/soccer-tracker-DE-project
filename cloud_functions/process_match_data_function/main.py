@@ -3,17 +3,23 @@ import requests
 import json
 import os
 import logging
+import base64
 from google.auth import default
-
 from cloud_functions.process_match_data_function.utils.data_processing_match import get_json_files_from_gcs, process_match_data, transform_to_bigquery_rows
 from utils.bigquery_helpers_match import insert_data_into_bigquery
+from google.cloud import pubsub_v1
 
-def process_football_data(request: Request):
+def process_football_data(event, context):
     """
     Cloud Function to process new football match data from GCS and load into BigQuery,
-    with Discord notifications for processing status.
+    triggered by Pub/Sub message from fetch_match_data function.
     """
     try:
+
+        pubsub_message = base64.b64decode(event['data']).decode('utf-8')
+        input_data = json.loads(pubsub_message)
+        logging.info(f"Received input data from fetch_match_data: {input_data}")
+
         bucket_name = os.environ.get('BUCKET_NAME')
         _, project_id = default()
 
@@ -25,14 +31,16 @@ def process_football_data(request: Request):
 
         logging.info("Starting to process new football data from GCS")
 
-        match_data = get_json_files_from_gcs(bucket_name, project_id)
+        match_data = input_data.get('matches', [])
+        if not match_data:
+            match_data = get_json_files_from_gcs(bucket_name, project_id)
 
         if not match_data:
             message = "No new match data files found for processing."
             send_discord_notification(
                 "📝 Football Data Processing: No Updates", 
                 "All match data files have already been processed. No new updates required.", 
-                16776960  # Yellow
+                16776960
             )
             return message, 200
 
@@ -42,7 +50,7 @@ def process_football_data(request: Request):
             send_discord_notification(
                 "⚠️ Football Data Processing: Empty Data", 
                 "New files were found but contained no valid match data.", 
-                16776960  # Yellow
+                16776960
             )
             return message, 200
 
@@ -55,7 +63,7 @@ def process_football_data(request: Request):
                 f"⚠️ Found {len(match_data)} new files.\n"
                 f"All {result['skipped_count']} matches already exist in the database."
             )
-            color = 16776960  # Yellow
+            color = 16776960
         else:
             notification_title = "✅ Football Data Processing: Success"
             success_message = (
@@ -63,7 +71,23 @@ def process_football_data(request: Request):
                 f"• {result['inserted_count']} new matches added\n"
                 f"• {result['skipped_count']} existing matches skipped"
             )
-            color = 65280  # Green
+            color = 65280
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(project_id, 'fetch_weather_data_topic')
+        
+        publish_data = {
+            "processed_matches": result,
+            "stats": input_data.get('stats', {}),
+            "timestamp": context.timestamp
+        }
+        
+        future = publisher.publish(
+            topic_path,
+            data=json.dumps(publish_data).encode('utf-8')
+        )
+        publish_result = future.result()
+        logging.info(f"Published message to fetch_weather_data_topic with ID: {publish_result}")
 
         send_discord_notification(notification_title, success_message, color)
         return success_message, 200
@@ -72,8 +96,8 @@ def process_football_data(request: Request):
         error_message = f"Error during football data processing: {str(e)}"
         send_discord_notification(
             "❌ Football Data Processing: Error", 
-            f"Processing failed with error:\n```{error_message}```", 
-            16711680  # Red
+            f"Processing failed with error:\n{error_message}", 
+            16711680
         )
         logging.exception(error_message)
         return error_message, 500
