@@ -7,8 +7,10 @@ from google.auth import default
 from cloud_functions.process_match_data_function.utils.data_processing_match import get_json_files_from_gcs, process_match_data, transform_to_bigquery_rows
 from utils.bigquery_helpers_match import insert_data_into_bigquery
 from google.cloud import pubsub_v1
+from datetime import datetime
 
-def process_football_data(event, context):
+
+def process_football_data(event):
     """
     Cloud Function to process new football match data from GCS and load into BigQuery,
     triggered by Pub/Sub message from fetch_match_data function.
@@ -78,7 +80,7 @@ def process_football_data(event, context):
         publish_data = {
             "processed_matches": result,
             "stats": input_data.get('stats', {}),
-            "timestamp": context.timestamp
+            "timestamp": datetime.now().isoformat()
         }
         
         future = publisher.publish(
