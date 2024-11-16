@@ -10,7 +10,7 @@ from google.cloud import pubsub_v1
 from datetime import datetime
 
 
-def process_football_data(event):
+def process_football_data(event, context):
     """
     Cloud Function to process new football match data from GCS and load into BigQuery,
     triggered by Pub/Sub message from fetch_match_data function.

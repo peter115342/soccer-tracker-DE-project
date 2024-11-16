@@ -11,7 +11,7 @@ import logging
 
 
 
-def fetch_league_data(event):
+def fetch_league_data(event, context):
     """
     Cloud Function to fetch leagues and teams data and load into BigQuery,
     runs only on odd weeks with Discord notifications.

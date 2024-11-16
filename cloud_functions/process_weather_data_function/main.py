@@ -8,7 +8,7 @@ from google.auth import default
 from utils.data_processing_weather import get_json_files_from_gcs, transform_weather_data, transform_to_bigquery_rows
 from utils.bigquery_helpers_weather import insert_data_into_bigquery
 
-def process_weather_data(event):
+def process_weather_data(event, context):
     """
     Cloud Function to process new weather data from GCS and load into BigQuery,
     triggered by Pub/Sub message from fetch_weather_data function.
