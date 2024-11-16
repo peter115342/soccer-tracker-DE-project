@@ -4,7 +4,7 @@ import os
 import logging
 import base64
 from google.auth import default
-from cloud_functions.process_match_data_function.utils.data_processing_match import get_json_files_from_gcs, process_match_data, transform_to_bigquery_rows
+from utils.data_processing_match import get_json_files_from_gcs, process_match_data, transform_to_bigquery_rows
 from utils.bigquery_helpers_match import insert_data_into_bigquery
 from google.cloud import pubsub_v1
 from datetime import datetime
