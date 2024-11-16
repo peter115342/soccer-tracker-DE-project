@@ -1,9 +1,7 @@
-from flask import Request
 import requests
 import json
 import os
 import logging
-import base64
 from datetime import datetime
 from google.cloud import pubsub_v1
 from utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs
