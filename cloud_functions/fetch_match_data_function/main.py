@@ -11,7 +11,6 @@ def fetch_football_data(event, context):
     Cloud Function to fetch football match data from top 5 leagues and save to bucket,
     with Discord notifications for success or failure and Pub/Sub trigger for next function.
     """
-    
     try:
         date_to = datetime.now().strftime('%Y-%m-%d')
         date_from = date_to
@@ -19,33 +18,32 @@ def fetch_football_data(event, context):
         logging.info(f"Fetching matches from {date_from} to {date_to}")
         matches = fetch_matches_for_competitions(date_from, date_to)
 
+        new_matches = 0
+        error_count = 0
+        processed_matches = []
+
         if not matches:
             message = f"No new matches found between {date_from} and {date_to}"
             logging.info(message)
             send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
-            return message, 200
+        else:
+            for match in matches:
+                try:
+                    match_id = match['id']
+                    save_to_gcs(match, match_id)
+                    processed_matches.append(match)
+                    new_matches += 1
+                except Exception as e:
+                    error_count += 1
+                    logging.error(f"Error processing match ID {match_id}: {e}")
 
-        new_matches = 0
-        error_count = 0
-        processed_matches = []
-        
-        for match in matches:
-            try:
-                match_id = match['id']
-                save_to_gcs(match, match_id)
-                processed_matches.append(match)
-                new_matches += 1
-            except Exception as e:
-                error_count += 1
-                logging.error(f"Error processing match ID {match_id}: {e}")
-
-        success_message = f"Fetched {new_matches} new matches. Errors: {error_count}"
-        logging.info(success_message)
-        send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
+            success_message = f"Fetched {new_matches} new matches. Errors: {error_count}"
+            logging.info(success_message)
+            send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'process_football_data_topic')
-        
+
         publish_data = {
             "matches": processed_matches,
             "stats": {
@@ -54,17 +52,17 @@ def fetch_football_data(event, context):
                 "date": date_to
             }
         }
-        
+
         future = publisher.publish(
-            topic_path, 
+            topic_path,
             data=json.dumps(publish_data).encode('utf-8'),
             timestamp=datetime.now().isoformat()
         )
-        
+
         publish_result = future.result()
         logging.info(f"Published message to process_football_data_topic with ID: {publish_result}")
 
-        return success_message, 200
+        return "Process completed.", 200
 
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"

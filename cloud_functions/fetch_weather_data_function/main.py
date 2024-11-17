@@ -18,60 +18,61 @@ def fetch_weather_data(data, context):
 
         match_data = get_match_data()
 
-        if not match_data:
-            message = "📝 No matches to fetch weather data for"
-            send_discord_notification("Weather Data Update", message, 16776960)
-            return message, 200
-
         processed_count = 0
         error_count = 0
         processed_weather_data = []
 
-        for match in match_data:
-            try:
-                match_id = match["id"]
-                match_datetime_str = match["utcDate"]
-                home_team = match["homeTeam"]
-                coords_str = home_team.get("address", "")
-
-                if not coords_str:
-                    logging.warning(f"No coordinates found for match {match_id}")
-                    error_count += 1
-                    continue
-
-                try:
-                    lat, lon = map(lambda x: float(x.strip()), coords_str.split(','))
-                except ValueError as e:
-                    logging.warning(f"Invalid coordinates format '{coords_str}' for match {match_id}: {e}")
-                    error_count += 1
-                    continue
-
-                match_datetime = datetime.strptime(match_datetime_str, "%Y-%m-%dT%H:%M:%S%z")
-                weather_data = fetch_weather_by_coordinates(lat, lon, match_datetime)
-
-                if weather_data:
-                    if save_weather_to_gcs(weather_data, match_id):
-                        processed_count += 1
-                        processed_weather_data.append(weather_data)
-                else:
-                    logging.warning(f"No weather data fetched for match {match_id}")
-                    error_count += 1
-
-            except Exception as e:
-                error_count += 1
-                logging.error(f"Error processing match {match_id}: {e}")
-
-        if processed_count > 0:
-            success_message = f"🌤️ Successfully saved weather data for {processed_count} new matches"
-            send_discord_notification("Weather Data Update", success_message, 65280)
-        else:
-            message = "📝 No new weather data needed to be saved"
+        if not match_data:
+            message = "📝 No matches to fetch weather data for"
+            logging.info(message)
             send_discord_notification("Weather Data Update", message, 16776960)
-            return message, 200
+        else:
+            for match in match_data:
+                try:
+                    match_id = match["id"]
+                    match_datetime_str = match["utcDate"]
+                    home_team = match["homeTeam"]
+                    coords_str = home_team.get("address", "")
+
+                    if not coords_str:
+                        logging.warning(f"No coordinates found for match {match_id}")
+                        error_count += 1
+                        continue
+
+                    try:
+                        lat, lon = map(lambda x: float(x.strip()), coords_str.split(','))
+                    except ValueError as e:
+                        logging.warning(f"Invalid coordinates format '{coords_str}' for match {match_id}: {e}")
+                        error_count += 1
+                        continue
+
+                    match_datetime = datetime.strptime(match_datetime_str, "%Y-%m-%dT%H:%M:%S%z")
+                    weather_data = fetch_weather_by_coordinates(lat, lon, match_datetime)
+
+                    if weather_data:
+                        if save_weather_to_gcs(weather_data, match_id):
+                            processed_count += 1
+                            processed_weather_data.append(weather_data)
+                    else:
+                        logging.warning(f"No weather data fetched for match {match_id}")
+                        error_count += 1
+
+                except Exception as e:
+                    error_count += 1
+                    logging.error(f"Error processing match {match_id}: {e}")
+
+            if processed_count > 0:
+                success_message = f"🌤️ Successfully saved weather data for {processed_count} new matches"
+                logging.info(success_message)
+                send_discord_notification("Weather Data Update", success_message, 65280)
+            else:
+                message = "📝 No new weather data needed to be saved"
+                logging.info(message)
+                send_discord_notification("Weather Data Update", message, 16776960)
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'process_weather_data_topic')
-        
+
         publish_data = {
             "weather_data": processed_weather_data,
             "stats": {
@@ -80,16 +81,16 @@ def fetch_weather_data(data, context):
                 "timestamp": datetime.now().isoformat()
             }
         }
-        
+
         future = publisher.publish(
             topic_path,
             data=json.dumps(publish_data).encode('utf-8')
         )
-        
+
         publish_result = future.result()
         logging.info(f"Published message to process_weather_data_topic with ID: {publish_result}")
 
-        return success_message, 200
+        return "Process completed.", 200
 
     except Exception as e:
         error_message = f"❌ Weather data update failed: {str(e)}"
