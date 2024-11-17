@@ -27,25 +27,10 @@ def fetch_league_data(event, context):
             league_data_list.append(league_data)
 
         load_data_into_bigquery(league_data_list)
-        
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_football_data_topic')
-        
-        pipeline_data = {
-            "league_data": league_data_list,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-        future = publisher.publish(
-            topic_path, 
-            data=json.dumps(pipeline_data).encode('utf-8'),
-            origin="fetch_league_data"
-        )
-        future.result()
 
         send_discord_notification(
             "✅ Fetch League Data: Success", 
-            "League data fetched, loaded into BigQuery, and published to next function successfully.",
+            "League data fetched, loaded into BigQuery successfully.",
             65280  # Green
         )
         return 'League data processed and pipeline triggered successfully.', 200
