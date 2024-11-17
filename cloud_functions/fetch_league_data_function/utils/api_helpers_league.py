@@ -25,12 +25,12 @@ def get_existing_teams_from_bq(project_id: str, dataset: str) -> set:
     """Fetch existing team IDs from BigQuery"""
     client = bigquery.Client(project=project_id)
     query = """
-        SELECT DISTINCT team_id 
+        SELECT DISTINCT id
         FROM `{}.{}.teams`
     """.format(project_id, dataset)
     
     results = client.query(query).result()
-    return {row.team_id for row in results}
+    return {row.id for row in results}
 
 def get_stadium_coordinates(venue: str, team_name: str, team_city: str, team_country: str) -> Optional[str]:
     """
