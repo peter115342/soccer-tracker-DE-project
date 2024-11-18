@@ -37,10 +37,6 @@ def process_football_data(data, context):
         if not match_data:
             match_data = get_json_files_from_gcs(bucket_name, project_id)
 
-        inserted_count = 0
-        skipped_count = 0
-        bq_rows = []
-
         if not match_data:
             message = "No new match data files found for processing."
             logging.info(message)
@@ -49,61 +45,64 @@ def process_football_data(data, context):
                 "All match data files have already been processed. No new updates required.", 
                 16776960
             )
+            return "No new data to process.", 200
+
+        df = process_match_data(match_data)
+        if df.empty:
+            message = "No valid matches found in the new data files."
+            logging.info(message)
+            send_discord_notification(
+                "⚠️ Football Data Processing: Empty Data", 
+                "New files were found but contained no valid match data.", 
+                16776960
+            )
+            return "No valid matches in data.", 200
+
+        bq_rows = transform_to_bigquery_rows(df)
+        result = insert_data_into_bigquery('match_data', bq_rows)
+        inserted_count = result['inserted_count']
+        skipped_count = result['skipped_count']
+
+        if inserted_count == 0:
+            notification_title = "ℹ️ Football Data Processing: No New Matches"
+            success_message = (
+                f"⚠️ Found {len(match_data)} new files.\n"
+                f"All {skipped_count} matches already exist in the database."
+            )
+            color = 16776960
+            send_discord_notification(notification_title, success_message, color)
+            return "No new matches to insert.", 200
         else:
-            df = process_match_data(match_data)
-            if df.empty:
-                message = "No valid matches found in the new data files."
-                logging.info(message)
-                send_discord_notification(
-                    "⚠️ Football Data Processing: Empty Data", 
-                    "New files were found but contained no valid match data.", 
-                    16776960
-                )
-            else:
-                bq_rows = transform_to_bigquery_rows(df)
-                result = insert_data_into_bigquery('match_data', bq_rows)
-                inserted_count = result['inserted_count']
-                skipped_count = result['skipped_count']
+            notification_title = "✅ Football Data Processing: Success"
+            success_message = (
+                f"Successfully processed {len(match_data)} new files:\n"
+                f"• {inserted_count} new matches added\n"
+                f"• {skipped_count} existing matches skipped"
+            )
+            color = 65280
+            send_discord_notification(notification_title, success_message, color)
 
-                if inserted_count == 0:
-                    notification_title = "ℹ️ Football Data Processing: No New Matches"
-                    success_message = (
-                        f"⚠️ Found {len(match_data)} new files.\n"
-                        f"All {skipped_count} matches already exist in the database."
-                    )
-                    color = 16776960
-                else:
-                    notification_title = "✅ Football Data Processing: Success"
-                    success_message = (
-                        f"Successfully processed {len(match_data)} new files:\n"
-                        f"• {inserted_count} new matches added\n"
-                        f"• {skipped_count} existing matches skipped"
-                    )
-                    color = 65280
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(project_id, 'fetch_weather_data_topic')
 
-                send_discord_notification(notification_title, success_message, color)
-
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(project_id, 'fetch_weather_data_topic')
-
-        publish_data = {
-            "processed_matches": bq_rows,
-            "stats": {
-                "inserted_count": inserted_count,
-                "skipped_count": skipped_count,
-                "timestamp": datetime.now().isoformat()
+            publish_data = {
+                "processed_matches": bq_rows,
+                "stats": {
+                    "inserted_count": inserted_count,
+                    "skipped_count": skipped_count,
+                    "timestamp": datetime.now().isoformat()
+                }
             }
-        }
 
-        future = publisher.publish(
-            topic_path,
-            data=json.dumps(publish_data).encode('utf-8')
-        )
+            future = publisher.publish(
+                topic_path,
+                data=json.dumps(publish_data).encode('utf-8')
+            )
 
-        publish_result = future.result()
-        logging.info(f"Published message to fetch_weather_data_topic with ID: {publish_result}")
+            publish_result = future.result()
+            logging.info(f"Published message to fetch_weather_data_topic with ID: {publish_result}")
 
-        return "Process completed.", 200
+            return "Process completed.", 200
 
     except Exception as e:
         error_message = f"Error during football data processing: {str(e)}"

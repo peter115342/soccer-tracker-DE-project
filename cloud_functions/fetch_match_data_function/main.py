@@ -26,20 +26,21 @@ def fetch_football_data(event, context):
             message = f"No new matches found between {date_from} and {date_to}"
             logging.info(message)
             send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
-        else:
-            for match in matches:
-                try:
-                    match_id = match['id']
-                    save_to_gcs(match, match_id)
-                    processed_matches.append(match)
-                    new_matches += 1
-                except Exception as e:
-                    error_count += 1
-                    logging.error(f"Error processing match ID {match_id}: {e}")
+            return "No new matches to process.", 200
 
-            success_message = f"Fetched {new_matches} new matches. Errors: {error_count}"
-            logging.info(success_message)
-            send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
+        for match in matches:
+            try:
+                match_id = match['id']
+                save_to_gcs(match, match_id)
+                processed_matches.append(match)
+                new_matches += 1
+            except Exception as e:
+                error_count += 1
+                logging.error(f"Error processing match ID {match_id}: {e}")
+
+        success_message = f"Fetched {new_matches} new matches. Errors: {error_count}"
+        logging.info(success_message)
+        send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'process_football_data_topic')
