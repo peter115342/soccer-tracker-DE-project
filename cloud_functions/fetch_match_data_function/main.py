@@ -23,7 +23,7 @@ def fetch_football_data(event, context):
         processed_matches = []
 
         if not matches:
-            message = f"No new matches found between {date_from} and {date_to}"
+            message = f"No new matches found on date {date_from}"
             logging.info(message)
             send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
             return "No new matches to process.", 200
