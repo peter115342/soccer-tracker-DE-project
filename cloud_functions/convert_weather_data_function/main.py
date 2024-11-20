@@ -19,7 +19,7 @@ def transform_to_parquet(event, context):
         bucket_name = os.environ.get('BUCKET_NAME')
         source_blob_name = message_data['name']
         
-        logging.info(f"Starting conversion of {source_blob_name} to parquet")
+        logging.info(f"Conversion of {source_blob_name} to parquet")
         
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
