@@ -67,6 +67,15 @@ def transform_to_parquet(event, context):
             blob = bucket.blob(json_file)
             json_content = json.loads(blob.download_as_string())
             
+            # Normalize data structure
+            if isinstance(json_content, dict):
+                json_content = [json_content]
+            
+            # Normalize the score field
+            for item in json_content:
+                if 'score' in item and not isinstance(item['score'], list):
+                    item['score'] = [item['score']]
+            
             df = pl.DataFrame(json_content)
             
             df.write_parquet('/tmp/temp.parquet')
