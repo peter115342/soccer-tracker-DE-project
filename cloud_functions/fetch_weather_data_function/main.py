@@ -14,6 +14,13 @@ def fetch_weather_data(data, context):
             input_data = json.loads(data)
         else:
             input_data = json.loads(base64.b64decode(data['data']).decode('utf-8'))
+
+        if 'action' not in input_data or input_data['action'] != 'fetch_weather':
+            error_message = "Invalid message format or incorrect action"
+            logging.error(error_message)
+            send_discord_notification("❌ Weather Data: Invalid Trigger", error_message, 16711680)
+            return error_message, 500
+
         logging.info(f"Received processed match data: {input_data}")
 
         match_data = get_match_data()
@@ -22,6 +29,27 @@ def fetch_weather_data(data, context):
             message = "📝 No matches to fetch weather data for"
             logging.info(message)
             send_discord_notification("Weather Data Update", message, 16776960)
+
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_weather_to_parquet_topic')
+
+            publish_data = {
+                "weather_data": [],
+                "stats": {
+                    "processed_count": 0,
+                    "error_count": 0,
+                    "timestamp": datetime.now().isoformat()
+                }
+            }
+
+            future = publisher.publish(
+                topic_path,
+                data=json.dumps(publish_data).encode('utf-8')
+            )
+
+            publish_result = future.result()
+            logging.info(f"Published empty message to convert-weather-to-parquet-topic with ID: {publish_result}")
+            
             return "No matches to process weather data for.", 200
 
         processed_count = 0
@@ -67,29 +95,31 @@ def fetch_weather_data(data, context):
             logging.info(success_message)
             send_discord_notification("Weather Data Update", success_message, 65280)
 
-            publisher = pubsub_v1.PublisherClient()
-            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'process_weather_data_topic')
-
-            publish_data = {
-                "weather_data": processed_weather_data,
-                "stats": {
-                    "processed_count": processed_count,
-                    "error_count": error_count,
-                    "timestamp": datetime.now().isoformat()
-                }
-            }
-
-            future = publisher.publish(
-                topic_path,
-                data=json.dumps(publish_data).encode('utf-8')
-            )
-
-            publish_result = future.result()
-            logging.info(f"Published message to process_weather_data_topic with ID: {publish_result}")
         else:
             message = "📝 No new weather data needed to be saved"
             logging.info(message)
             send_discord_notification("Weather Data Update", message, 16776960)
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_weather_to_parquet_topic')
+
+        publish_data = {
+            "action": "convert_weather",
+            "weather_data": processed_weather_data,
+            "stats": {
+                "processed_count": processed_count,
+                "error_count": error_count,
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+
+        future = publisher.publish(
+            topic_path,
+            data=json.dumps(publish_data).encode('utf-8')
+        )
+
+        publish_result = future.result()
+        logging.info(f"Published message to convert-weather-to-parquet-topic with ID: {publish_result}")
 
         return "Process completed.", 200
 

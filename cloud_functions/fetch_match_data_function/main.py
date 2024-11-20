@@ -23,7 +23,7 @@ def fetch_football_data(event, context):
         processed_matches = []
 
         if not matches:
-            message = f"No new matches found on date {date_from}"
+            message = f"No new matches found on date {date_from}. Skipping conversion step."
             logging.info(message)
             send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
             return "No new matches to process.", 200
@@ -38,30 +38,26 @@ def fetch_football_data(event, context):
                 error_count += 1
                 logging.error(f"Error processing match ID {match_id}: {e}")
 
-        success_message = f"Fetched {new_matches} new matches. Errors: {error_count}"
+        success_message = f"Fetched {new_matches} new matches. Errors: {error_count}. Triggering conversion step."
         logging.info(success_message)
         send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
 
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'process_football_data_topic')
+        if new_matches > 0:
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
 
-        publish_data = {
-            "matches": processed_matches,
-            "stats": {
-                "new_matches": new_matches,
-                "errors": error_count,
-                "date": date_to
+            publish_data = {
+                "action": "convert_matches"
             }
-        }
 
-        future = publisher.publish(
-            topic_path,
-            data=json.dumps(publish_data).encode('utf-8'),
-            timestamp=datetime.now().isoformat()
-        )
+            future = publisher.publish(
+                topic_path,
+                data=json.dumps(publish_data).encode('utf-8'),
+                timestamp=datetime.now().isoformat()
+            )
 
-        publish_result = future.result()
-        logging.info(f"Published message to process_football_data_topic with ID: {publish_result}")
+            publish_result = future.result()
+            logging.info(f"Published trigger message to convert_to_parquet_topic with ID: {publish_result}")
 
         return "Process completed.", 200
 
