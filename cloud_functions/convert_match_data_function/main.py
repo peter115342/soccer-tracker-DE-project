@@ -39,9 +39,8 @@ def transform_to_parquet(event, context):
         logging.info(success_message)
         send_discord_notification("✅ Convert to Parquet: Success", success_message, 65280)
 
-        # Always trigger weather data fetch
         publisher = pubsub_v1.PublisherClient()
-        weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch-weather-data-topic')
+        weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_data_topic')
 
         weather_message = {
             "match_id": source_blob_name.replace('.json', '')
@@ -65,7 +64,7 @@ def transform_to_parquet(event, context):
         # Trigger weather data fetch even on error
         try:
             publisher = pubsub_v1.PublisherClient()
-            weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch-weather-data-topic')
+            weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_data_topic')
 
             weather_message = {
                 "match_id": source_blob_name.replace('.json', '')

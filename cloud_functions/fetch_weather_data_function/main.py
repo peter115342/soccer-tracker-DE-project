@@ -24,7 +24,7 @@ def fetch_weather_data(data, context):
             send_discord_notification("Weather Data Update", message, 16776960)
 
             publisher = pubsub_v1.PublisherClient()
-            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert-weather-to-parquet-topic')
+            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_weather_to_parquet_topic')
 
             publish_data = {
                 "weather_data": [],
@@ -94,7 +94,7 @@ def fetch_weather_data(data, context):
             send_discord_notification("Weather Data Update", message, 16776960)
 
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert-weather-to-parquet-topic')
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_weather_to_parquet_topic')
 
         publish_data = {
             "weather_data": processed_weather_data,

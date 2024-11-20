@@ -28,7 +28,7 @@ def fetch_football_data(event, context):
             send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
             
             publisher = pubsub_v1.PublisherClient()
-            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert-to-parquet-topic')
+            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
 
             publish_data = {
                 "matches": [],
@@ -65,7 +65,7 @@ def fetch_football_data(event, context):
         send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
 
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert-to-parquet-topic')
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
 
         publish_data = {
             "matches": processed_matches,
