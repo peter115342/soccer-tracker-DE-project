@@ -40,12 +40,12 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
 
     logging.info(f"Retrieved {len(match_data)} new JSON files from GCS")
     
-    if new_file_names:
-        rows_to_insert = [{'file_name': name} for name in new_file_names]
-        #errors = bq_client.insert_rows_json(processed_files_table, rows_to_insert)
-        if errors:
-            logging.error(f"Failed to insert processed file names into BigQuery: {errors}")
-            raise RuntimeError(f"Failed to update processed files in BigQuery: {errors}")
+    # if new_file_names:
+    #     rows_to_insert = [{'file_name': name} for name in new_file_names]
+    #     errors = bq_client.insert_rows_json(processed_files_table, rows_to_insert)
+    #     if errors:
+    #         logging.error(f"Failed to insert processed file names into BigQuery: {errors}")
+    #         raise RuntimeError(f"Failed to update processed files in BigQuery: {errors}")
 
     return match_data
 
