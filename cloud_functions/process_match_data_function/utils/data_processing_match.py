@@ -13,16 +13,17 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
 
     bq_client = bigquery.Client(project=project_id)
     processed_files_table = f"{project_id}.sports_data.processed_files"
+    match_data_table = f"{project_id}.sports_data.match_data"
 
-    create_table_query = f"""
-    CREATE TABLE IF NOT EXISTS `{processed_files_table}` (
-        file_name STRING,
-        processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """
-    bq_client.query(create_table_query).result()
+    # create_table_query = f"""
+    # CREATE TABLE IF NOT EXISTS `{processed_files_table}` (
+    #     file_name STRING,
+    #     processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    # )
+    # """
+    # bq_client.query(create_table_query).result()
 
-    query = f"SELECT file_name FROM `{processed_files_table}`"
+    query = f"SELECT id FROM `{match_data_table}`"
     processed_files = set(row.file_name for row in bq_client.query(query).result())
     logging.info(f"Retrieved {len(processed_files)} processed files from BigQuery")
 
@@ -41,7 +42,7 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
     
     if new_file_names:
         rows_to_insert = [{'file_name': name} for name in new_file_names]
-        errors = bq_client.insert_rows_json(processed_files_table, rows_to_insert)
+        #errors = bq_client.insert_rows_json(processed_files_table, rows_to_insert)
         if errors:
             logging.error(f"Failed to insert processed file names into BigQuery: {errors}")
             raise RuntimeError(f"Failed to update processed files in BigQuery: {errors}")
