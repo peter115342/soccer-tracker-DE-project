@@ -12,25 +12,54 @@ def transform_to_parquet(event, context):
          event (dict): The dictionary with data specific to this type of event.
          context (google.cloud.functions.Context): The Cloud Functions event metadata.
     """
+    source_blob_name = None
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         message_data = json.loads(pubsub_message)
         
-        bucket_name = os.environ.get('BUCKET_NAME')
-        source_blob_name = message_data['name']
+        if 'name' not in message_data:
+            error_message = "No 'name' field in message data"
+            logging.error(error_message)
+            send_discord_notification("❌ Convert to Parquet: Failure", error_message, 16711680)
+            return error_message, 500
         
-        logging.info(f"Starting conversion of {source_blob_name} to parquet")
+        source_blob_name = message_data['name']
+        bucket_name = os.environ.get('BUCKET_NAME')
         
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
+        
+        parquet_blob_name = source_blob_name.replace('.json', '.parquet')
+        parquet_blob = bucket.blob(f'match_data_parquet/{parquet_blob_name}')
+        
+        if parquet_blob.exists():
+            message = f"Parquet file already exists for {source_blob_name}"
+            logging.info(message)
+            send_discord_notification("ℹ️ Convert to Parquet: Skipped", message, 16776960)
+            
+            publisher = pubsub_v1.PublisherClient()
+            weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_data_topic')
+
+            weather_message = {
+                "match_id": source_blob_name.replace('.json', '')
+            }
+
+            future = publisher.publish(
+                weather_topic_path,
+                data=json.dumps(weather_message).encode('utf-8')
+            )
+
+            publish_result = future.result()
+            logging.info(f"Published message to fetch_weather_data_topic with ID: {publish_result}")
+            
+            return message, 200
+        
+        logging.info(f"Starting conversion of {source_blob_name} to parquet")
         
         blob = bucket.blob(source_blob_name)
         json_content = json.loads(blob.download_as_string())
         
         df = pl.DataFrame(json_content)
-        
-        parquet_blob_name = source_blob_name.replace('.json', '.parquet')
-        parquet_blob = bucket.blob(f'match_data_parquet/{parquet_blob_name}')
         
         df.write_parquet('/tmp/temp.parquet')
         parquet_blob.upload_from_filename('/tmp/temp.parquet')
@@ -52,34 +81,14 @@ def transform_to_parquet(event, context):
         )
 
         publish_result = future.result()
-        logging.info(f"Published message to fetch-weather-data-topic with ID: {publish_result}")
+        logging.info(f"Published message to fetch_weather_data_topic with ID: {publish_result}")
         
         return success_message
 
     except Exception as e:
-        error_message = f"Error converting {source_blob_name} to parquet: {str(e)}"
+        error_message = f"Error converting {source_blob_name if source_blob_name else 'unknown file'} to parquet: {str(e)}"
         send_discord_notification("❌ Convert to Parquet: Failure", error_message, 16711680)
         logging.exception(error_message)
-
-        # Trigger weather data fetch even on error
-        try:
-            publisher = pubsub_v1.PublisherClient()
-            weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_data_topic')
-
-            weather_message = {
-                "match_id": source_blob_name.replace('.json', '')
-            }
-
-            future = publisher.publish(
-                weather_topic_path,
-                data=json.dumps(weather_message).encode('utf-8')
-            )
-
-            publish_result = future.result()
-            logging.info(f"Published message to fetch-weather-data-topic with ID: {publish_result} after error")
-        except Exception as pub_error:
-            logging.error(f"Failed to publish message after error: {pub_error}")
-
         return error_message, 500
 
 def send_discord_notification(title: str, message: str, color: int):
