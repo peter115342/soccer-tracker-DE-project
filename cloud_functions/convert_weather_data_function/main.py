@@ -3,7 +3,7 @@ import json
 import os
 import logging
 import requests
-from google.cloud import storage, pubsub_v1
+from google.cloud import storage
 import polars as pl
 
 def transform_to_parquet(event, context):
@@ -12,83 +12,71 @@ def transform_to_parquet(event, context):
          event (dict): The dictionary with data specific to this type of event.
          context (google.cloud.functions.Context): The Cloud Functions event metadata.
     """
-    source_blob_name = None
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         message_data = json.loads(pubsub_message)
-        
-        if 'name' not in message_data:
-            error_message = "No 'name' field in message data"
+
+        if 'action' not in message_data or message_data['action'] != 'convert_weather':
+            error_message = "Invalid message format or incorrect action"
             logging.error(error_message)
-            send_discord_notification("❌ Convert Weather to Parquet: Failure", error_message, 16711680)
+            send_discord_notification("❌ Convert Weather to Parquet: Invalid Trigger", error_message, 16711680)
             return error_message, 500
-        
-        source_blob_name = message_data['name']
+
         bucket_name = os.environ.get('BUCKET_NAME')
-        
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
-        
-        parquet_blob_name = source_blob_name.replace('.json', '.parquet')
-        parquet_blob = bucket.blob(f'weather_data_parquet/{parquet_blob_name}')
-        
-        if parquet_blob.exists():
-            message = f"Weather parquet file already exists for {source_blob_name}"
+
+        blobs = bucket.list_blobs(prefix='weather_data/')
+        json_files = [blob.name for blob in blobs if blob.name.endswith('.json')]
+
+        if not json_files:
+            message = "No JSON files found in weather_data folder"
             logging.info(message)
-            send_discord_notification("ℹ️ Convert Weather to Parquet: Skipped", message, 16776960)
-            
-            publisher = pubsub_v1.PublisherClient()
-            next_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'process_weather_data_topic')
-
-            next_message = {
-                "match_id": source_blob_name.replace('.json', ''),
-                "status": "skipped"
-            }
-
-            future = publisher.publish(
-                next_topic_path,
-                data=json.dumps(next_message).encode('utf-8')
-            )
-
-            publish_result = future.result()
-            logging.info(f"Published skip message to process_weather_data_topic with ID: {publish_result}")
-            
+            send_discord_notification("ℹ️ Convert Weather to Parquet: No Files", message, 16776960)
             return message, 200
-        
-        logging.info(f"Starting conversion of {source_blob_name} to parquet")
-        
-        blob = bucket.blob(source_blob_name)
-        json_content = json.loads(blob.download_as_string())
-        
-        df = pl.DataFrame(json_content)
-        
-        df.write_parquet('/tmp/temp.parquet')
-        parquet_blob.upload_from_filename('/tmp/temp.parquet')
-        
-        success_message = f"Successfully converted weather data {source_blob_name} to parquet"
-        logging.info(success_message)
-        send_discord_notification("✅ Convert Weather to Parquet: Success", success_message, 65280)
 
-        publisher = pubsub_v1.PublisherClient()
-        next_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'process_weather_data_topic')
+        processed_count = 0
+        skipped_count = 0
+        error_count = 0
 
-        next_message = {
-            "match_id": source_blob_name.replace('.json', ''),
-            "status": "success"
-        }
+        for json_file in json_files:
+            try:
+                parquet_name = json_file.replace('.json', '.parquet')
+                parquet_path = f"weather_data_parquet/{os.path.basename(parquet_name)}"
+                parquet_blob = bucket.blob(parquet_path)
 
-        future = publisher.publish(
-            next_topic_path,
-            data=json.dumps(next_message).encode('utf-8')
-        )
+                if parquet_blob.exists():
+                    logging.info(f"Parquet already exists for {json_file}")
+                    skipped_count += 1
+                    continue
 
-        publish_result = future.result()
-        logging.info(f"Published message to process_weather_data_topic with ID: {publish_result}")
-        
-        return success_message
+                blob = bucket.blob(json_file)
+                json_content = json.loads(blob.download_as_string())
+                
+                df = pl.DataFrame(json_content)
+                
+                df.write_parquet('/tmp/temp.parquet')
+                parquet_blob.upload_from_filename('/tmp/temp.parquet')
+                processed_count += 1
+                
+                logging.info(f"Converted {json_file} to parquet")
+
+            except Exception as e:
+                error_count += 1
+                logging.error(f"Error converting {json_file}: {str(e)}")
+
+        status_message = f"Processed: {processed_count}, Skipped: {skipped_count}, Errors: {error_count}"
+        logging.info(status_message)
+
+        if processed_count > 0:
+            send_discord_notification("✅ Convert Weather to Parquet: Success", status_message, 65280)
+        else:
+            send_discord_notification("ℹ️ Convert Weather to Parquet: No New Files", status_message, 16776960)
+
+        return status_message
 
     except Exception as e:
-        error_message = f"Error converting weather data {source_blob_name if source_blob_name else 'unknown file'} to parquet: {str(e)}"
+        error_message = f"Error in weather data conversion: {str(e)}"
         send_discord_notification("❌ Convert Weather to Parquet: Failure", error_message, 16711680)
         logging.exception(error_message)
         return error_message, 500

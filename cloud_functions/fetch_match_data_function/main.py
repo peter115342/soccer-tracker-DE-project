@@ -31,12 +31,7 @@ def fetch_football_data(event, context):
             topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
 
             publish_data = {
-                "matches": [],
-                "stats": {
-                    "new_matches": 0,
-                    "errors": 0,
-                    "date": date_to
-                }
+                "action": "convert_matches"
             }
 
             future = publisher.publish(
@@ -46,7 +41,7 @@ def fetch_football_data(event, context):
             )
 
             publish_result = future.result()
-            logging.info(f"Published empty message to convert-to-parquet-topic with ID: {publish_result}")
+            logging.info(f"Published trigger message to convert_to_parquet_topic with ID: {publish_result}")
             
             return "No new matches to process.", 200
 
@@ -68,12 +63,7 @@ def fetch_football_data(event, context):
         topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
 
         publish_data = {
-            "matches": processed_matches,
-            "stats": {
-                "new_matches": new_matches,
-                "errors": error_count,
-                "date": date_to
-            }
+            "action": "convert_matches"
         }
 
         future = publisher.publish(
@@ -83,7 +73,7 @@ def fetch_football_data(event, context):
         )
 
         publish_result = future.result()
-        logging.info(f"Published message to convert-to-parquet-topic with ID: {publish_result}")
+        logging.info(f"Published trigger message to convert_to_parquet_topic with ID: {publish_result}")
 
         return "Process completed.", 200
 

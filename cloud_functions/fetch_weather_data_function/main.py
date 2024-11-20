@@ -14,6 +14,13 @@ def fetch_weather_data(data, context):
             input_data = json.loads(data)
         else:
             input_data = json.loads(base64.b64decode(data['data']).decode('utf-8'))
+
+        if 'action' not in input_data or input_data['action'] != 'fetch_weather':
+            error_message = "Invalid message format or incorrect action"
+            logging.error(error_message)
+            send_discord_notification("❌ Weather Data: Invalid Trigger", error_message, 16711680)
+            return error_message, 500
+
         logging.info(f"Received processed match data: {input_data}")
 
         match_data = get_match_data()
@@ -97,6 +104,7 @@ def fetch_weather_data(data, context):
         topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_weather_to_parquet_topic')
 
         publish_data = {
+            "action": "convert_weather",
             "weather_data": processed_weather_data,
             "stats": {
                 "processed_count": processed_count,
