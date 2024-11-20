@@ -12,7 +12,7 @@ def get_json_files_from_gcs(bucket_name: str, project_id: str) -> List[Dict[str,
     logging.info(f"Accessing bucket: {bucket_name}")
 
     bq_client = bigquery.Client(project=project_id)
-    processed_files_table = f"{project_id}.sports_data.processed_files"
+    #processed_files_table = f"{project_id}.sports_data.processed_files"
     match_data_table = f"{project_id}.sports_data.match_data"
 
     # create_table_query = f"""
