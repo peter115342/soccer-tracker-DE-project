@@ -39,6 +39,7 @@ def transform_to_parquet(event, context):
         logging.info(success_message)
         send_discord_notification("✅ Convert to Parquet: Success", success_message, 65280)
 
+        # Always trigger weather data fetch
         publisher = pubsub_v1.PublisherClient()
         weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch-weather-data-topic')
 
@@ -53,13 +54,33 @@ def transform_to_parquet(event, context):
 
         publish_result = future.result()
         logging.info(f"Published message to fetch-weather-data-topic with ID: {publish_result}")
-
+        
         return success_message
 
     except Exception as e:
         error_message = f"Error converting {source_blob_name} to parquet: {str(e)}"
         send_discord_notification("❌ Convert to Parquet: Failure", error_message, 16711680)
         logging.exception(error_message)
+
+        # Trigger weather data fetch even on error
+        try:
+            publisher = pubsub_v1.PublisherClient()
+            weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch-weather-data-topic')
+
+            weather_message = {
+                "match_id": source_blob_name.replace('.json', '')
+            }
+
+            future = publisher.publish(
+                weather_topic_path,
+                data=json.dumps(weather_message).encode('utf-8')
+            )
+
+            publish_result = future.result()
+            logging.info(f"Published message to fetch-weather-data-topic with ID: {publish_result} after error")
+        except Exception as pub_error:
+            logging.error(f"Failed to publish message after error: {pub_error}")
+
         return error_message, 500
 
 def send_discord_notification(title: str, message: str, color: int):

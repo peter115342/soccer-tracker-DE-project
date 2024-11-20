@@ -26,6 +26,28 @@ def fetch_football_data(event, context):
             message = f"No new matches found on date {date_from}"
             logging.info(message)
             send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
+            
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert-to-parquet-topic')
+
+            publish_data = {
+                "matches": [],
+                "stats": {
+                    "new_matches": 0,
+                    "errors": 0,
+                    "date": date_to
+                }
+            }
+
+            future = publisher.publish(
+                topic_path,
+                data=json.dumps(publish_data).encode('utf-8'),
+                timestamp=datetime.now().isoformat()
+            )
+
+            publish_result = future.result()
+            logging.info(f"Published empty message to convert-to-parquet-topic with ID: {publish_result}")
+            
             return "No new matches to process.", 200
 
         for match in matches:
@@ -43,7 +65,7 @@ def fetch_football_data(event, context):
         send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
 
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert-to-parquet-topic')
 
         publish_data = {
             "matches": processed_matches,
@@ -61,7 +83,7 @@ def fetch_football_data(event, context):
         )
 
         publish_result = future.result()
-        logging.info(f"Published message to convert_to_parquet_topic with ID: {publish_result}")
+        logging.info(f"Published message to convert-to-parquet-topic with ID: {publish_result}")
 
         return "Process completed.", 200
 
