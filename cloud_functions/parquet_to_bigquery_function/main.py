@@ -30,16 +30,16 @@ def load_to_bigquery(event, context):
 
         match_loaded, match_processed = load_match_parquet_to_bigquery(
             bigquery_client,
-            os.environ.get('MATCH_DATASET'),
-            os.environ.get('MATCH_TABLE'),
+            'sports_data',
+            'matches_parquet',
             bucket_name,
             match_files
         )
 
         weather_loaded, weather_processed = load_weather_parquet_to_bigquery(
             bigquery_client,
-            os.environ.get('WEATHER_DATASET'),
-            os.environ.get('WEATHER_TABLE'),
+            'sports_data',
+            'weather_parquet',
             bucket_name,
             weather_files
         )

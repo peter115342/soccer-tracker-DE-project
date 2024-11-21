@@ -70,20 +70,19 @@ def transform_to_parquet(event, context):
 
         if processed_count > 0:
             send_discord_notification("✅ Convert Weather to Parquet: Success", status_message, 65280)
-            
-            # Trigger BigQuery load
+
             publisher = pubsub_v1.PublisherClient()
             bigquery_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'load_to_bigquery_topic')
-            
+
             bigquery_message = {
                 "action": "load_to_bigquery"
             }
-            
+
             future = publisher.publish(
                 bigquery_topic_path,
                 data=json.dumps(bigquery_message).encode('utf-8')
             )
-            
+
             publish_result = future.result()
             logging.info(f"Published trigger message to load_to_bigquery_topic with ID: {publish_result}")
         else:
