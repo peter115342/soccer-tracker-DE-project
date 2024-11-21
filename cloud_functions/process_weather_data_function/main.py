@@ -1,3 +1,5 @@
+#DEPRECATED - not used anymore, the processing will be done in BQ
+
 import requests
 import json
 import os

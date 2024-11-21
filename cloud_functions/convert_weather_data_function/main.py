@@ -3,7 +3,7 @@ import json
 import os
 import logging
 import requests
-from google.cloud import storage
+from google.cloud import storage, pubsub_v1
 import polars as pl
 
 def transform_to_parquet(event, context):
@@ -70,6 +70,22 @@ def transform_to_parquet(event, context):
 
         if processed_count > 0:
             send_discord_notification("✅ Convert Weather to Parquet: Success", status_message, 65280)
+            
+            # Trigger BigQuery load
+            publisher = pubsub_v1.PublisherClient()
+            bigquery_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'load_to_bigquery_topic')
+            
+            bigquery_message = {
+                "action": "load_to_bigquery"
+            }
+            
+            future = publisher.publish(
+                bigquery_topic_path,
+                data=json.dumps(bigquery_message).encode('utf-8')
+            )
+            
+            publish_result = future.result()
+            logging.info(f"Published trigger message to load_to_bigquery_topic with ID: {publish_result}")
         else:
             send_discord_notification("ℹ️ Convert Weather to Parquet: No New Files", status_message, 16776960)
 

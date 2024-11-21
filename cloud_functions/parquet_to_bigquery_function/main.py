@@ -3,7 +3,7 @@ import json
 import os
 import logging
 import requests
-from google.cloud import storage, bigquery, pubsub_v1
+from google.cloud import storage, bigquery
 from utils.bigquery_helpers_parquet import load_match_parquet_to_bigquery, load_weather_parquet_to_bigquery
 
 def load_to_bigquery(event, context):
@@ -25,11 +25,9 @@ def load_to_bigquery(event, context):
         bucket = storage_client.bucket(bucket_name)
         bigquery_client = bigquery.Client()
 
-        # Get files from storage
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
         weather_files = [blob.name for blob in bucket.list_blobs(prefix='weather_data_parquet/')]
 
-        # Load match data
         match_loaded, match_processed = load_match_parquet_to_bigquery(
             bigquery_client,
             os.environ.get('MATCH_DATASET'),
@@ -38,7 +36,6 @@ def load_to_bigquery(event, context):
             match_files
         )
 
-        # Load weather data
         weather_loaded, weather_processed = load_weather_parquet_to_bigquery(
             bigquery_client,
             os.environ.get('WEATHER_DATASET'),
@@ -54,31 +51,7 @@ def load_to_bigquery(event, context):
         )
         
         logging.info(status_message)
-        
-        if match_loaded == 0 and weather_loaded == 0:
-            send_discord_notification("ℹ️ BigQuery Load: No New Data", status_message, 16776960)
-        else:
-            send_discord_notification("✅ BigQuery Load: Complete", status_message, 65280)
-
-        # Always trigger next step if no errors
-        publisher = pubsub_v1.PublisherClient()
-        next_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'next_processing_step_topic')
-        
-        next_message = {
-            "action": "next_step",
-            "stats": {
-                "matches_loaded": match_loaded,
-                "weather_loaded": weather_loaded
-            }
-        }
-        
-        future = publisher.publish(
-            next_topic_path,
-            data=json.dumps(next_message).encode('utf-8')
-        )
-        
-        publish_result = future.result()
-        logging.info(f"Published message to next processing step topic: {publish_result}")
+        send_discord_notification("✅ BigQuery Load: Complete", status_message, 65280)
         
         return status_message, 200
 
@@ -102,6 +75,9 @@ def send_discord_notification(title: str, message: str, color: int):
                 "title": title,
                 "description": message,
                 "color": color,
+                "footer": {
+                    "text": "Football Data Processing Service"
+                }
             }
         ]
     }
