@@ -1,92 +1,71 @@
-import base64
+import requests
 import json
 import os
 import logging
-import requests
-from google.cloud import storage, bigquery, pubsub_v1
-from utils.bigquery_helpers_parquet import load_match_parquet_to_bigquery, load_weather_parquet_to_bigquery
+from datetime import datetime
+from google.cloud import pubsub_v1
+from utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs
 
-def load_to_bigquery(event, context):
-    """Background Cloud Function to be triggered by Pub/Sub.
-    Loads Parquet files from GCS to BigQuery tables.
+def fetch_football_data(event, context):
+    """
+    Cloud Function to fetch football match data from top 5 leagues and save to bucket,
+    with Discord notifications for success or failure and Pub/Sub trigger for next function.
     """
     try:
-        pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-        message_data = json.loads(pubsub_message)
+        date_to = datetime.now().strftime('%Y-%m-%d')
+        date_from = date_to
 
-        if 'action' not in message_data or message_data['action'] != 'load_to_bigquery':
-            error_message = "Invalid message format"
-            logging.error(error_message)
-            send_discord_notification("❌ BigQuery Load: Invalid Trigger", error_message, 16711680)
-            return error_message, 500
+        logging.info(f"Fetching matches from {date_from} to {date_to}")
+        matches = fetch_matches_for_competitions(date_from, date_to)
 
-        bucket_name = os.environ.get('BUCKET_NAME')
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(bucket_name)
-        bigquery_client = bigquery.Client()
+        new_matches = 0
+        error_count = 0
+        processed_matches = []
 
-        # Get files from storage
-        match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
-        weather_files = [blob.name for blob in bucket.list_blobs(prefix='weather_data_parquet/')]
-
-        # Load match data
-        match_loaded, match_processed = load_match_parquet_to_bigquery(
-            bigquery_client,
-            os.environ.get('MATCH_DATASET'),
-            os.environ.get('MATCH_TABLE'),
-            bucket_name,
-            match_files
-        )
-
-        # Load weather data
-        weather_loaded, weather_processed = load_weather_parquet_to_bigquery(
-            bigquery_client,
-            os.environ.get('WEATHER_DATASET'),
-            os.environ.get('WEATHER_TABLE'),
-            bucket_name,
-            weather_files
-        )
-
-        status_message = (
-            f"Loaded {match_loaded} new match files and {weather_loaded} new weather files to BigQuery\n"
-            f"Match files: {', '.join(match_processed)}\n"
-            f"Weather files: {', '.join(weather_processed)}"
-        )
-        
-        logging.info(status_message)
-        
-        if match_loaded == 0 and weather_loaded == 0:
-            send_discord_notification("ℹ️ BigQuery Load: No New Data", status_message, 16776960)
+        if not matches:
+            message = f"No new matches found on date {date_from}. Proceeding with conversion step."
+            logging.info(message)
+            send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
         else:
-            send_discord_notification("✅ BigQuery Load: Complete", status_message, 65280)
+            for match in matches:
+                try:
+                    match_id = match['id']
+                    save_to_gcs(match, match_id)
+                    processed_matches.append(match)
+                    new_matches += 1
+                except Exception as e:
+                    error_count += 1
+                    logging.error(f"Error processing match ID {match_id}: {e}")
 
-        # Always trigger next step if no errors
+            success_message = f"Fetched {new_matches} new matches. Errors: {error_count}. Triggering conversion step."
+            logging.info(success_message)
+            send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
+
+        # Publish message regardless of matches found
         publisher = pubsub_v1.PublisherClient()
-        next_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'next_processing_step_topic')
-        
-        next_message = {
-            "action": "next_step",
-            "stats": {
-                "matches_loaded": match_loaded,
-                "weather_loaded": weather_loaded
-            }
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
+
+        publish_data = {
+            "action": "convert_matches"
         }
-        
+
         future = publisher.publish(
-            next_topic_path,
-            data=json.dumps(next_message).encode('utf-8')
+            topic_path,
+            data=json.dumps(publish_data).encode('utf-8'),
+            timestamp=datetime.now().isoformat()
         )
-        
+
         publish_result = future.result()
-        logging.info(f"Published message to next processing step topic: {publish_result}")
-        
-        return status_message, 200
+        logging.info(f"Published trigger message to convert_to_parquet_topic with ID: {publish_result}")
+
+        return "Process completed.", 200
 
     except Exception as e:
-        error_message = f"Error during BigQuery load: {str(e)}"
-        send_discord_notification("❌ BigQuery Load: Failure", error_message, 16711680)
+        error_message = f"An error occurred: {str(e)}"
+        send_discord_notification("❌ Fetch Match Data: Failure", error_message, 16711680)
         logging.exception(error_message)
         return error_message, 500
+
 
 def send_discord_notification(title: str, message: str, color: int):
     """Sends a notification to Discord with the specified title, message, and color."""
@@ -101,7 +80,7 @@ def send_discord_notification(title: str, message: str, color: int):
             {
                 "title": title,
                 "description": message,
-                "color": color,
+                "color": color
             }
         ]
     }
