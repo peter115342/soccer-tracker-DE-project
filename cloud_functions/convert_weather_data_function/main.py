@@ -68,25 +68,23 @@ def transform_to_parquet(event, context):
         status_message = f"Processed: {processed_count}, Skipped: {skipped_count}, Errors: {error_count}"
         logging.info(status_message)
 
-        if processed_count > 0:
-            send_discord_notification("✅ Convert Weather to Parquet: Success", status_message, 65280)
+        send_discord_notification("✅ Convert Weather to Parquet: Success", status_message, 65280)
 
-            publisher = pubsub_v1.PublisherClient()
-            bigquery_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'load_to_bigquery_topic')
+        publisher = pubsub_v1.PublisherClient()
+        bigquery_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'load_to_bigquery_topic')
 
-            bigquery_message = {
+        bigquery_message = {
                 "action": "load_to_bigquery"
-            }
+        }
 
-            future = publisher.publish(
-                bigquery_topic_path,
-                data=json.dumps(bigquery_message).encode('utf-8')
-            )
+        future = publisher.publish(
+            bigquery_topic_path,
+            data=json.dumps(bigquery_message).encode('utf-8')
+        )
 
-            publish_result = future.result()
-            logging.info(f"Published trigger message to load_to_bigquery_topic with ID: {publish_result}")
-        else:
-            send_discord_notification("ℹ️ Convert Weather to Parquet: No New Files", status_message, 16776960)
+        publish_result = future.result()
+        logging.info(f"Published trigger message to load_to_bigquery_topic with ID: {publish_result}")
+
 
         return status_message
 
