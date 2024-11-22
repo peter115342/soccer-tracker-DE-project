@@ -1,5 +1,4 @@
 from google.cloud import bigquery
-from google.api_core import exceptions
 import logging
 from typing import List, Tuple
 
@@ -19,8 +18,8 @@ def load_match_parquet_to_bigquery(
     try:
         client.get_table(table_ref)
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
-    except exceptions.NotFound:
-        job_config.write_disposition = bigquery.WriteDisposition.WRITE_CREATE_IF_NEEDED
+    except bigquery.exceptions.NotFound:
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True
     
     for file_path in files:
@@ -58,8 +57,8 @@ def load_weather_parquet_to_bigquery(
     try:
         client.get_table(table_ref)
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
-    except exceptions.NotFound:
-        job_config.write_disposition = bigquery.WriteDisposition.WRITE_CREATE_IF_NEEDED
+    except bigquery.exceptions.NotFound:
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True
     
     for file_path in files:
