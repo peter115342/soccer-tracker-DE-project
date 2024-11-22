@@ -28,10 +28,6 @@ def load_to_bigquery(event, context):
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET,
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-            schema_update_options=[
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION,
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
-            ]
         )
 
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]

@@ -14,18 +14,23 @@ def load_match_parquet_to_bigquery(
     loaded_count = 0
     processed_files = []
     
+    table_ref = f"{dataset_id}.{table_id}"
+    try:
+        client.get_table(table_ref)
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+    except bigquery.exceptions.NotFound:
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_CREATE_IF_NEEDED
+        job_config.autodetect = True
+    
     for file_path in files:
         if not file_path.endswith('.parquet'):
             continue
             
         uri = f"gs://{bucket_name}/{file_path}"
         
-        # Let BigQuery auto-detect schema from Parquet
-        job_config.autodetect = True
-        
         load_job = client.load_table_from_uri(
             uri,
-            f"{dataset_id}.{table_id}",
+            table_ref,
             job_config=job_config
         )
         
@@ -48,18 +53,23 @@ def load_weather_parquet_to_bigquery(
     loaded_count = 0
     processed_files = []
     
+    table_ref = f"{dataset_id}.{table_id}"
+    try:
+        client.get_table(table_ref)
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+    except bigquery.exceptions.NotFound:
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_CREATE_IF_NEEDED
+        job_config.autodetect = True
+    
     for file_path in files:
         if not file_path.endswith('.parquet'):
             continue
             
         uri = f"gs://{bucket_name}/{file_path}"
         
-        # Let BigQuery auto-detect schema from Parquet
-        job_config.autodetect = True
-        
         load_job = client.load_table_from_uri(
             uri,
-            f"{dataset_id}.{table_id}",
+            table_ref,
             job_config=job_config
         )
         
