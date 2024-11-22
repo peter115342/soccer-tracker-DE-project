@@ -12,8 +12,8 @@ def load_match_parquet_to_bigquery(
 ) -> Tuple[int, List[str]]:
     """Load match parquet files to BigQuery with auto schema detection."""
     loaded_count = 0
-    processed_files = []
-    
+    processed_files: List[str] = []
+
     first_file = next((f for f in files if f.endswith('.parquet')), None)
     if not first_file:
         return loaded_count, processed_files
@@ -60,7 +60,7 @@ def load_weather_parquet_to_bigquery(
 ) -> Tuple[int, List[str]]:
     """Load weather parquet files to BigQuery with auto schema detection."""
     loaded_count = 0
-    processed_files = []
+    processed_files: List[str] = []
     
     first_file = next((f for f in files if f.endswith('.parquet')), None)
     if not first_file:
