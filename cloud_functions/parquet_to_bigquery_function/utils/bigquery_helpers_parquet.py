@@ -14,7 +14,12 @@ def load_match_parquet_to_bigquery(
     loaded_count = 0
     processed_files = []
     
+    first_file = next((f for f in files if f.endswith('.parquet')), None)
+    if not first_file:
+        return loaded_count, processed_files
+
     table_ref = f"{dataset_id}.{table_id}"
+    
     try:
         client.get_table(table_ref)
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
@@ -34,10 +39,14 @@ def load_match_parquet_to_bigquery(
             job_config=job_config
         )
         
-        load_job.result()
-        loaded_count += 1
-        processed_files.append(uri)
-        logging.info(f"Loaded match data: {uri}")
+        try:
+            load_job.result()
+            loaded_count += 1
+            processed_files.append(uri)
+            logging.info(f"Loaded match data: {uri}")
+        except Exception as e:
+            logging.error(f"Error loading {uri}: {str(e)}")
+            continue
     
     return loaded_count, processed_files
 
@@ -53,7 +62,12 @@ def load_weather_parquet_to_bigquery(
     loaded_count = 0
     processed_files = []
     
+    first_file = next((f for f in files if f.endswith('.parquet')), None)
+    if not first_file:
+        return loaded_count, processed_files
+
     table_ref = f"{dataset_id}.{table_id}"
+    
     try:
         client.get_table(table_ref)
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
@@ -73,9 +87,13 @@ def load_weather_parquet_to_bigquery(
             job_config=job_config
         )
         
-        load_job.result()
-        loaded_count += 1
-        processed_files.append(uri)
-        logging.info(f"Loaded weather data: {uri}")
+        try:
+            load_job.result()
+            loaded_count += 1
+            processed_files.append(uri)
+            logging.info(f"Loaded weather data: {uri}")
+        except Exception as e:
+            logging.error(f"Error loading {uri}: {str(e)}")
+            continue
     
     return loaded_count, processed_files

@@ -27,7 +27,6 @@ def load_to_bigquery(event, context):
 
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET,
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
 
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
@@ -52,14 +51,15 @@ def load_to_bigquery(event, context):
         )
 
         status_message = (
-            f"Loaded {match_loaded} new match files and {weather_loaded} new weather files to BigQuery\n"
+            f"Processed {len(match_files)} match files and {len(weather_files)} weather files\n"
+            f"Successfully loaded: {match_loaded} matches, {weather_loaded} weather records\n"
             f"Match files: {', '.join(match_processed)}\n"
             f"Weather files: {', '.join(weather_processed)}"
         )
-        
+
         logging.info(status_message)
         send_discord_notification("✅ BigQuery Load: Complete", status_message, 65280)
-        
+
         return status_message, 200
 
     except Exception as e:
