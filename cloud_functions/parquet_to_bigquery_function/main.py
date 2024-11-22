@@ -8,7 +8,7 @@ from utils.bigquery_helpers_parquet import load_match_parquet_to_bigquery, load_
 
 def load_to_bigquery(event, context):
     """Background Cloud Function to be triggered by Pub/Sub.
-    Loads Parquet files from GCS to BigQuery tables.
+    Loads Parquet files from GCS to BigQuery tables with schema handling.
     """
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
@@ -25,6 +25,15 @@ def load_to_bigquery(event, context):
         bucket = storage_client.bucket(bucket_name)
         bigquery_client = bigquery.Client()
 
+        job_config = bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.PARQUET,
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            schema_update_options=[
+                bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION,
+                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
+            ]
+        )
+
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
         weather_files = [blob.name for blob in bucket.list_blobs(prefix='weather_data_parquet/')]
 
@@ -33,7 +42,8 @@ def load_to_bigquery(event, context):
             'sports_data',
             'matches_parquet',
             bucket_name,
-            match_files
+            match_files,
+            job_config=job_config
         )
 
         weather_loaded, weather_processed = load_weather_parquet_to_bigquery(
@@ -41,7 +51,8 @@ def load_to_bigquery(event, context):
             'sports_data',
             'weather_parquet',
             bucket_name,
-            weather_files
+            weather_files,
+            job_config=job_config
         )
 
         status_message = (
