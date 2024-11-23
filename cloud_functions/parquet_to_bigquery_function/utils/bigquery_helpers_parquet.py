@@ -23,6 +23,9 @@ def load_match_parquet_to_bigquery(
     try:
         client.get_table(table_ref)
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+        job_config.schema_update_options = [
+            bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
+        ]
     except:  # noqa: E722
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True
@@ -71,6 +74,9 @@ def load_weather_parquet_to_bigquery(
     try:
         client.get_table(table_ref)
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+        job_config.schema_update_options = [
+            bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
+        ]
     except:  # noqa: E722
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True

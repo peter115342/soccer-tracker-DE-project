@@ -27,6 +27,9 @@ def load_to_bigquery(event, context):
 
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET,
+            schema_update_options=[
+                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
+            ]
         )
 
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
@@ -64,16 +67,19 @@ def load_to_bigquery(event, context):
 
     except Exception as e:
         error_message = f"Error during BigQuery load: {str(e)}"
-        send_discord_notification("❌ BigQuery Load: Failure", error_message, 16711680)
         logging.exception(error_message)
+        send_discord_notification("❌ BigQuery Load: Failure", error_message, 16711680)
         return error_message, 500
 
 def send_discord_notification(title: str, message: str, color: int):
     """Sends a notification to Discord with the specified title, message, and color."""
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
     if not webhook_url:
-        logging.warning("Discord webhook URL not set.")
+        logging.error("Discord webhook URL not configured")
         return
+
+    if len(message) > 2000:
+        message = message[:1997] + "..."
 
     discord_data = {
         "content": None,
@@ -89,7 +95,16 @@ def send_discord_notification(title: str, message: str, color: int):
         ]
     }
 
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(webhook_url, data=json.dumps(discord_data), headers=headers)
-    if response.status_code != 204:
-        logging.error(f"Failed to send Discord notification: {response.status_code}, {response.text}")
+    try:
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(
+            webhook_url, 
+            data=json.dumps(discord_data), 
+            headers=headers, 
+            timeout=10
+        )
+        response.raise_for_status()
+        if response.status_code != 204:
+            logging.error(f"Discord notification failed with status code: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Discord notification failed: {str(e)}")
