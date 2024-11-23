@@ -23,12 +23,10 @@ def load_match_parquet_to_bigquery(
     try:
         client.get_table(table_ref)
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
-        job_config.schema_update_options = [
-            bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
-        ]
-    except:  # noqa: E722
+    except Exception:
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True
+        job_config.schema_update_options = []
     
     for file_path in files:
         if not file_path.endswith('.parquet'):
@@ -36,13 +34,12 @@ def load_match_parquet_to_bigquery(
             
         uri = f"gs://{bucket_name}/{file_path}"
         
-        load_job = client.load_table_from_uri(
-            uri,
-            table_ref,
-            job_config=job_config
-        )
-        
         try:
+            load_job = client.load_table_from_uri(
+                uri,
+                table_ref,
+                job_config=job_config
+            )
             load_job.result()
             loaded_count += 1
             processed_files.append(uri)
@@ -74,12 +71,10 @@ def load_weather_parquet_to_bigquery(
     try:
         client.get_table(table_ref)
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
-        job_config.schema_update_options = [
-            bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
-        ]
-    except:  # noqa: E722
+    except Exception:
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True
+        job_config.schema_update_options = []
     
     for file_path in files:
         if not file_path.endswith('.parquet'):
@@ -87,13 +82,12 @@ def load_weather_parquet_to_bigquery(
             
         uri = f"gs://{bucket_name}/{file_path}"
         
-        load_job = client.load_table_from_uri(
-            uri,
-            table_ref,
-            job_config=job_config
-        )
-        
         try:
+            load_job = client.load_table_from_uri(
+                uri,
+                table_ref,
+                job_config=job_config
+            )
             load_job.result()
             loaded_count += 1
             processed_files.append(uri)

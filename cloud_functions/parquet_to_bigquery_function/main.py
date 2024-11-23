@@ -25,12 +25,19 @@ def load_to_bigquery(event, context):
         bucket = storage_client.bucket(bucket_name)
         bigquery_client = bigquery.Client()
 
+        # Basic job configuration without schema update options
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET,
-            schema_update_options=[
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
-            ]
         )
+
+        # Ensure dataset exists
+        dataset_ref = bigquery_client.dataset('sports_data')
+        try:
+            bigquery_client.get_dataset(dataset_ref)
+        except Exception:
+            dataset = bigquery.Dataset(dataset_ref)
+            dataset.location = "US"
+            bigquery_client.create_dataset(dataset)
 
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
         weather_files = [blob.name for blob in bucket.list_blobs(prefix='weather_data_parquet/')]
