@@ -13,4 +13,4 @@ Despite this change, I am  keeping the existing Airflow DAGs and the `Dockerfile
 
 ## Note
 
-These files are no longer actively used in the project but may serve as a useful reference for how the data pipelines were previously structured with Airflow.
+These files are no longer actively used in the project but may serve as a useful reference for how the base of the project was previously structured with Airflow.
