@@ -91,8 +91,7 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
         
         if team_id in existing_teams:
             logging.info(f"Team {team.get('name')} already exists, skipping coordinates lookup")
-            continue
-            
+
         team_name = team.get('name', '')
         stadium_name = team.get('venue', '') or team_name
         team_address = team.get('address', '')

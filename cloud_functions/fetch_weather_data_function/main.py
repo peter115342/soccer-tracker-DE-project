@@ -49,7 +49,7 @@ def fetch_weather_data(data, context):
 
             publish_result = future.result()
             logging.info(f"Published empty message to convert-weather-to-parquet-topic with ID: {publish_result}")
-            
+
             return "No matches to process weather data for.", 200
 
         processed_count = 0
