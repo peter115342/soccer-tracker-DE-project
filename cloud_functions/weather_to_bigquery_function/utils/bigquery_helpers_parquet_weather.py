@@ -38,7 +38,7 @@ def load_weather_parquet_to_bigquery(
         query = f"""
             SELECT COUNT(*) as count 
             FROM `{table_ref}` 
-            WHERE weather_id = '{weather_id}'
+            WHERE id = '{weather_id}'
         """
         
         query_job = client.query(query)
