@@ -62,7 +62,6 @@ def load_matches_to_bigquery(event, context):
         logging.info(status_message)
         send_discord_notification("✅ Match BigQuery Load: Complete", status_message, 65280)
 
-        # Trigger weather fetch function
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_topic')
 

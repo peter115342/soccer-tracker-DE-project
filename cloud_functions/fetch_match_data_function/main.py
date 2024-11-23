@@ -41,7 +41,6 @@ def fetch_football_data(event, context):
             logging.info(success_message)
             send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
 
-        # Publish message regardless of matches found
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
 
