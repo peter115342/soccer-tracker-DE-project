@@ -60,7 +60,7 @@ def load_match_parquet_to_bigquery(
         query = f"""
             SELECT COUNT(*) as count 
             FROM `{table_ref}` 
-            WHERE id = '{match_id}'
+            WHERE id = CAST({match_id} AS INT64)
         """
         
         query_job = client.query(query)
