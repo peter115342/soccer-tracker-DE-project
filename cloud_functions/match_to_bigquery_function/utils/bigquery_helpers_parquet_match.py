@@ -14,14 +14,15 @@ def transform_match_data(file_path: str) -> pl.DataFrame:
     
     df = df.with_columns([
         pl.col('referees').map_elements(lambda x: {
-            'id': x.get('id'),
-            'name': x.get('name'),
-            'type': x.get('type'),
-            'nationality': str(x.get('nationality', '')) if x.get('nationality') is not None else ''
+            'id': x['id'] if x is not None else None,
+            'name': x['name'] if x is not None else None,
+            'type': x['type'] if x is not None else None,
+            'nationality': str(x['nationality']) if x is not None and x.get('nationality') is not None else ''
         } if x is not None else None)
     ])
     
     return df
+
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
