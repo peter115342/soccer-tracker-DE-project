@@ -32,8 +32,7 @@ def load_match_parquet_to_bigquery(
             bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
             bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
         ]
-        job_config.destination_table_description = f"Match data loaded with match_id: {match_id}"
-
+        
         try:
             load_job = client.load_table_from_uri(
                 uri,

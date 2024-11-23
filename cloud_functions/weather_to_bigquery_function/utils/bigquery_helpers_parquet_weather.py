@@ -32,7 +32,6 @@ def load_weather_parquet_to_bigquery(
             bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
             bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
         ]
-        job_config.destination_table_description = f"Weather data loaded with weather_id: {weather_id}"
 
         try:
             load_job = client.load_table_from_uri(

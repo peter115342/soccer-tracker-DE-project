@@ -4,7 +4,7 @@ import os
 import logging
 import requests
 from google.cloud import storage, bigquery
-from utils.bigquery_helpers_weather import load_weather_parquet_to_bigquery
+from utils.bigquery_helpers_parquet_weather import load_weather_parquet_to_bigquery
 
 def load_weather_to_bigquery(event, context):
     """Background Cloud Function to be triggered by Pub/Sub.
