@@ -49,15 +49,15 @@ def load_weather_parquet_to_bigquery(
             continue
 
         uri = f"gs://{bucket_name}/{file}"
-        
+        transformed_path = f"/tmp/{weather_id}_transformed.parquet"
+        temp_path = f"/tmp/{weather_id}.parquet"
+
         try:
             blob = bucket.blob(file)
-            temp_path = f"/tmp/{weather_id}.parquet"
             blob.download_to_filename(temp_path)
             
             df = transform_weather_data(temp_path)
             
-            transformed_path = f"/tmp/{weather_id}_transformed.parquet"
             df.write_parquet(transformed_path)
             
             transformed_blob = bucket.blob(f"transformed_weather_data/{weather_id}_transformed.parquet")

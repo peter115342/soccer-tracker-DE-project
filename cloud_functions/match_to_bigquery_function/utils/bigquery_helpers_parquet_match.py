@@ -15,8 +15,8 @@ def transform_match_data(file_path: str) -> pl.DataFrame:
     df = df.with_columns([
         pl.col('referees').map_elements(lambda x: [
             {**ref, 'nationality': ref.get('nationality', '') or ''} 
-            for ref in x
-        ])
+            for ref in (x if isinstance(x, list) else [])
+        ] if x is not None else [])
     ])
     
     return df
@@ -71,15 +71,15 @@ def load_match_parquet_to_bigquery(
             continue
 
         uri = f"gs://{bucket_name}/{file}"
-        
+        temp_path = f"/tmp/{match_id}.parquet"
+        transformed_path = f"/tmp/{match_id}_transformed.parquet"
+
         try:
             blob = bucket.blob(file)
-            temp_path = f"/tmp/{match_id}.parquet"
             blob.download_to_filename(temp_path)
             
             df = transform_match_data(temp_path)
             
-            transformed_path = f"/tmp/{match_id}_transformed.parquet"
             df.write_parquet(transformed_path)
             
             transformed_blob = bucket.blob(f"transformed_match_data/{match_id}_transformed.parquet")
