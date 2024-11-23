@@ -13,10 +13,12 @@ def transform_match_data(file_path: str) -> pl.DataFrame:
     df = pl.read_parquet(file_path)
     
     df = df.with_columns([
-        pl.col('referees').map_elements(lambda x: [
-            {**ref, 'nationality': str(ref.get('nationality', '')) if ref.get('nationality') is not None else ''} 
-            for ref in (x if isinstance(x, list) else [])
-        ] if x is not None else [])
+        pl.col('referees').map_elements(lambda x: {
+            'id': x.get('id'),
+            'name': x.get('name'),
+            'type': x.get('type'),
+            'nationality': str(x.get('nationality', '')) if x.get('nationality') is not None else ''
+        } if x is not None else None)
     ])
     
     return df
