@@ -26,14 +26,14 @@ def load_parquet_to_bigquery(
         client.get_table(table_ref)
         logging.info(f"Table {table_ref} exists. Appending data.")
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
-    except Exception:
-        logging.info(f"Table {table_ref} does not exist. Creating a new table.")
-        job_config.write_disposition = bigquery.WriteDisposition.WRITE_EMPTY
-        job_config.autodetect = True
         job_config.schema_update_options = [
             bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
             bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION,
         ]
+    except Exception:
+        logging.info(f"Table {table_ref} does not exist. Creating a new table.")
+        job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+        job_config.autodetect = True
         job_config.source_format = bigquery.SourceFormat.PARQUET
 
     try:
@@ -50,6 +50,7 @@ def load_parquet_to_bigquery(
         logging.error(f"Error loading {file_type} files into {table_ref}: {str(e)}")
 
     return loaded_count, processed_files
+
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
