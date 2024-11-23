@@ -41,14 +41,12 @@ def load_parquet_to_bigquery(
         processed_files.extend(uris)
         logging.info(f"Successfully loaded {loaded_count} {file_type} file(s) into {table_ref}")
         
-        logging.info(f"Bytes processed: {load_job.total_bytes_processed}")
-        logging.info(f"Rows loaded: {load_job.output_rows}")
-        
     except Exception as e:
         logging.error(f"Error loading {file_type} files into {table_ref}: {str(e)}")
         raise
 
     return loaded_count, processed_files
+
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
