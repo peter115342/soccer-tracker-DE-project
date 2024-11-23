@@ -11,7 +11,7 @@ def load_match_parquet_to_bigquery(
     files: List[str],
     job_config: bigquery.LoadJobConfig
 ) -> Tuple[int, List[str]]:
-    """Load match Parquet files directly to BigQuery."""
+    """Load match Parquet files to BigQuery with explicit referee nationality handling."""
     loaded_count = 0
     processed_files: List[str] = []
     storage_client = storage.Client()
@@ -44,9 +44,11 @@ def load_match_parquet_to_bigquery(
             if 'referees' in df.columns:
                 df = df.with_columns([
                     pl.col('referees').map_elements(lambda x: {
-                        **x,
+                        'id': x['id'] if x else None,
+                        'name': x['name'] if x else None,
+                        'type': x['type'] if x else None,
                         'nationality': str(x['nationality']) if x and x.get('nationality') is not None else None
-                    } if x else None)
+                    })
                 ])
             
             transformed_path = f"/tmp/{match_id}_transformed.parquet"
@@ -56,6 +58,7 @@ def load_match_parquet_to_bigquery(
             transformed_blob.upload_from_filename(transformed_path)
             
             uri = f"gs://{bucket_name}/transformed/{match_id}_transformed.parquet"
+            
             load_job = client.load_table_from_uri(
                 uri,
                 table_ref,
@@ -67,7 +70,6 @@ def load_match_parquet_to_bigquery(
             processed_files.append(uri)
             logging.info(f"Successfully loaded match {match_id} into {table_ref}")
             
-            # Cleanup
             transformed_blob.delete()
             
         except Exception as e:
