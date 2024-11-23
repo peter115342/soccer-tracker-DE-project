@@ -19,19 +19,14 @@ def load_match_parquet_to_bigquery(
     processed_files: List[str] = []
 
     table_ref = f"{client.project}.{dataset_id}.{table_id}"
-    try:
-        table = client.get_table(table_ref)
-        job_config.schema = table.schema 
-    except Exception:
-        logging.info(f"Table {table_ref} does not exist yet. Will be created with inferred schema.")
 
+    job_config.autodetect = True
     job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
     job_config.source_format = bigquery.SourceFormat.PARQUET
     job_config.schema_update_options = [
         bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
         bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
     ]
-    job_config.autodetect = True
 
     for file in files:
         if not file.endswith('.parquet'):
