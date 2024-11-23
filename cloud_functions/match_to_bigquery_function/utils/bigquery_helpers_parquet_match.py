@@ -14,7 +14,7 @@ def transform_match_data(file_path: str) -> pl.DataFrame:
     
     df = df.with_columns([
         pl.col('referees').map_elements(lambda x: [
-            {**ref, 'nationality': ref.get('nationality', '') or ''} 
+            {**ref, 'nationality': str(ref.get('nationality', '')) if ref.get('nationality') is not None else ''} 
             for ref in (x if isinstance(x, list) else [])
         ] if x is not None else [])
     ])
