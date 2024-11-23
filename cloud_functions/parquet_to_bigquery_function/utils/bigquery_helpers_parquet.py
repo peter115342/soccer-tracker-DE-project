@@ -11,7 +11,7 @@ def load_parquet_to_bigquery(
     job_config: bigquery.LoadJobConfig,
     file_type: str
 ) -> Tuple[int, List[str]]:
-    """Load Parquet files to BigQuery, creating the table if it doesn't exist."""
+    """Load Parquet files to BigQuery table."""
     loaded_count = 0
     processed_files: List[str] = []
 
@@ -21,20 +21,13 @@ def load_parquet_to_bigquery(
         return loaded_count, processed_files
 
     table_ref = f"{client.project}.{dataset_id}.{table_id}"
-
-    try:
-        client.get_table(table_ref)
-        logging.info(f"Table {table_ref} exists. Appending data.")
-        job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
-        job_config.schema_update_options = [
-            bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
-            bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION,
-        ]
-    except Exception:
-        logging.info(f"Table {table_ref} does not exist. Creating a new table.")
-        job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-        job_config.autodetect = True
-        job_config.source_format = bigquery.SourceFormat.PARQUET
+    
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+    job_config.source_format = bigquery.SourceFormat.PARQUET
+    job_config.schema_update_options = [
+        bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
+        bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
+    ]
 
     try:
         load_job = client.load_table_from_uri(
@@ -43,14 +36,19 @@ def load_parquet_to_bigquery(
             job_config=job_config
         )
         load_job.result()
+        
         loaded_count = len(uris)
         processed_files.extend(uris)
-        logging.info(f"Loaded {loaded_count} {file_type} file(s) into {table_ref} successfully.")
+        logging.info(f"Successfully loaded {loaded_count} {file_type} file(s) into {table_ref}")
+        
+        logging.info(f"Bytes processed: {load_job.total_bytes_processed}")
+        logging.info(f"Rows loaded: {load_job.output_rows}")
+        
     except Exception as e:
         logging.error(f"Error loading {file_type} files into {table_ref}: {str(e)}")
+        raise
 
     return loaded_count, processed_files
-
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
@@ -60,7 +58,7 @@ def load_match_parquet_to_bigquery(
     files: List[str],
     job_config: bigquery.LoadJobConfig
 ) -> Tuple[int, List[str]]:
-    """Load match Parquet files to BigQuery, handling table creation and loading."""
+    """Load match Parquet files to BigQuery."""
     return load_parquet_to_bigquery(
         client,
         dataset_id,
@@ -79,7 +77,7 @@ def load_weather_parquet_to_bigquery(
     files: List[str],
     job_config: bigquery.LoadJobConfig
 ) -> Tuple[int, List[str]]:
-    """Load weather Parquet files to BigQuery, handling table creation and loading."""
+    """Load weather Parquet files to BigQuery."""
     return load_parquet_to_bigquery(
         client,
         dataset_id,
