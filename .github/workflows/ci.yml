@@ -122,28 +122,28 @@ jobs:
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
       #     cd ../..
 
-      # - name: Deploy match_to_bigquery Function
-      #   run: |
-      #     cd cloud_functions/match_to_bigquery_function
-      #     uv run gcloud functions deploy load_matches_to_bigquery \
-      #       --runtime python39 \
-      #       --trigger-topic match_to_bigquery_topic \
-      #       --entry-point load_matches_to_bigquery \
-      #       --timeout 540s \
-      #       --memory 1GiB \
-      #       --region europe-central2 \
-      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-      #     cd ../..
+      - name: Deploy match_to_bigquery Function
+        run: |
+          cd cloud_functions/match_to_bigquery_function
+          uv run gcloud functions deploy load_matches_to_bigquery \
+            --runtime python39 \
+            --trigger-topic match_to_bigquery_topic \
+            --entry-point load_matches_to_bigquery \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+          cd ../..
 
-      # - name: Deploy weather_to_bigquery Function
-      #   run: |
-      #     cd cloud_functions/weather_to_bigquery_function
-      #     uv run gcloud functions deploy load_weather_to_bigquery \
-      #       --runtime python39 \
-      #       --trigger-topic weather_to_bigquery_topic \
-      #       --entry-point load_weather_to_bigquery \
-      #       --timeout 540s \
-      #       --memory 1GiB \
-      #       --region europe-central2 \
-      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-      #     cd ../..
+      - name: Deploy weather_to_bigquery Function
+        run: |
+          cd cloud_functions/weather_to_bigquery_function
+          uv run gcloud functions deploy load_weather_to_bigquery \
+            --runtime python39 \
+            --trigger-topic weather_to_bigquery_topic \
+            --entry-point load_weather_to_bigquery \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+          cd ../..

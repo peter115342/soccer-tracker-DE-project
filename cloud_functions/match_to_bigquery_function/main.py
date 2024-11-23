@@ -5,7 +5,7 @@ import logging
 import requests
 from datetime import datetime
 from google.cloud import storage, bigquery, pubsub_v1
-from cloud_functions.match_to_bigquery_function.utils.bigquery_helpers_parquet_match import load_match_parquet_to_bigquery
+from utils.bigquery_helpers_parquet_match import load_match_parquet_to_bigquery
 
 
 def load_matches_to_bigquery(event, context):
