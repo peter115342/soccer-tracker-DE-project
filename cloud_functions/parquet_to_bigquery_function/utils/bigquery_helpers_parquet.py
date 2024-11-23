@@ -20,33 +20,30 @@ def load_match_parquet_to_bigquery(
 
     table_ref = f"{dataset_id}.{table_id}"
     
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+    
     try:
         client.get_table(table_ref)
-        job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
     except Exception:
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True
-        job_config.schema_update_options = []
     
-    for file_path in files:
-        if not file_path.endswith('.parquet'):
-            continue
-            
-        uri = f"gs://{bucket_name}/{file_path}"
+    uris = [f"gs://{bucket_name}/{f}" for f in files if f.endswith('.parquet')]
+    if not uris:
+        return loaded_count, processed_files
         
-        try:
-            load_job = client.load_table_from_uri(
-                uri,
-                table_ref,
-                job_config=job_config
-            )
-            load_job.result()
-            loaded_count += 1
-            processed_files.append(uri)
-            logging.info(f"Loaded match data: {uri}")
-        except Exception as e:
-            logging.error(f"Error loading {uri}: {str(e)}")
-            continue
+    try:
+        load_job = client.load_table_from_uri(
+            uris,
+            table_ref,
+            job_config=job_config
+        )
+        load_job.result()
+        loaded_count = len(uris)
+        processed_files.extend(uris)
+        logging.info(f"Loaded {loaded_count} match files successfully")
+    except Exception as e:
+        logging.error(f"Error loading match files: {str(e)}")
     
     return loaded_count, processed_files
 
@@ -61,39 +58,36 @@ def load_weather_parquet_to_bigquery(
     """Load weather parquet files to BigQuery with auto schema detection."""
     loaded_count = 0
     processed_files: List[str] = []
-    
+
     first_file = next((f for f in files if f.endswith('.parquet')), None)
     if not first_file:
         return loaded_count, processed_files
 
     table_ref = f"{dataset_id}.{table_id}"
     
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+    
     try:
         client.get_table(table_ref)
-        job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
     except Exception:
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True
-        job_config.schema_update_options = []
     
-    for file_path in files:
-        if not file_path.endswith('.parquet'):
-            continue
-            
-        uri = f"gs://{bucket_name}/{file_path}"
+    uris = [f"gs://{bucket_name}/{f}" for f in files if f.endswith('.parquet')]
+    if not uris:
+        return loaded_count, processed_files
         
-        try:
-            load_job = client.load_table_from_uri(
-                uri,
-                table_ref,
-                job_config=job_config
-            )
-            load_job.result()
-            loaded_count += 1
-            processed_files.append(uri)
-            logging.info(f"Loaded weather data: {uri}")
-        except Exception as e:
-            logging.error(f"Error loading {uri}: {str(e)}")
-            continue
+    try:
+        load_job = client.load_table_from_uri(
+            uris,
+            table_ref,
+            job_config=job_config
+        )
+        load_job.result()
+        loaded_count = len(uris)
+        processed_files.extend(uris)
+        logging.info(f"Loaded {loaded_count} weather files successfully")
+    except Exception as e:
+        logging.error(f"Error loading weather files: {str(e)}")
     
     return loaded_count, processed_files
