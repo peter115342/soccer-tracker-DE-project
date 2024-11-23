@@ -25,12 +25,15 @@ def load_to_bigquery(event, context):
         bucket = storage_client.bucket(bucket_name)
         bigquery_client = bigquery.Client()
 
-        # Basic job configuration without schema update options
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET,
+            schema_update_options=[
+                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
+                bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
+            ]
         )
 
-        # Ensure dataset exists
+
         dataset_ref = bigquery_client.dataset('sports_data')
         try:
             bigquery_client.get_dataset(dataset_ref)

@@ -72,6 +72,17 @@ def load_weather_parquet_to_bigquery(
     except Exception:
         job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
         job_config.autodetect = True
+        
+        schema = [
+            bigquery.SchemaField("hourly", "RECORD", mode="REPEATED", fields=[
+                bigquery.SchemaField("snow_depth", "RECORD", mode="REPEATED", fields=[
+                    bigquery.SchemaField("list", "RECORD", mode="REPEATED", fields=[
+                        bigquery.SchemaField("element", "FLOAT64")
+                    ])
+                ])
+            ])
+        ]
+        job_config.schema = schema
     
     uris = [f"gs://{bucket_name}/{f}" for f in files if f.endswith('.parquet')]
     if not uris:
