@@ -21,16 +21,17 @@ if not GCP_PROJECT_ID:
 BASE_URL = 'https://api.football-data.org/v4'
 HEADERS = {'X-Auth-Token': API_KEY}
 
-def get_existing_teams_from_bq(project_id: str, dataset: str) -> set:
-    """Fetch existing team IDs from BigQuery"""
+def get_existing_teams_from_bq(project_id: str, dataset: str) -> dict:
+    """Fetch existing team IDs and addresses from BigQuery"""
     client = bigquery.Client(project=project_id)
     query = """
-        SELECT DISTINCT id
+        SELECT id, address
         FROM `{}.{}.teams`
     """.format(project_id, dataset)
     
     results = client.query(query).result()
-    return {row.id for row in results}
+    return {row.id: row.address for row in results}
+
 
 def get_stadium_coordinates(venue: str, team_name: str, team_city: str, team_country: str) -> Optional[str]:
     """
@@ -91,7 +92,9 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
         
         if team_id in existing_teams:
             logging.info(f"Team {team.get('name')} already exists, skipping coordinates lookup")
-            
+            team['address'] = existing_teams[team_id]
+            continue
+
         team_name = team.get('name', '')
         stadium_name = team.get('venue', '') or team_name
         team_address = team.get('address', '')
