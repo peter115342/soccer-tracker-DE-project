@@ -33,8 +33,8 @@ def load_matches_to_bigquery(event, context):
                 bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
                 bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
             ],
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND
-
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            autodetect=True
         )
 
         dataset_ref = bigquery_client.dataset('sports_data')
