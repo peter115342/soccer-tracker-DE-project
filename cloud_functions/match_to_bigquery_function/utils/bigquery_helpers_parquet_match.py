@@ -8,19 +8,26 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
     df = pl.read_parquet(parquet_path)
     
     if 'referees' in df.columns:
-        df = df.with_columns([
-            pl.col('referees').struct.field('nationality').cast(pl.Utf8).fill_null(''),
-            pl.col('referees').struct.field('list').list.eval(
-                pl.element().struct.field('element').struct.field('nationality').cast(pl.Utf8).fill_null('')
-            )
-        ])
+        try:
+            df = df.with_columns([
+                pl.col('referees').struct.field('nationality').cast(pl.Utf8).fill_null(''),
+                pl.col('referees').struct.field('list').list.eval(
+                    pl.element().struct.field('element').struct.field('nationality').cast(pl.Utf8).fill_null('')
+                )
+            ])
+        except:  # noqa: E722
+            df = df.with_columns([
+                pl.col('referees').struct.field('list').list.eval(
+                    pl.element().struct.field('nationality').cast(pl.Utf8).fill_null('')
+                )
+            ])
         
         df = df.with_columns([
             pl.struct([
                 pl.col('referees').struct.field('id'),
                 pl.col('referees').struct.field('name'),
                 pl.col('referees').struct.field('type'),
-                pl.col('referees').struct.field('nationality'),
+                pl.col('referees').struct.field('nationality').fill_null(''),
                 pl.col('referees').struct.field('list')
             ]).alias('referees')
         ])
