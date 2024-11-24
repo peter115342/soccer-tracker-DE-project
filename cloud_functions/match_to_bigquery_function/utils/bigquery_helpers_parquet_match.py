@@ -33,7 +33,7 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
             ('halfTime', pl.Struct([('home', pl.Int64), ('away', pl.Int64)]))
         ]),
         'odds': pl.Struct([('msg', pl.Utf8)]),
-        'referees': pl.Struct([('id', pl.Int64), ('name', pl.Utf8), ('type', pl.Utf8), ('nationality', pl.Int64)])
+        'referees': pl.Struct([('id', pl.Int64), ('name', pl.Utf8), ('type', pl.Utf8), ('nationality', pl.Utf8)])
     }
 
     for col, dtype in required_schema.items():
