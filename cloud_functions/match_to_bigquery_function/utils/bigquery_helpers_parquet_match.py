@@ -9,7 +9,10 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
     
     if 'referees' in df.columns:
         df = df.with_columns([
-            pl.col('referees').struct.field('nationality').cast(pl.Utf8).fill_null('')
+            pl.col('referees').struct.field('nationality').cast(pl.Utf8).fill_null(''),
+            pl.col('referees').struct.field('list').list.eval(
+                pl.element().struct.field('element').struct.field('nationality').cast(pl.Utf8).fill_null('')
+            )
         ])
         
         df = df.with_columns([
@@ -17,14 +20,12 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
                 pl.col('referees').struct.field('id'),
                 pl.col('referees').struct.field('name'),
                 pl.col('referees').struct.field('type'),
-                pl.col('referees.nationality')
+                pl.col('referees').struct.field('nationality'),
+                pl.col('referees').struct.field('list')
             ]).alias('referees')
         ])
-        
-        df = df.drop('referees.nationality')
     
     return df
-
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
     dataset_id: str,
