@@ -6,31 +6,19 @@ import polars as pl
 
 def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
     df = pl.read_parquet(parquet_path)
-
+    
     if 'referees' in df.columns:
-        try:
-            df = df.with_columns([
-                pl.col('referees').struct.field('list').list.eval(
-                    pl.element().struct.field('element').struct.field('nationality').cast(pl.Utf8).fill_null('')
-                ).alias('referees_list')
-            ])
-
-            df = df.with_columns([
-                pl.struct([
-                    pl.col('referees').struct.field('id'),
-                    pl.col('referees').struct.field('name'),
-                    pl.col('referees').struct.field('type'),
-                    pl.col('referees').struct.field('nationality').fill_null(''),
-                    pl.col('referees_list').alias('list')
-                ]).alias('referees')
-            ])
-
-            df = df.drop('referees_list')
-        except Exception as e:
-            logging.warning(f"Error processing referees: {str(e)}")
-            pass
-
+        df = df.with_columns([
+            pl.struct([
+                pl.col('referees').struct.field('id'),
+                pl.col('referees').struct.field('name'),
+                pl.col('referees').struct.field('type'),
+                pl.col('referees').struct.field('nationality').fill_null('None')
+            ]).alias('referees')
+        ])
+    
     return df
+
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
