@@ -8,15 +8,21 @@ from google.cloud import storage, bigquery, pubsub_v1
 from utils.bigquery_helpers_parquet_match import load_match_parquet_to_bigquery
 
 
+import base64
+import json
+import os
+import logging
+from datetime import datetime
+from google.cloud import storage, bigquery, pubsub_v1
+from utils.bigquery_helpers_parquet_match import load_match_parquet_to_bigquery
+
 def load_matches_to_bigquery(event, context):
-    """Background Cloud Function to be triggered by Pub/Sub.
-    Loads Match Parquet files from GCS to BigQuery tables.
-    """
+    """Background Cloud Function to load Match Parquet files from GCS to BigQuery."""
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         message_data = json.loads(pubsub_message)
 
-        if 'action' not in message_data or message_data['action'] != 'load_matches_to_bigquery':
+        if message_data.get('action') != 'load_matches_to_bigquery':
             error_message = "Invalid message format"
             logging.error(error_message)
             send_discord_notification("❌ Match BigQuery Load: Invalid Trigger", error_message, 16711680)
@@ -44,6 +50,13 @@ def load_matches_to_bigquery(event, context):
             dataset = bigquery.Dataset(dataset_ref)
             dataset.location = "US"
             bigquery_client.create_dataset(dataset)
+
+        table_ref = dataset_ref.table('matches_parquet')
+        try:
+            bigquery_client.get_table(table_ref)
+        except Exception:
+            table = bigquery.Table(table_ref)
+            bigquery_client.create_table(table)
 
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
         match_loaded, match_processed = load_match_parquet_to_bigquery(
@@ -87,7 +100,6 @@ def load_matches_to_bigquery(event, context):
         logging.exception(error_message)
         send_discord_notification("❌ Match BigQuery Load: Failure", error_message, 16711680)
         return error_message, 500
-
 
 def send_discord_notification(title: str, message: str, color: int):
     """Sends a notification to Discord with the specified title, message, and color."""
