@@ -8,14 +8,6 @@ from google.cloud import storage, bigquery, pubsub_v1
 from utils.bigquery_helpers_parquet_match import load_match_parquet_to_bigquery
 
 
-import base64
-import json
-import os
-import logging
-from datetime import datetime
-from google.cloud import storage, bigquery, pubsub_v1
-from utils.bigquery_helpers_parquet_match import load_match_parquet_to_bigquery
-
 def load_matches_to_bigquery(event, context):
     """Background Cloud Function to load Match Parquet files from GCS to BigQuery."""
     try:

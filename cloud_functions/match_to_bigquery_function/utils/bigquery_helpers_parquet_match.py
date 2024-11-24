@@ -1,11 +1,7 @@
-from google.cloud import bigquery, storage
-import logging
-from typing import List, Tuple
-import polars as pl
-
 from google.cloud import bigquery
 import logging
 from typing import List, Tuple
+
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
