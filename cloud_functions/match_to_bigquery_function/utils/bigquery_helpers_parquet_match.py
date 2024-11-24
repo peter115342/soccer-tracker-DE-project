@@ -7,11 +7,6 @@ import polars as pl
 def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
     df = pl.read_parquet(parquet_path)
     
-    if 'referees' in df.columns:
-        df = df.with_columns([
-            pl.col('referees').struct.field('nationality').cast(pl.Int64).alias('referees.nationality')
-        ])
-        
     required_schema = {
         'area': pl.Struct([('id', pl.Int64), ('name', pl.Utf8), ('code', pl.Utf8), ('flag', pl.Utf8)]),
         'competition': pl.Struct([('id', pl.Int64), ('name', pl.Utf8), ('code', pl.Utf8), ('type', pl.Utf8), ('emblem', pl.Utf8)]),
