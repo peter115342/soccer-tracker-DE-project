@@ -25,9 +25,10 @@ def transform_match_parquet(parquet_path: str, match_id: str) -> pl.DataFrame:
             pass
 
     df = df.with_columns([
-        pl.lit(match_id).alias('id')
+        pl.lit(int(match_id)).alias('id')
     ])
     return df
+
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
