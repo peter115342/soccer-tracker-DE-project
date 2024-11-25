@@ -9,17 +9,16 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
 
     if 'referees' in df.columns:
         try:
-            def replace_null_nationality(refs):
+            def remove_nationality(refs):
                 if isinstance(refs, list):
-                    return [{**ref, 'nationality': ref.get('nationality') or 'None'} for ref in refs]
+                    return [{k: v for k, v in ref.items() if k != 'nationality'} for ref in refs]
                 elif isinstance(refs, dict):
-                    refs['nationality'] = refs.get('nationality') or 'None'
-                    return refs
+                    return {k: v for k, v in refs.items() if k != 'nationality'}
                 else:
                     return refs
 
             df = df.with_columns([
-                pl.col('referees').apply(replace_null_nationality).alias('referees')
+                pl.col('referees').apply(remove_nationality).alias('referees')
             ])
         except Exception as e:
             logging.warning(f"Error processing referees: {str(e)}")
