@@ -20,7 +20,9 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
                     pl.col('referees').struct.field('id'),
                     pl.col('referees').struct.field('name'),
                     pl.col('referees').struct.field('type'),
-                    pl.col('referees').struct.field('nationality').cast(pl.Utf8).fill_null('None'),
+                    pl.when(pl.col('referees').struct.field('nationality').is_null())
+                      .then(pl.lit('None'))
+                      .otherwise(pl.col('referees').struct.field('nationality')),
                     pl.col('referees_list').alias('list')
                 ]).alias('referees')
             ])
