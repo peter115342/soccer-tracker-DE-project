@@ -5,8 +5,10 @@ import logging
 import requests
 from datetime import datetime
 from google.cloud import storage, bigquery, pubsub_v1
-from utils.bigquery_helpers_parquet_match import load_match_parquet_to_bigquery
-
+from utils.bigquery_helpers_parquet_match import (
+    load_match_parquet_to_bigquery,
+    preprocess_parquet_files
+)
 
 def load_matches_to_bigquery(event, context):
     """Background Cloud Function to load Match Parquet files from GCS to BigQuery."""
@@ -51,6 +53,15 @@ def load_matches_to_bigquery(event, context):
             bigquery_client.create_table(table)
 
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
+        
+        preprocess_parquet_files(
+            bigquery_client,
+            'sports_data',
+            'matches_parquet',
+            bucket_name,
+            match_files
+        )
+
         match_loaded, match_processed = load_match_parquet_to_bigquery(
             bigquery_client,
             'sports_data',
