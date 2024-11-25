@@ -6,32 +6,25 @@ import polars as pl
 
 def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
     df = pl.read_parquet(parquet_path)
-    
+
     if 'referees' in df.columns:
         try:
+            def replace_null_nationality(refs):
+                if isinstance(refs, list):
+                    return [{**ref, 'nationality': ref.get('nationality') or 'None'} for ref in refs]
+                elif isinstance(refs, dict):
+                    refs['nationality'] = refs.get('nationality') or 'None'
+                    return refs
+                else:
+                    return refs
+
             df = df.with_columns([
-                pl.col('referees').cast(pl.Utf8).alias('referees_str')
+                pl.col('referees').apply(replace_null_nationality).alias('referees')
             ])
-            
-            df = df.with_columns([
-                pl.struct([
-                    pl.col('referees').struct.field('id'),
-                    pl.col('referees').struct.field('name'),
-                    pl.col('referees').struct.field('type'),
-                    pl.lit('None').cast(pl.Utf8).alias('nationality'),
-                    pl.col('referees').struct.field('list')
-                ]).alias('referees')
-            ])
-            
-            df = df.drop('referees_str')
         except Exception as e:
             logging.warning(f"Error processing referees: {str(e)}")
             pass
-    
-
-
-
-
+    return df
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
