@@ -4,7 +4,7 @@ from typing import List, Tuple
 import tempfile
 import polars as pl
 
-def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
+def transform_match_parquet(parquet_path: str, match_id: str) -> pl.DataFrame:
     df = pl.read_parquet(parquet_path)
 
     if 'referees' in df.columns:
@@ -23,6 +23,10 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
         except Exception as e:
             logging.warning(f"Error processing referees: {str(e)}")
             pass
+
+    df = df.with_columns([
+        pl.lit(match_id).alias('id')
+    ])
     return df
 
 def load_match_parquet_to_bigquery(
@@ -48,10 +52,15 @@ def load_match_parquet_to_bigquery(
         query = f"""
             SELECT COUNT(*) as count 
             FROM `{table_ref}` 
-            WHERE id = CAST({match_id} AS INT64)
+            WHERE id = @match_id
         """
+        job_config_query = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("match_id", "STRING", match_id)
+            ]
+        )
 
-        if next(client.query(query).result()).count > 0:
+        if next(client.query(query, job_config=job_config_query).result()).count > 0:
             logging.info(f"Match {match_id} already exists in BigQuery, skipping...")
             continue
 
@@ -59,7 +68,7 @@ def load_match_parquet_to_bigquery(
         with tempfile.NamedTemporaryFile(suffix='.parquet') as temp_file:
             blob.download_to_filename(temp_file.name)
             
-            df = transform_match_parquet(temp_file.name)
+            df = transform_match_parquet(temp_file.name, match_id)
             df.write_parquet(temp_file.name)
             
             uri = f"gs://{bucket_name}/temp_{match_id}.parquet"
