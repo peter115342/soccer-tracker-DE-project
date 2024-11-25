@@ -11,8 +11,13 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
         try:
             df = df.with_columns([
                 pl.col('referees').struct.field('list').list.eval(
-                    pl.element().struct.field('element').struct.field('nationality').cast(pl.Utf8).fill_null('None')
-                ).alias('referees_list')
+                    pl.struct([
+                        pl.element().struct.field('element').struct.field('id'),
+                        pl.element().struct.field('element').struct.field('name'),
+                        pl.element().struct.field('element').struct.field('type'),
+                        pl.element().struct.field('element').struct.field('nationality').cast(pl.Utf8).fill_null('None')
+                    ]).alias('element')
+                ).alias('list')
             ])
             
             df = df.with_columns([
@@ -20,19 +25,16 @@ def transform_match_parquet(parquet_path: str) -> pl.DataFrame:
                     pl.col('referees').struct.field('id'),
                     pl.col('referees').struct.field('name'),
                     pl.col('referees').struct.field('type'),
-                    pl.when(pl.col('referees').struct.field('nationality').is_null())
-                      .then(pl.lit('None'))
-                      .otherwise(pl.col('referees').struct.field('nationality')),
-                    pl.col('referees_list').alias('list')
+                    pl.col('referees').struct.field('nationality').cast(pl.Utf8).fill_null('None'),
+                    pl.col('referees').struct.field('list')
                 ]).alias('referees')
             ])
-            
-            df = df.drop('referees_list')
         except Exception as e:
             logging.warning(f"Error processing referees: {str(e)}")
             pass
     
     return df
+
 
 
 
