@@ -7,50 +7,67 @@ def load_match_parquet_to_bigquery(
     dataset_id: str,
     table_id: str,
     bucket_name: str,
-    files: List[str],
+    match_files: List[str],
     job_config: bigquery.LoadJobConfig
 ) -> int:
-    loaded_count = 0
-    processed_files: List[str] = []
+    """
+    Load match parquet files to BigQuery while preventing duplicates and including IDs from filenames.
+    Returns:
+        int: Number of successfully loaded matches
+    """
+    successfully_loaded = 0
     table_ref = f"{client.project}.{dataset_id}.{table_id}"
-    
-    for file in files:
-        if not file.endswith('.parquet'):
-            continue
 
-        match_id = int(file.split('/')[-1].replace('.parquet', ''))
-        uri = f"gs://{bucket_name}/{file}"
+    query = f"""
+    SELECT DISTINCT id 
+    FROM `{table_ref}`
+    """
+    existing_ids = {row.id for row in client.query(query).result()}
 
-        query = f"""
-            SELECT COUNT(*) as count 
-            FROM `{table_ref}` 
-            WHERE id = @match_id
-        """
-        job_config_query = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("match_id", "INT64", match_id)
-            ]
-        )
-
-        if next(client.query(query, job_config=job_config_query).result()).count > 0:
-            logging.info(f"Match {match_id} already exists in BigQuery, skipping...")
+    for file_path in match_files:
+        if not file_path.endswith('.parquet') or file_path == 'match_data_parquet/':
             continue
 
         try:
+            match_id = int(file_path.split('/')[-1].replace('.parquet', ''))
+        except ValueError:
+            logging.warning(f"Skipping file with invalid ID format: {file_path}")
+            continue
+
+        if match_id in existing_ids:
+            logging.info(f"Skipping existing match ID: {match_id}")
+            continue
+
+        temp_table_id = f"{table_id}_temp_{match_id}"
+        temp_table_ref = f"{client.project}.{dataset_id}.{temp_table_id}"
+
+        uri = f"gs://{bucket_name}/{file_path}"
+        
+        try:
             load_job = client.load_table_from_uri(
                 uri,
-                table_ref,
+                f"{client.project}.{dataset_id}.{temp_table_id}",
                 job_config=job_config
             )
             load_job.result()
 
-            loaded_count += 1
-            processed_files.append(uri)
-            logging.info(f"Successfully loaded match {match_id} into {table_ref}")
+            insert_query = f"""
+            INSERT INTO `{table_ref}`
+            SELECT * FROM `{temp_table_ref}`
+            WHERE id = {match_id}
+            """
+            
+            insert_job = client.query(insert_query)
+            insert_job.result()
+            
+            successfully_loaded += 1
+            logging.info(f"Successfully loaded match ID: {match_id}")
 
         except Exception as e:
-            error_msg = f"Error loading match ID {match_id} from file {file}: {str(e)}"
-            logging.error(error_msg)
-            raise Exception(error_msg)
+            logging.error(f"Error loading match ID {match_id}: {str(e)}")
+            continue
+            
+        finally:
+            client.delete_table(temp_table_ref, not_found_ok=True)
 
-    return loaded_count
+    return successfully_loaded
