@@ -7,7 +7,6 @@ from datetime import datetime
 from google.cloud import storage, bigquery, pubsub_v1
 from utils.bigquery_helpers_parquet_match import (
     load_match_parquet_to_bigquery,
-    preprocess_parquet_files
 )
 
 def load_matches_to_bigquery(event, context):

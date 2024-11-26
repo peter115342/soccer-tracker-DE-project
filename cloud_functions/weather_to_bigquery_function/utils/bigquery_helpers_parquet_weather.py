@@ -1,4 +1,4 @@
-from google.cloud import bigquery, storage
+from google.cloud import bigquery
 import logging
 from typing import List, Tuple
 
