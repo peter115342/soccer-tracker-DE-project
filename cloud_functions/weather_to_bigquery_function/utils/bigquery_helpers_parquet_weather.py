@@ -15,28 +15,41 @@ def load_weather_parquet_to_bigquery(
     processed_files: List[str] = []
     table_ref = f"{client.project}.{dataset_id}.{table_id}"
     
+    weather_ids = [
+        file.split('/')[-1].replace('.parquet', '')
+        for file in files
+        if file.endswith('.parquet')
+    ]
+    
+    if not weather_ids:
+        return loaded_count, processed_files
+
+    query = f"""
+        SELECT DISTINCT id
+        FROM `{table_ref}`
+        WHERE id IN UNNEST(@weather_ids)
+    """
+    job_config_query = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ArrayQueryParameter("weather_ids", "STRING", weather_ids)
+        ]
+    )
+    
+    existing_weather = {
+        row.id for row in client.query(query, job_config=job_config_query).result()
+    }
+
     for file in files:
         if not file.endswith('.parquet'):
             continue
 
         weather_id = file.split('/')[-1].replace('.parquet', '')
-        uri = f"gs://{bucket_name}/{file}"
-
-        query = f"""
-            SELECT COUNT(*) as count
-            FROM `{table_ref}` 
-            WHERE id = @weather_id
-        """
-        job_config_query = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("weather_id", "STRING", weather_id)
-            ]
-        )
-
-        if next(client.query(query, job_config=job_config_query).result()).count > 0:
+        
+        if weather_id in existing_weather:
             logging.info(f"Weather {weather_id} already exists in BigQuery, skipping...")
             continue
 
+        uri = f"gs://{bucket_name}/{file}"
         try:
             load_job = client.load_table_from_uri(
                 uri,

@@ -63,7 +63,6 @@ def load_matches_to_bigquery(event, context):
         status_message = (
             f"Processed {len(match_files)} match files\n"
             f"Successfully loaded: {match_loaded} matches\n"
-            f"Match files: {', '.join(match_processed)}"
         )
 
         logging.info(status_message)
