@@ -1,7 +1,7 @@
 import logging
 from typing import List
 from google.cloud import bigquery, storage
-import pandas as pd
+import polars as pl
 import os
 
 def load_match_parquet_to_bigquery(
@@ -13,6 +13,7 @@ def load_match_parquet_to_bigquery(
 ):
     """
     Loads match Parquet files from GCS to BigQuery, adding the id from the filename and avoiding duplicates.
+    Uses Polars for efficient Parquet handling.
     """
     existing_ids_query = f"SELECT DISTINCT id FROM `{bigquery_client.project}.{dataset_id}.{table_id}`"
     existing_ids = set()
@@ -41,32 +42,32 @@ def load_match_parquet_to_bigquery(
         blob.download_to_filename(temp_file_name)
 
         try:
-            df = pd.read_parquet(temp_file_name)
-        except Exception as e:
-            logging.error(f"Failed to read Parquet file {file_name}: {e}")
-            os.remove(temp_file_name)
-            continue
-
-        df['id'] = match_id
-
-        try:
+            df = pl.read_parquet(temp_file_name)
+            
+            df = df.with_columns(pl.lit(match_id).alias('id'))
+            
+            pandas_df = df.to_pandas()
+            
             job_config = bigquery.LoadJobConfig(
                 write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
                 schema_update_options=[
                     bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
                 ],
             )
+            
             load_job = bigquery_client.load_table_from_dataframe(
-                df,
+                pandas_df,
                 destination=f"{dataset_id}.{table_id}",
                 job_config=job_config,
             )
             load_job.result()
             logging.info(f"Loaded match ID {match_id} into BigQuery.")
             total_loaded += 1
+            
         except Exception as e:
-            logging.error(f"Failed to load match ID {match_id} into BigQuery: {e}")
-
-        os.remove(temp_file_name)
+            logging.error(f"Failed to process match ID {match_id}: {e}")
+        finally:
+            if os.path.exists(temp_file_name):
+                os.remove(temp_file_name)
 
     return total_loaded
