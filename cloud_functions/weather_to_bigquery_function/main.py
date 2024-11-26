@@ -3,7 +3,7 @@ import json
 import os
 import logging
 import requests
-import pandas as pd
+import polars as pl
 from google.cloud import storage, bigquery
 from utils.bigquery_helpers_parquet_weather import load_weather_parquet_to_bigquery
 
@@ -16,9 +16,9 @@ def process_and_upload_weather_data(bucket_name, source_blob_name, destination_b
     if 'hourly' in json_data and 'visibility' in json_data['hourly']:
         del json_data['hourly']['visibility']
 
-    df = pd.DataFrame(json_data['hourly'])
+    df = pl.DataFrame(json_data['hourly'])
     tmp_parquet_file = '/tmp/weather.parquet'
-    df.to_parquet(tmp_parquet_file, index=False)
+    df.write_parquet(tmp_parquet_file)
 
     dest_blob = bucket.blob(destination_blob_name)
     dest_blob.upload_from_filename(tmp_parquet_file)
