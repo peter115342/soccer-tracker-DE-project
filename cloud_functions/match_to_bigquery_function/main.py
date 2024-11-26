@@ -4,7 +4,7 @@ import os
 import logging
 import requests
 from datetime import datetime
-from google.cloud import  bigquery, pubsub_v1
+from google.cloud import bigquery, pubsub_v1
 
 def load_matches_to_bigquery(event, context):
     """Background Cloud Function to update BigQuery external table for Match Parquet files in GCS."""
@@ -23,13 +23,12 @@ def load_matches_to_bigquery(event, context):
 
         dataset_ref = bigquery_client.dataset('sports_data_eu')
 
-        # Ensure dataset exists
         try:
             bigquery_client.get_dataset(dataset_ref)
             logging.info("Dataset 'sports_data_eu' exists.")
         except Exception:
             dataset = bigquery.Dataset(dataset_ref)
-            dataset.location = "US"
+            dataset.location = "europe-central2"
             bigquery_client.create_dataset(dataset)
             logging.info("Created dataset 'sports_data_eu'.")
 
@@ -53,13 +52,24 @@ def load_matches_to_bigquery(event, context):
             bigquery_client.create_table(table)
             logging.info("Created external table 'matches_parquet'.")
 
-        status_message = "External table 'matches_parquet' has been updated with all Parquet files."
+        # Count matches in the external table
+        query = """
+            SELECT COUNT(*) as match_count 
+            FROM `sports_data_eu.matches_parquet`
+        """
+        query_job = bigquery_client.query(query)
+        match_count = next(query_job.result())[0]
+
+        status_message = (
+            f"External table 'matches_parquet' has been updated.\n"
+            f"Total matches available: {match_count}"
+        )
 
         logging.info(status_message)
         send_discord_notification("✅ Match BigQuery External Table: Updated", status_message, 65280)
 
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'Ofetch_weather_data_topic')
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_data_topic')
 
         publish_data = {
             "action": "fetch_weather",

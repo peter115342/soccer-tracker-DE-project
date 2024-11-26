@@ -48,11 +48,15 @@ def transform_to_parquet(event, context):
                 blob = bucket.blob(json_file)
                 json_content = json.loads(blob.download_as_string())
                 
+                match_id = os.path.basename(json_file).replace('.json', '')
+                
                 if 'hourly' in json_content and 'visibility' in json_content['hourly']:
                     del json_content['hourly']['visibility']
                 
                 if 'hourly_units' in json_content and 'visibility' in json_content['hourly_units']:
                     del json_content['hourly_units']['visibility']
+                
+                json_content['id'] = match_id
                 
                 df = pl.DataFrame(json_content)
                 

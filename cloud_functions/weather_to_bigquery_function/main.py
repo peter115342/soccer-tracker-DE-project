@@ -3,13 +3,10 @@ import json
 import os
 import logging
 import requests
-from google.cloud import storage, bigquery
-from utils.bigquery_helpers_parquet_weather import (
-    load_weather_parquet_to_bigquery,
-)
+from google.cloud import bigquery
 
 def load_weather_to_bigquery(event, context):
-    """Background Cloud Function to load Weather Parquet files from GCS to BigQuery."""
+    """Background Cloud Function to update BigQuery external table for Weather Parquet files in GCS."""
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         message_data = json.loads(pubsub_message)
@@ -21,59 +18,60 @@ def load_weather_to_bigquery(event, context):
             return error_message, 500
 
         bucket_name = os.environ.get('BUCKET_NAME')
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(bucket_name)
         bigquery_client = bigquery.Client()
 
-        job_config = bigquery.LoadJobConfig(
-            source_format=bigquery.SourceFormat.PARQUET,
-            schema_update_options=[
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
-            ],
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND
-        )
-
         dataset_ref = bigquery_client.dataset('sports_data_eu')
+
         try:
             bigquery_client.get_dataset(dataset_ref)
+            logging.info("Dataset 'sports_data_eu' exists.")
         except Exception:
             dataset = bigquery.Dataset(dataset_ref)
-            dataset.location = "US"
+            dataset.location = "europe-central2"
             bigquery_client.create_dataset(dataset)
+            logging.info("Created dataset 'sports_data_eu'.")
 
         table_ref = dataset_ref.table('weather_parquet')
-        try:
-            bigquery_client.get_table(table_ref)
-        except Exception:
-            table = bigquery.Table(table_ref)
-            bigquery_client.create_table(table)
 
-        weather_files = [blob.name for blob in bucket.list_blobs(prefix='weather_data_parquet/')]
-        
-        weather_loaded = load_weather_parquet_to_bigquery(
-            bigquery_client,
-            'sports_data_eu',
-            'weather_parquet',
-            bucket_name,
-            weather_files,
-            job_config=job_config
-        )
+        try:
+            table = bigquery_client.get_table(table_ref)
+            logging.info("Table 'weather_parquet' exists.")
+
+            external_config = bigquery.ExternalConfig('PARQUET')
+            external_config.source_uris = [f"gs://{bucket_name}/weather_data_parquet/*.parquet"]
+            table.external_data_configuration = external_config
+            bigquery_client.update_table(table, ['external_data_configuration'])
+            logging.info("Updated external table 'weather_parquet' configuration.")
+
+        except Exception:
+            external_config = bigquery.ExternalConfig('PARQUET')
+            external_config.source_uris = [f"gs://{bucket_name}/weather_data_parquet/*.parquet"]
+            table = bigquery.Table(table_ref)
+            table.external_data_configuration = external_config
+            bigquery_client.create_table(table)
+            logging.info("Created external table 'weather_parquet'.")
+
+        query = """
+            SELECT COUNT(*) as weather_count 
+            FROM `sports_data_eu.weather_parquet`
+        """
+        query_job = bigquery_client.query(query)
+        weather_count = next(query_job.result())[0]
 
         status_message = (
-            f"Processed {len(weather_files)} weather files\n"
-            f"Successfully loaded: {weather_loaded} weather records\n"
+            f"External table 'weather_parquet' has been updated.\n"
+            f"Total weather records available: {weather_count}"
         )
 
         logging.info(status_message)
-        send_discord_notification("✅ Weather BigQuery Load: Complete", status_message, 65280)
+        send_discord_notification("✅ Weather BigQuery External Table: Updated", status_message, 65280)
 
-        ##TODO next pipeline trigger
         return status_message, 200
 
     except Exception as e:
-        error_message = f"Error during Weather BigQuery load: {str(e)}"
+        error_message = f"Error during Weather BigQuery external table update: {str(e)}"
         logging.exception(error_message)
-        send_discord_notification("❌ Weather BigQuery Load: Failure", error_message, 16711680)
+        send_discord_notification("❌ Weather BigQuery External Table: Failure", error_message, 16711680)
         return error_message, 500
 
 def send_discord_notification(title: str, message: str, color: int):
@@ -100,9 +98,9 @@ def send_discord_notification(title: str, message: str, color: int):
     try:
         headers = {"Content-Type": "application/json"}
         response = requests.post(
-            webhook_url, 
-            data=json.dumps(discord_data), 
-            headers=headers, 
+            webhook_url,
+            data=json.dumps(discord_data),
+            headers=headers,
             timeout=10
         )
         response.raise_for_status()
