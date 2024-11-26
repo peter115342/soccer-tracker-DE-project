@@ -78,7 +78,13 @@ def transform_to_parquet(event, context):
                     for referee in item['referees']:
                         if 'nationality' in referee and referee['nationality'] is None:
                             referee['nationality'] = "None"
-            
+
+                if 'venue' in item and item['venue'] is not None:
+                    item['venue'] = 0
+                    
+                if 'season' in item and item['season'].get('winner') is not None:
+                    item['season']['winner'] = 0
+                    
             df = pl.DataFrame(json_content)
             
             df.write_parquet('/tmp/temp.parquet')
