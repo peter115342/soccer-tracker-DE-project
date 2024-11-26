@@ -33,7 +33,7 @@ def load_weather_to_bigquery(event, context):
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND
         )
 
-        dataset_ref = bigquery_client.dataset('sports_data')
+        dataset_ref = bigquery_client.dataset('sports_data_eu')
         try:
             bigquery_client.get_dataset(dataset_ref)
         except Exception:
@@ -52,7 +52,7 @@ def load_weather_to_bigquery(event, context):
         
         weather_loaded = load_weather_parquet_to_bigquery(
             bigquery_client,
-            'sports_data',
+            'sports_data_eu',
             'weather_parquet',
             bucket_name,
             weather_files,

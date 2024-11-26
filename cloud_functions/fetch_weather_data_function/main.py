@@ -166,8 +166,8 @@ def get_match_data():
             m.homeTeam.id AS home_team_id,
             m.homeTeam.name AS home_team_name,
             t.address AS home_team_address
-        FROM `{client.project}.sports_data.match_data` AS m
-        JOIN `{client.project}.sports_data.teams` AS t
+        FROM `{client.project}.sports_data_eu.match_data` AS m
+        JOIN `{client.project}.sports_data_eu.teams` AS t
         ON m.homeTeam.id = t.id
     """
     query_job = client.query(query)

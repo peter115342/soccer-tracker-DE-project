@@ -17,7 +17,7 @@ client: bigquery.Client = bigquery.Client(project=project_id)
 
 def insert_data_into_bigquery(table_name: str, data: List[Dict[str, Any]]) -> None:
     """Updates or inserts league data into the specified BigQuery table."""
-    table_id: str = f'{project_id}.sports_data.{table_name}'
+    table_id: str = f'{project_id}.sports_data_eu.{table_name}'
     
     new_ids = [str(item['id']) for item in data]
     id_list = ', '.join([f"'{id}'" for id in new_ids])

@@ -6,5 +6,3 @@ google-cloud-storage
 polars
 google-cloud-pubsub
 google-api-core
-pyarrow
-pandas

@@ -3,6 +3,7 @@ from typing import List
 from google.cloud import bigquery, storage
 import polars as pl
 import os
+import json
 
 def load_match_parquet_to_bigquery(
     bigquery_client,
@@ -12,8 +13,7 @@ def load_match_parquet_to_bigquery(
     match_files: List[str],
 ):
     """
-    Loads match Parquet files from GCS to BigQuery, adding the id from the filename and avoiding duplicates.
-    Uses Polars for efficient Parquet handling.
+    Loads match Parquet files from GCS to BigQuery, handling complex nested structures.
     """
     existing_ids_query = f"SELECT DISTINCT id FROM `{bigquery_client.project}.{dataset_id}.{table_id}`"
     existing_ids = set()
@@ -42,11 +42,22 @@ def load_match_parquet_to_bigquery(
         blob.download_to_filename(temp_file_name)
 
         try:
+            # Read parquet with Polars
             df = pl.read_parquet(temp_file_name)
             
+            # Add id column
             df = df.with_columns(pl.lit(match_id).alias('id'))
             
+            # Convert complex columns to JSON strings
+            df = df.with_columns([
+                pl.col('score').map_elements(lambda x: json.dumps(x) if x is not None else None).alias('score'),
+                pl.col('referees').map_elements(lambda x: json.dumps(x) if x is not None else None).alias('referees')
+            ])
+            
+            # Convert to pandas and specify dtype for complex columns
             pandas_df = df.to_pandas()
+            pandas_df['score'] = pandas_df['score'].astype(str)
+            pandas_df['referees'] = pandas_df['referees'].astype(str)
             
             job_config = bigquery.LoadJobConfig(
                 write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
