@@ -73,6 +73,11 @@ def transform_to_parquet(event, context):
             for item in json_content:
                 if 'score' in item and not isinstance(item['score'], list):
                     item['score'] = [item['score']]
+                
+                if 'referees' in item and isinstance(item['referees'], list):
+                    for referee in item['referees']:
+                        if 'nationality' in referee and referee['nationality'] is None:
+                            referee['nationality'] = "None"
             
             df = pl.DataFrame(json_content)
             

@@ -3,11 +3,29 @@ import json
 import os
 import logging
 import requests
+import pandas as pd
 from google.cloud import storage, bigquery
 from utils.bigquery_helpers_parquet_weather import load_weather_parquet_to_bigquery
 
+def process_and_upload_weather_data(bucket_name, source_blob_name, destination_blob_name):
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    json_data = json.loads(blob.download_as_text())
+
+    if 'hourly' in json_data and 'visibility' in json_data['hourly']:
+        del json_data['hourly']['visibility']
+
+    df = pd.DataFrame(json_data['hourly'])
+    tmp_parquet_file = '/tmp/weather.parquet'
+    df.to_parquet(tmp_parquet_file, index=False)
+
+    dest_blob = bucket.blob(destination_blob_name)
+    dest_blob.upload_from_filename(tmp_parquet_file)
+
 def load_weather_to_bigquery(event, context):
-    """Background Cloud Function to be triggered by Pub/Sub.
+    """
+    Background Cloud Function to be triggered by Pub/Sub.
     Loads Weather Parquet files from GCS to BigQuery tables.
     """
     try:
@@ -21,8 +39,6 @@ def load_weather_to_bigquery(event, context):
             return error_message, 500
 
         bucket_name = os.environ.get('BUCKET_NAME')
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(bucket_name)
         bigquery_client = bigquery.Client()
 
         job_config = bigquery.LoadJobConfig(
@@ -32,7 +48,6 @@ def load_weather_to_bigquery(event, context):
                 bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
             ],
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND
-
         )
 
         dataset_ref = bigquery_client.dataset('sports_data')
@@ -43,7 +58,11 @@ def load_weather_to_bigquery(event, context):
             dataset.location = "US"
             bigquery_client.create_dataset(dataset)
 
-        weather_files = [blob.name for blob in bucket.list_blobs(prefix='weather_data_parquet/')]
+        source_blob_name = 'weather_data_json/weather.json'
+        destination_blob_name = 'weather_data_parquet/weather.parquet'
+        process_and_upload_weather_data(bucket_name, source_blob_name, destination_blob_name)
+
+        weather_files = [destination_blob_name]
         weather_loaded, weather_processed = load_weather_parquet_to_bigquery(
             bigquery_client,
             'sports_data',
@@ -54,9 +73,9 @@ def load_weather_to_bigquery(event, context):
         )
 
         status_message = (
-            f"Processed {len(weather_files)} weather files\n"
+            f"Processed 1 weather file\n"
             f"Successfully loaded: {weather_loaded} weather records\n"
-            f"Weather files: {', '.join(weather_processed)}"
+            f"Weather file: {destination_blob_name}"
         )
 
         logging.info(status_message)
@@ -71,7 +90,6 @@ def load_weather_to_bigquery(event, context):
         return error_message, 500
 
 def send_discord_notification(title: str, message: str, color: int):
-    """Sends a notification to Discord with the specified title, message, and color."""
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
     if not webhook_url:
         logging.error("Discord webhook URL not configured")
@@ -97,9 +115,9 @@ def send_discord_notification(title: str, message: str, color: int):
     try:
         headers = {"Content-Type": "application/json"}
         response = requests.post(
-            webhook_url, 
-            data=json.dumps(discord_data), 
-            headers=headers, 
+            webhook_url,
+            data=json.dumps(discord_data),
+            headers=headers,
             timeout=10
         )
         response.raise_for_status()
