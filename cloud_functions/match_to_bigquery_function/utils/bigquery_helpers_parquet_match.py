@@ -14,41 +14,28 @@ def load_match_parquet_to_bigquery(
     processed_files: List[str] = []
     table_ref = f"{client.project}.{dataset_id}.{table_id}"
     
-    match_ids = [
-        int(file.split('/')[-1].replace('.parquet', ''))
-        for file in files
-        if file.endswith('.parquet')
-    ]
-    
-    if not match_ids:
-        return loaded_count, processed_files
-
-    query = f"""
-        SELECT DISTINCT id
-        FROM `{table_ref}`
-        WHERE id IN UNNEST(@match_ids)
-    """
-    job_config_query = bigquery.QueryJobConfig(
-        query_parameters=[
-            bigquery.ArrayQueryParameter("match_ids", "INT64", match_ids)
-        ]
-    )
-    
-    existing_matches = {
-        row.id for row in client.query(query, job_config=job_config_query).result()
-    }
-
     for file in files:
         if not file.endswith('.parquet'):
             continue
 
         match_id = int(file.split('/')[-1].replace('.parquet', ''))
-        
-        if match_id in existing_matches:
+        uri = f"gs://{bucket_name}/{file}"
+
+        query = f"""
+            SELECT COUNT(*) as count 
+            FROM `{table_ref}` 
+            WHERE id = @match_id
+        """
+        job_config_query = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("match_id", "INT64", match_id)
+            ]
+        )
+
+        if next(client.query(query, job_config=job_config_query).result()).count > 0:
             logging.info(f"Match {match_id} already exists in BigQuery, skipping...")
             continue
 
-        uri = f"gs://{bucket_name}/{file}"
         try:
             load_job = client.load_table_from_uri(
                 uri,
@@ -66,4 +53,4 @@ def load_match_parquet_to_bigquery(
             logging.error(error_msg)
             raise Exception(error_msg)
 
-    return loaded_count, processed_files
+    return loaded_count

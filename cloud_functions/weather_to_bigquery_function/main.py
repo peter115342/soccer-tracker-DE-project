@@ -50,7 +50,7 @@ def load_weather_to_bigquery(event, context):
 
         weather_files = [blob.name for blob in bucket.list_blobs(prefix='weather_data_parquet/')]
         
-        weather_loaded, weather_processed = load_weather_parquet_to_bigquery(
+        weather_loaded = load_weather_parquet_to_bigquery(
             bigquery_client,
             'sports_data',
             'weather_parquet',
@@ -62,7 +62,6 @@ def load_weather_to_bigquery(event, context):
         status_message = (
             f"Processed {len(weather_files)} weather files\n"
             f"Successfully loaded: {weather_loaded} weather records\n"
-            f"Weather files: {', '.join(weather_processed)}"
         )
 
         logging.info(status_message)
