@@ -1,6 +1,6 @@
 from google.cloud import bigquery
 import logging
-from typing import List, Tuple
+from typing import List
 
 def load_match_parquet_to_bigquery(
     client: bigquery.Client,
@@ -9,7 +9,7 @@ def load_match_parquet_to_bigquery(
     bucket_name: str,
     files: List[str],
     job_config: bigquery.LoadJobConfig
-) -> Tuple[int, List[str]]:
+) -> int:
     loaded_count = 0
     processed_files: List[str] = []
     table_ref = f"{client.project}.{dataset_id}.{table_id}"

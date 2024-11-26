@@ -1,6 +1,6 @@
 from google.cloud import bigquery
 import logging
-from typing import List, Tuple
+from typing import List
 
 def load_weather_parquet_to_bigquery(
     client: bigquery.Client,
@@ -9,7 +9,7 @@ def load_weather_parquet_to_bigquery(
     bucket_name: str,
     files: List[str],
     job_config: bigquery.LoadJobConfig
-) -> Tuple[int, List[str]]:
+) -> int:
     """Load weather Parquet files to BigQuery."""
     loaded_count = 0
     processed_files: List[str] = []
