@@ -81,6 +81,9 @@ def transform_to_parquet(event, context):
 
                 if 'venue' in item and item['venue'] is not None:
                     item['venue'] = 0
+
+                if 'group' in item and item['group'] is not None:
+                    item['group'] = 0
                     
                 if 'season' in item and item['season'].get('winner') is not None:
                     item['season']['winner'] = 0

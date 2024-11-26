@@ -51,7 +51,10 @@ def transform_to_parquet(event, context):
                 if 'hourly' in json_content:
                     for key in json_content['hourly']:
                         if isinstance(json_content['hourly'][key], list):
-                            json_content['hourly'][key] = [0 if x is None else x for x in json_content['hourly'][key]]
+                            if key in ['relativehumidity_2m', 'weathercode', 'cloudcover', 'winddirection_10m']:
+                                json_content['hourly'][key] = [0 if x is None else x for x in json_content['hourly'][key]]
+                            else:
+                                json_content['hourly'][key] = [0.0 if x is None else x for x in json_content['hourly'][key]]
                   
                 match_id = os.path.basename(json_file).replace('.json', '')
                 
