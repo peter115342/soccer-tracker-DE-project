@@ -44,8 +44,7 @@ def load_weather_to_bigquery(event, context):
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET,
             schema_update_options=[
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
+                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
             ],
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND
         )
@@ -62,7 +61,7 @@ def load_weather_to_bigquery(event, context):
         destination_blob_name = 'weather_data_parquet/weather.parquet'
         process_and_upload_weather_data(bucket_name, source_blob_name, destination_blob_name)
 
-        weather_files = [destination_blob_name]
+        weather_files = ['weather_data_parquet/weather.parquet']
         weather_loaded, weather_processed = load_weather_parquet_to_bigquery(
             bigquery_client,
             'sports_data',

@@ -30,11 +30,9 @@ def load_matches_to_bigquery(event, context):
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET,
             schema_update_options=[
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
+                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
             ],
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-            autodetect=True
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND
         )
 
         dataset_ref = bigquery_client.dataset('sports_data')
@@ -54,14 +52,6 @@ def load_matches_to_bigquery(event, context):
 
         match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
         
-        preprocess_parquet_files(
-            bigquery_client,
-            'sports_data',
-            'matches_parquet',
-            bucket_name,
-            match_files
-        )
-
         match_loaded, match_processed = load_match_parquet_to_bigquery(
             bigquery_client,
             'sports_data',
