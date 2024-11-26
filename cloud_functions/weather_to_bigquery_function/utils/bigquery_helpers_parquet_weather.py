@@ -43,7 +43,7 @@ def load_weather_parquet_to_bigquery(
         if not file.endswith('.parquet'):
             continue
 
-        weather_id = file.split('/')[-1].replace('.parquet', '')
+        weather_id = int(file.split('/')[-1].replace('.parquet', ''))
         
         if weather_id in existing_weather:
             logging.info(f"Weather {weather_id} already exists in BigQuery, skipping...")

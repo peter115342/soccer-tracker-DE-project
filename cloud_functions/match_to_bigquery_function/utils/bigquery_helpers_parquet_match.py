@@ -42,7 +42,7 @@ def load_match_parquet_to_bigquery(
         if not file.endswith('.parquet'):
             continue
 
-        match_id = file.split('/')[-1].replace('.parquet', '')
+        match_id = int(file.split('/')[-1].replace('.parquet', ''))
         
         if match_id in existing_matches:
             logging.info(f"Match {match_id} already exists in BigQuery, skipping...")
