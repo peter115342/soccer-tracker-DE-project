@@ -48,6 +48,9 @@ def transform_to_parquet(event, context):
                 blob = bucket.blob(json_file)
                 json_content = json.loads(blob.download_as_string())
                 
+                if 'hourly' in json_content and 'snow_depth' in json_content['hourly']:
+                    json_content['hourly']['snow_depth'] = [float(x) if x is not None else None for x in json_content['hourly']['snow_depth']]
+                
                 match_id = os.path.basename(json_file).replace('.json', '')
                 
                 if 'hourly' in json_content and 'visibility' in json_content['hourly']:
