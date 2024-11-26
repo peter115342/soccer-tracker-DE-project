@@ -26,42 +26,37 @@ def load_matches_to_bigquery(event, context):
         bucket = storage_client.bucket(bucket_name)
         bigquery_client = bigquery.Client()
 
-        job_config = bigquery.LoadJobConfig(
-            source_format=bigquery.SourceFormat.PARQUET,
-            schema_update_options=[
-                bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
-            ],
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND
-        )
-
         dataset_ref = bigquery_client.dataset('sports_data')
         try:
             bigquery_client.get_dataset(dataset_ref)
+            logging.info("Dataset 'sports_data' exists.")
         except Exception:
             dataset = bigquery.Dataset(dataset_ref)
             dataset.location = "US"
             bigquery_client.create_dataset(dataset)
+            logging.info("Created dataset 'sports_data'.")
 
         table_ref = dataset_ref.table('matches_parquet')
         try:
             bigquery_client.get_table(table_ref)
+            logging.info("Table 'matches_parquet' exists.")
         except Exception:
             table = bigquery.Table(table_ref)
             bigquery_client.create_table(table)
+            logging.info("Created table 'matches_parquet'.")
 
-        match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/')]
-        
+        match_files = [blob.name for blob in bucket.list_blobs(prefix='match_data_parquet/') if blob.name.endswith('.parquet')]
+
         match_loaded = load_match_parquet_to_bigquery(
             bigquery_client,
             'sports_data',
             'matches_parquet',
             bucket_name,
             match_files,
-            job_config=job_config
         )
 
         status_message = (
-            f"Processed {len(match_files) - 1} match files\n"
+            f"Processed {len(match_files)} match files\n"
             f"Successfully loaded: {match_loaded} matches\n"
         )
 
@@ -116,9 +111,9 @@ def send_discord_notification(title: str, message: str, color: int):
     try:
         headers = {"Content-Type": "application/json"}
         response = requests.post(
-            webhook_url, 
-            data=json.dumps(discord_data), 
-            headers=headers, 
+            webhook_url,
+            data=json.dumps(discord_data),
+            headers=headers,
             timeout=10
         )
         response.raise_for_status()
