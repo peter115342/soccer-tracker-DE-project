@@ -59,6 +59,8 @@ def load_matches_to_bigquery(event, context):
             match_files,
             job_config=job_config
         )
+        if match_loaded > 0:
+            match_loaded = match_loaded-1
 
         status_message = (
             f"Processed {len(match_files)} match files\n"
@@ -69,7 +71,7 @@ def load_matches_to_bigquery(event, context):
         send_discord_notification("✅ Match BigQuery Load: Complete", status_message, 65280)
 
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weatherdata_topic')
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_data_topic')
 
         publish_data = {
             "action": "fetch_weather",
