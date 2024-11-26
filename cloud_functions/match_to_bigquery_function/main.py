@@ -110,9 +110,6 @@ def send_discord_notification(title: str, message: str, color: int):
                 "title": title,
                 "description": message,
                 "color": color,
-                "footer": {
-                    "text": "Football Data Processing Service"
-                }
             }
         ]
     }
