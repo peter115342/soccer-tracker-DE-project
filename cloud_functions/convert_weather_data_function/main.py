@@ -64,7 +64,7 @@ def transform_to_parquet(event, context):
                 if 'hourly_units' in json_content and 'visibility' in json_content['hourly_units']:
                     del json_content['hourly_units']['visibility']
                 
-                json_content['match_id'] = match_id
+                json_content['id'] = match_id
                 
                 df = pl.DataFrame(json_content)
                 
