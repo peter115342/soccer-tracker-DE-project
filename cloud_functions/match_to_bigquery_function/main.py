@@ -70,7 +70,7 @@ def load_matches_to_bigquery(event, context):
         send_discord_notification("✅ Match BigQuery Load: Complete", status_message, 65280)
 
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_topic')
+        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_data_topic')
 
         publish_data = {
             "action": "fetch_weather",
