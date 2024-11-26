@@ -15,7 +15,7 @@ def load_match_parquet_to_bigquery(
     table_ref = f"{client.project}.{dataset_id}.{table_id}"
     
     match_ids = [
-        file.split('/')[-1].replace('.parquet', '')
+        int(file.split('/')[-1].replace('.parquet', ''))
         for file in files
         if file.endswith('.parquet')
     ]
@@ -30,7 +30,7 @@ def load_match_parquet_to_bigquery(
     """
     job_config_query = bigquery.QueryJobConfig(
         query_parameters=[
-            bigquery.ArrayQueryParameter("match_ids", "STRING", match_ids)
+            bigquery.ArrayQueryParameter("match_ids", "INT64", match_ids)
         ]
     )
     

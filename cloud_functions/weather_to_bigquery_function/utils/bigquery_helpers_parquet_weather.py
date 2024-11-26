@@ -16,7 +16,7 @@ def load_weather_parquet_to_bigquery(
     table_ref = f"{client.project}.{dataset_id}.{table_id}"
     
     weather_ids = [
-        file.split('/')[-1].replace('.parquet', '')
+        int(file.split('/')[-1].replace('.parquet', ''))
         for file in files
         if file.endswith('.parquet')
     ]
@@ -31,7 +31,7 @@ def load_weather_parquet_to_bigquery(
     """
     job_config_query = bigquery.QueryJobConfig(
         query_parameters=[
-            bigquery.ArrayQueryParameter("weather_ids", "STRING", weather_ids)
+            bigquery.ArrayQueryParameter("weather_ids", "INT64", weather_ids)
         ]
     )
     
