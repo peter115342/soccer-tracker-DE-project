@@ -7,3 +7,4 @@ polars
 google-cloud-pubsub
 google-api-core
 pyarrow
+pandas
