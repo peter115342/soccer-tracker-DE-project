@@ -7,11 +7,6 @@ from google.cloud import storage, pubsub_v1
 import polars as pl
 
 def transform_to_parquet(event, context):
-    """Background Cloud Function to be triggered by Pub/Sub.
-    Args:
-         event (dict): The dictionary with data specific to this type of event.
-         context (google.cloud.functions.Context): The Cloud Functions event metadata.
-    """
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         message_data = json.loads(pubsub_message)
@@ -53,6 +48,12 @@ def transform_to_parquet(event, context):
                 blob = bucket.blob(json_file)
                 json_content = json.loads(blob.download_as_string())
                 
+                if 'hourly' in json_content and 'visibility' in json_content['hourly']:
+                    del json_content['hourly']['visibility']
+                
+                if 'hourly_units' in json_content and 'visibility' in json_content['hourly_units']:
+                    del json_content['hourly_units']['visibility']
+                
                 df = pl.DataFrame(json_content)
                 
                 df.write_parquet('/tmp/temp.parquet')
@@ -92,6 +93,7 @@ def transform_to_parquet(event, context):
         send_discord_notification("❌ Convert Weather to Parquet: Failure", error_message, 16711680)
         logging.exception(error_message)
         return error_message, 500
+
 
 def send_discord_notification(title: str, message: str, color: int):
     """Sends a notification to Discord with the specified title, message, and color."""

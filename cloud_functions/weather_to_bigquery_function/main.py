@@ -3,42 +3,26 @@ import json
 import os
 import logging
 import requests
-import polars as pl
 from google.cloud import storage, bigquery
-from utils.bigquery_helpers_parquet_weather import load_weather_parquet_to_bigquery
-
-def process_and_upload_weather_data(bucket_name, source_blob_name, destination_blob_name):
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(source_blob_name)
-    json_data = json.loads(blob.download_as_text())
-
-    if 'hourly' in json_data and 'visibility' in json_data['hourly']:
-        del json_data['hourly']['visibility']
-
-    df = pl.DataFrame(json_data['hourly'])
-    tmp_parquet_file = '/tmp/weather.parquet'
-    df.write_parquet(tmp_parquet_file)
-
-    dest_blob = bucket.blob(destination_blob_name)
-    dest_blob.upload_from_filename(tmp_parquet_file)
+from utils.bigquery_helpers_parquet_weather import (
+    load_weather_parquet_to_bigquery,
+)
 
 def load_weather_to_bigquery(event, context):
-    """
-    Background Cloud Function to be triggered by Pub/Sub.
-    Loads Weather Parquet files from GCS to BigQuery tables.
-    """
+    """Background Cloud Function to load Weather Parquet files from GCS to BigQuery."""
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         message_data = json.loads(pubsub_message)
 
-        if 'action' not in message_data or message_data['action'] != 'load_weather_to_bigquery':
+        if message_data.get('action') != 'load_weather_to_bigquery':
             error_message = "Invalid message format"
             logging.error(error_message)
             send_discord_notification("❌ Weather BigQuery Load: Invalid Trigger", error_message, 16711680)
             return error_message, 500
 
         bucket_name = os.environ.get('BUCKET_NAME')
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
         bigquery_client = bigquery.Client()
 
         job_config = bigquery.LoadJobConfig(
@@ -57,11 +41,15 @@ def load_weather_to_bigquery(event, context):
             dataset.location = "US"
             bigquery_client.create_dataset(dataset)
 
-        source_blob_name = 'weather_data_json/weather.json'
-        destination_blob_name = 'weather_data_parquet/weather.parquet'
-        process_and_upload_weather_data(bucket_name, source_blob_name, destination_blob_name)
+        table_ref = dataset_ref.table('weather_parquet')
+        try:
+            bigquery_client.get_table(table_ref)
+        except Exception:
+            table = bigquery.Table(table_ref)
+            bigquery_client.create_table(table)
 
-        weather_files = ['weather_data_parquet/weather.parquet']
+        weather_files = [blob.name for blob in bucket.list_blobs(prefix='weather_data_parquet/')]
+        
         weather_loaded, weather_processed = load_weather_parquet_to_bigquery(
             bigquery_client,
             'sports_data',
@@ -72,14 +60,15 @@ def load_weather_to_bigquery(event, context):
         )
 
         status_message = (
-            f"Processed 1 weather file\n"
+            f"Processed {len(weather_files)} weather files\n"
             f"Successfully loaded: {weather_loaded} weather records\n"
-            f"Weather file: {destination_blob_name}"
+            f"Weather files: {', '.join(weather_processed)}"
         )
 
         logging.info(status_message)
         send_discord_notification("✅ Weather BigQuery Load: Complete", status_message, 65280)
 
+        ##TODO next pipeline trigger
         return status_message, 200
 
     except Exception as e:
@@ -89,6 +78,7 @@ def load_weather_to_bigquery(event, context):
         return error_message, 500
 
 def send_discord_notification(title: str, message: str, color: int):
+    """Sends a notification to Discord with the specified title, message, and color."""
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
     if not webhook_url:
         logging.error("Discord webhook URL not configured")
@@ -111,9 +101,9 @@ def send_discord_notification(title: str, message: str, color: int):
     try:
         headers = {"Content-Type": "application/json"}
         response = requests.post(
-            webhook_url,
-            data=json.dumps(discord_data),
-            headers=headers,
+            webhook_url, 
+            data=json.dumps(discord_data), 
+            headers=headers, 
             timeout=10
         )
         response.raise_for_status()
