@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-
+      - dev
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -14,27 +14,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-
-      - name: Install uv
+          python-version: '3.12'
+          cache: 'poetry'
+      - name: Install Poetry
         run: |
-          pip install uv
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
-      - name: Create Virtual Environment
+      - name: Install dependencies with Poetry
         run: |
-          uv venv
-
-      - name: Install dependencies
-        run: |
-          uv pip install -r requirements.txt
+          poetry install
 
       - name: Run mypy
         run: |
-          uv run mypy --namespace-packages --explicit-package-bases .
+          poetry run mypy --namespace-packages --explicit-package-bases .
 
       - name: Run ruff
         run: |
-          uv run ruff check .
+          poetry run ruff check .
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
@@ -48,23 +45,24 @@ jobs:
 
       - name: Create Pub/Sub Topics
         run: |
-          uv run gcloud pubsub topics create fetch_league_data_topic || true
-          uv run gcloud pubsub topics create fetch_football_data_topic || true
-          uv run gcloud pubsub topics create fetch_weather_data_topic || true
-          uv run gcloud pubsub topics create convert_to_parquet_topic || true
-          uv run gcloud pubsub topics create convert_weather_to_parquet_topic || true
-          uv run gcloud pubsub topics create match_to_bigquery_topic || true
-          uv run gcloud pubsub topics create weather_to_bigquery_topic || true
+          poetry run gcloud pubsub topics create fetch_league_data_topic || true
+          poetry run gcloud pubsub topics create fetch_football_data_topic || true
+          poetry run gcloud pubsub topics create fetch_weather_data_topic || true
+          poetry run gcloud pubsub topics create convert_to_parquet_topic || true
+          poetry run gcloud pubsub topics create convert_weather_to_parquet_topic || true
+          poetry run gcloud pubsub topics create match_to_bigquery_topic || true
+          poetry run gcloud pubsub topics create weather_to_bigquery_topic || true
 
       - name: Deploy fetch_league_data Function
         run: |
           cd cloud_functions/fetch_league_data_function
-          uv run gcloud functions deploy fetch_league_data \
-            --runtime python39 \
+          poetry install
+          poetry run gcloud functions deploy fetch_league_data \
+            --runtime python312 \
             --trigger-topic fetch_league_data_topic \
             --entry-point fetch_league_data \
             --timeout 540s \
-            --memory 1GiB \@
+            --memory 1GiB \
             --region europe-central2 \
             --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
           cd ../..
@@ -72,8 +70,9 @@ jobs:
       - name: Deploy fetch_football_data Function
         run: |
           cd cloud_functions/fetch_match_data_function
-          uv run gcloud functions deploy fetch_football_data \
-            --runtime python39 \
+          poetry install
+          poetry run gcloud functions deploy fetch_football_data \
+            --runtime python312 \
             --trigger-topic fetch_football_data_topic \
             --entry-point fetch_football_data \
             --timeout 540s \
@@ -85,8 +84,9 @@ jobs:
       - name: Deploy fetch_weather_data Function
         run: |
           cd cloud_functions/fetch_weather_data_function
-          uv run gcloud functions deploy fetch_weather_data \
-            --runtime python39 \
+          poetry install
+          poetry run gcloud functions deploy fetch_weather_data \
+            --runtime python312 \
             --trigger-topic fetch_weather_data_topic \
             --entry-point fetch_weather_data \
             --timeout 540s \
@@ -98,8 +98,9 @@ jobs:
       - name: Deploy convert_match_data Function
         run: |
           cd cloud_functions/convert_match_data_function
-          uv run gcloud functions deploy transform_match_to_parquet \
-            --runtime python39 \
+          poetry install
+          poetry run gcloud functions deploy transform_match_to_parquet \
+            --runtime python312 \
             --trigger-topic convert_to_parquet_topic \
             --entry-point transform_to_parquet \
             --timeout 540s \
@@ -111,8 +112,9 @@ jobs:
       - name: Deploy convert_weather_data Function
         run: |
           cd cloud_functions/convert_weather_data_function
-          uv run gcloud functions deploy transform_weather_to_parquet \
-            --runtime python39 \
+          poetry install
+          poetry run gcloud functions deploy transform_weather_to_parquet \
+            --runtime python312 \
             --trigger-topic convert_weather_to_parquet_topic \
             --entry-point transform_to_parquet \
             --timeout 540s \
@@ -124,8 +126,9 @@ jobs:
       - name: Deploy match_to_bigquery Function
         run: |
           cd cloud_functions/match_to_bigquery_function
-          uv run gcloud functions deploy load_matches_to_bigquery \
-            --runtime python39 \
+          poetry install
+          poetry run gcloud functions deploy load_matches_to_bigquery \
+            --runtime python312 \
             --trigger-topic match_to_bigquery_topic \
             --entry-point load_matches_to_bigquery \
             --timeout 1200s \
@@ -137,8 +140,9 @@ jobs:
       - name: Deploy weather_to_bigquery Function
         run: |
           cd cloud_functions/weather_to_bigquery_function
-          uv run gcloud functions deploy load_weather_to_bigquery \
-            --runtime python39 \
+          poetry install
+          poetry run gcloud functions deploy load_weather_to_bigquery \
+            --runtime python312 \
             --trigger-topic weather_to_bigquery_topic \
             --entry-point load_weather_to_bigquery \
             --timeout 1200s \
