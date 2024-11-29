@@ -26,36 +26,39 @@ def fetch_football_data(event, context):
             message = f"No new matches found on date {date_from}. Proceeding with conversion step."
             logging.info(message)
             send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
-        else:
-            for match in matches:
-                try:
-                    match_id = match['id']
-                    save_to_gcs(match, match_id)
-                    processed_matches.append(match)
-                    new_matches += 1
-                except Exception as e:
-                    error_count += 1
-                    logging.error(f"Error processing match ID {match_id}: {e}")
+            return "No new matches to process.", 200
+        
+        for match in matches:
+            try:
+                match_id = match['id']
+                save_to_gcs(match, match_id)
+                processed_matches.append(match)
+                new_matches += 1
+            except Exception as e:
+                error_count += 1
+                logging.error(f"Error processing match ID {match_id}: {e}")
 
-            success_message = f"Fetched {new_matches} new matches. Errors: {error_count}. Triggering conversion step."
-            logging.info(success_message)
-            send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
+        success_message = f"Fetched {new_matches} new matches. Errors: {error_count}. Triggering conversion step."
+        logging.info(success_message)
+        send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
 
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
+        # Only trigger next function if we have successfully processed matches
+        if new_matches > 0:
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')
 
-        publish_data = {
-            "action": "convert_matches"
-        }
+            publish_data = {
+                "action": "convert_matches"
+            }
 
-        future = publisher.publish(
-            topic_path,
-            data=json.dumps(publish_data).encode('utf-8'),
-            timestamp=datetime.now().isoformat()
-        )
+            future = publisher.publish(
+                topic_path,
+                data=json.dumps(publish_data).encode('utf-8'),
+                timestamp=datetime.now().isoformat()
+            )
 
-        publish_result = future.result()
-        logging.info(f"Published trigger message to convert_to_parquet_topic with ID: {publish_result}")
+            publish_result = future.result()
+            logging.info(f"Published trigger message to convert_to_parquet_topic with ID: {publish_result}")
 
         return "Process completed.", 200
 
