@@ -1,21 +1,11 @@
-[tool.poetry]
-name = "soccer-tracker-de"
+[project]
+name = "soccer-tracker-de-project"
 version = "0.1.0"
 description = ""
-authors = ["peter115342 <pmuzslay8@gmail.com>"]
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.12"
-ruff = "^0.8.0"
-mypy = "^1.13.0"
-pytest = "^8.3.3"
-
-[tool.poetry.group.dev.dependencies]
-ruff = ">=0.8.0"
-mypy = ">=1.13.0"
-pytest = ">=8.3.3"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires-python = ">=3.12"
+dependencies = [
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "pytest>=8.3.3",
+]
