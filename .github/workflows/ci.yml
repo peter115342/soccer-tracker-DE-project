@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies using uv
         run: |
-          uv pip install -e .
+          uv pip install .
   
 
       - name: Run mypy
