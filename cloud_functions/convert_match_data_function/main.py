@@ -67,15 +67,27 @@ def transform_to_parquet(event, context):
             blob = bucket.blob(json_file)
             json_content = json.loads(blob.download_as_string())
             
-            # Normalize data structure
             if isinstance(json_content, dict):
                 json_content = [json_content]
             
-            # Normalize the score field
             for item in json_content:
                 if 'score' in item and not isinstance(item['score'], list):
                     item['score'] = [item['score']]
-            
+                
+                if 'referees' in item and isinstance(item['referees'], list):
+                    for referee in item['referees']:
+                        if 'nationality' in referee and referee['nationality'] is None:
+                            referee['nationality'] = "None"
+
+                if 'venue' in item and item['venue'] is not None:
+                    item['venue'] = 0
+
+                if 'group' in item and item['group'] is not None:
+                    item['group'] = 0
+                    
+                if 'season' in item and item['season'].get('winner') is not None:
+                    item['season']['winner'] = 0
+                    
             df = pl.DataFrame(json_content)
             
             df.write_parquet('/tmp/temp.parquet')
@@ -87,23 +99,19 @@ def transform_to_parquet(event, context):
         send_discord_notification("✅ Convert to Parquet: Complete", status_message, 65280)
 
         publisher = pubsub_v1.PublisherClient()
-        weather_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'fetch_weather_data_topic')
+        bigquery_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'match_to_bigquery_topic')
         
-        weather_message = {
-            "action": "fetch_weather",
-            "stats": {
-                "processed": processed_count,
-                "skipped": skipped_count
-            }
+        bigquery_message = {
+            "action": "load_matches_to_bigquery"
         }
         
         future = publisher.publish(
-            weather_topic_path,
-            data=json.dumps(weather_message).encode('utf-8')
+            bigquery_topic_path,
+            data=json.dumps(bigquery_message).encode('utf-8')
         )
         
         publish_result = future.result()
-        logging.info("Published message to fetch_weather_data_topic with conversion stats")
+        logging.info("Published message to match_to_bigquery_topic with conversion stats")
         
         return status_message, 200
 

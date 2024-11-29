@@ -3,15 +3,10 @@ import json
 import os
 import logging
 import requests
-from google.cloud import storage
+from google.cloud import storage, pubsub_v1
 import polars as pl
 
 def transform_to_parquet(event, context):
-    """Background Cloud Function to be triggered by Pub/Sub.
-    Args:
-         event (dict): The dictionary with data specific to this type of event.
-         context (google.cloud.functions.Context): The Cloud Functions event metadata.
-    """
     try:
         pubsub_message = base64.b64decode(event['data']).decode('utf-8')
         message_data = json.loads(pubsub_message)
@@ -53,6 +48,24 @@ def transform_to_parquet(event, context):
                 blob = bucket.blob(json_file)
                 json_content = json.loads(blob.download_as_string())
                 
+                if 'hourly' in json_content:
+                    for key in json_content['hourly']:
+                        if isinstance(json_content['hourly'][key], list):
+                            if key in ['relativehumidity_2m', 'weathercode', 'cloudcover', 'winddirection_10m']:
+                                json_content['hourly'][key] = [0 if x is None else x for x in json_content['hourly'][key]]
+                            else:
+                                json_content['hourly'][key] = [0.0 if x is None else x for x in json_content['hourly'][key]]
+                  
+                match_id = os.path.basename(json_file).replace('.json', '')
+                
+                if 'hourly' in json_content and 'visibility' in json_content['hourly']:
+                    del json_content['hourly']['visibility']
+                
+                if 'hourly_units' in json_content and 'visibility' in json_content['hourly_units']:
+                    del json_content['hourly_units']['visibility']
+                
+                json_content['id'] = match_id
+                
                 df = pl.DataFrame(json_content)
                 
                 df.write_parquet('/tmp/temp.parquet')
@@ -68,10 +81,22 @@ def transform_to_parquet(event, context):
         status_message = f"Processed: {processed_count}, Skipped: {skipped_count}, Errors: {error_count}"
         logging.info(status_message)
 
-        if processed_count > 0:
-            send_discord_notification("✅ Convert Weather to Parquet: Success", status_message, 65280)
-        else:
-            send_discord_notification("ℹ️ Convert Weather to Parquet: No New Files", status_message, 16776960)
+        send_discord_notification("✅ Convert Weather to Parquet: Success", status_message, 65280)
+
+        publisher = pubsub_v1.PublisherClient()
+        bigquery_topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'weather_to_bigquery_topic')
+
+        bigquery_message = {
+                "action": "load_weather_to_bigquery"
+        }
+
+        future = publisher.publish(
+            bigquery_topic_path,
+            data=json.dumps(bigquery_message).encode('utf-8')
+        )
+
+        publish_result = future.result()
+        logging.info(f"Published trigger message to weather_to_bigquery_topic with ID: {publish_result}")
 
         return status_message
 
@@ -80,6 +105,7 @@ def transform_to_parquet(event, context):
         send_discord_notification("❌ Convert Weather to Parquet: Failure", error_message, 16711680)
         logging.exception(error_message)
         return error_message, 500
+
 
 def send_discord_notification(title: str, message: str, color: int):
     """Sends a notification to Discord with the specified title, message, and color."""

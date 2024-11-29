@@ -27,7 +27,7 @@ def fetch_football_data(event, context):
             logging.info(message)
             send_discord_notification("ℹ️ Fetch Match Data: No New Matches", message, 16776960)
             return "No new matches to process.", 200
-
+        
         for match in matches:
             try:
                 match_id = match['id']
@@ -42,6 +42,7 @@ def fetch_football_data(event, context):
         logging.info(success_message)
         send_discord_notification("✅ Fetch Match Data: Success", success_message, 65280)
 
+        # Only trigger next function if we have successfully processed matches
         if new_matches > 0:
             publisher = pubsub_v1.PublisherClient()
             topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_to_parquet_topic')

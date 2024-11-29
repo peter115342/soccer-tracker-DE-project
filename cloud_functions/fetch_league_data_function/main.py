@@ -61,6 +61,7 @@ def load_data_into_bigquery(league_data_list: List[Dict[str, Any]]):
         }
         leagues.append(league_info)
 
+    if league_data['teams']:
         for team in league_data['teams']:
             team_info = {
                 'id': team['id'],
@@ -88,9 +89,6 @@ def send_discord_notification(title: str, message: str, color: int):
                 "title": title,
                 "description": message,
                 "color": color,
-                "footer": {
-                    "text": "Football Data Processing Service"
-                }
             }
         ]
     }
