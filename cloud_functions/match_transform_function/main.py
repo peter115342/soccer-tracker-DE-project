@@ -4,14 +4,27 @@ import os
 import logging
 import requests
 from pathlib import Path
-from google.cloud import bigquery, pubsub_v1
+from google.cloud import bigquery, pubsub_v1, dataform_v1beta1
 from datetime import datetime
 
 
-def load_sql_query():
-    sql_path = Path(__file__).parent / "sql" / "transformed_matches.sql"
-    with open(sql_path, "r") as f:
-        return f.read()
+def trigger_dataform_workflow():
+    client = dataform_v1beta1.DataformClient()
+
+    workspace_path = client.workspace_path(
+        project=os.environ["GCP_PROJECT_ID"],
+        location="europe-central2",
+        repository=os.environ["DATAFORM_REPOSITORY"],
+        workspace=os.environ["DATAFORM_WORKSPACE"],
+    )
+
+    workflow_invocation = {
+        "workspace": workspace_path,
+        "release_config": {"git_commitish": "main"},
+    }
+
+    operation = client.create_workflow_invocation(workflow_invocation)
+    return operation.result()
 
 
 def send_discord_notification(title: str, message: str, color: int):
@@ -50,7 +63,7 @@ def send_discord_notification(title: str, message: str, color: int):
 
 
 def transform_matches(event, context):
-    """Cloud Function to transform match data into native BigQuery table"""
+    """Cloud Function to transform match data using DataForm"""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -63,27 +76,19 @@ def transform_matches(event, context):
             )
             return error_message, 400
 
+        workflow_result = trigger_dataform_workflow()
+
         client = bigquery.Client()
-        transformation_query = load_sql_query()
-
-        job_config = bigquery.QueryJobConfig(
-            destination=f"{os.environ['GCP_PROJECT_ID']}.sports_data_eu.matches_processed",
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-            time_partitioning=bigquery.TimePartitioning(
-                type_=bigquery.TimePartitioningType.DAY, field="utcDate"
-            ),
+        count_query = (
+            "SELECT COUNT(*) as match_count FROM sports_data_eu.matches_processed"
         )
-
-        query_job = client.query(transformation_query, job_config=job_config)
-        result = query_job.result()  # noqa: F841
-
-        count_query = "SELECT COUNT(*) as match_count FROM sports_data_raw_parquet.matches_processed"
         count_job = client.query(count_query)
         match_count = next(count_job.result())[0]
 
         status_message = (
             f"Match transformation completed successfully.\n"
-            f"Total matches processed: {match_count}"
+            f"Total matches processed: {match_count}\n"
+            f"DataForm workflow completion time: {workflow_result.end_time}"
         )
 
         logging.info(status_message)
