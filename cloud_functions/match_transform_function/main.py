@@ -3,7 +3,6 @@ import json
 import os
 import logging
 import requests
-from pathlib import Path
 from google.cloud import bigquery, pubsub_v1, dataform_v1beta1
 from datetime import datetime
 
