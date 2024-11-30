@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
 jobs:
   build-and-deploy:
@@ -24,9 +25,10 @@ jobs:
         run: |
           uv venv
 
-      - name: Install dependencies
+      - name: Install dependencies using uv
         run: |
-          uv pip install -r requirements.txt
+          uv pip install .
+  
 
       - name: Run mypy
         run: |
@@ -64,7 +66,7 @@ jobs:
             --trigger-topic fetch_league_data_topic \
             --entry-point fetch_league_data \
             --timeout 540s \
-            --memory 1GiB \@
+            --memory 1GiB \
             --region europe-central2 \
             --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
           cd ../..
