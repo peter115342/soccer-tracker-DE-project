@@ -9,7 +9,7 @@ from datetime import datetime
 
 
 def load_sql_query():
-    sql_path = Path(__file__).parent / "sql" / "transform_matches.sql"
+    sql_path = Path(__file__).parent / "sql" / "transformed_matches.sql"
     with open(sql_path, "r") as f:
         return f.read()
 
