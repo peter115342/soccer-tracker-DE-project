@@ -1,13 +1,3 @@
-config {
-  type: "table",
-  schema: "sports_data_eu",
-  name: "matches_processed",
-  description: "Processed soccer matches data with normalized schema",
-  bigquery: {
-    partitionBy: "DATE(utcDate)"
-  }
-}
-
 SELECT DISTINCT
   id,
   TIMESTAMP(utcDate) as utcDate,
