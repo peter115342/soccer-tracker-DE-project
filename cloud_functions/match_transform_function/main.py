@@ -13,25 +13,15 @@ def trigger_dataform_workflow():
     project_id = os.environ["GCP_PROJECT_ID"]
     location = "europe-central2"
     repository_id = os.environ["DATAFORM_REPOSITORY"]
-    workspace_id = os.environ["DATAFORM_WORKSPACE"]
-
-    workspace = client.workspace_path(
-        project=project_id,
-        location=location,
-        repository=repository_id,
-        workspace=workspace_id,
-    )
-
-    compilation_result = client.create_compilation_result(parent=workspace).result()
-
-    workflow_invocation = dataform_v1beta1.WorkflowInvocation(
-        compilation_result=compilation_result.name
-    )
 
     repository = client.repository_path(
         project=project_id,
         location=location,
         repository=repository_id,
+    )
+
+    workflow_invocation = dataform_v1beta1.WorkflowInvocation(
+        release_config=f"{repository}/releaseConfigs/default"
     )
 
     operation = client.create_workflow_invocation(
