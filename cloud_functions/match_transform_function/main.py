@@ -10,18 +10,32 @@ from datetime import datetime
 def trigger_dataform_workflow():
     client = dataform_v1beta1.DataformClient()
 
-    parent = client.repository_path(
-        project=os.environ["GCP_PROJECT_ID"],
-        location="europe-central2",
-        repository=os.environ["DATAFORM_REPOSITORY"],
+    project_id = os.environ["GCP_PROJECT_ID"]
+    location = "europe-central2"
+    repository_id = os.environ["DATAFORM_REPOSITORY"]
+    workspace_id = os.environ["DATAFORM_WORKSPACE"]
+
+    workspace = client.workspace_path(
+        project=project_id,
+        location=location,
+        repository=repository_id,
+        workspace=workspace_id,
     )
 
+    compilation_result = client.create_compilation_result(parent=workspace).result()
+
     workflow_invocation = dataform_v1beta1.WorkflowInvocation(
-        release_config="releaseConfigs/default"
+        compilation_result=compilation_result.name
+    )
+
+    repository = client.repository_path(
+        project=project_id,
+        location=location,
+        repository=repository_id,
     )
 
     operation = client.create_workflow_invocation(
-        parent=parent,
+        parent=repository,
         workflow_invocation=workflow_invocation,
     )
 
