@@ -20,8 +20,14 @@ def trigger_dataform_workflow():
         repository=repository_id,
     )
 
+    logging.info(f"Fetching release configs for repository: {repository}")
     release_configs = client.list_release_configs(parent=repository)
-    latest_release_config = next(iter(release_configs))
+
+    try:
+        latest_release_config = next(iter(release_configs))
+        logging.info(f"Found release config: {latest_release_config}")
+    except StopIteration:
+        raise Exception("No release configs found in repository")
 
     workflow_invocation = dataform_v1beta1.WorkflowInvocation(
         compilation_result=latest_release_config.compilation_result,
