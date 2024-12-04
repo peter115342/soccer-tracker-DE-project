@@ -20,13 +20,13 @@ def trigger_dataform_workflow():
         repository=repository_id,
     )
 
-    releases = client.list_releases(
+    release_configs = client.list_release_configs(
         parent=repository, order_by="create_time desc", page_size=1
     )
-    latest_release = next(iter(releases))
+    latest_release_config = next(iter(release_configs))
 
     workflow_invocation = dataform_v1beta1.WorkflowInvocation(
-        compilation_result=latest_release.compilation_result,
+        compilation_result=latest_release_config.compilation_result,
     )
 
     operation = client.create_workflow_invocation(
