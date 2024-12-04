@@ -21,7 +21,8 @@ def trigger_dataform_workflow():
     )
 
     compile_response = client.create_compilation_result(
-        parent=repository, compilation_result={"git_commitish": "main"}
+        parent=repository,
+        compilation_result=dataform_v1beta1.CompilationResult(git_commitish="main"),
     ).result()
 
     workflow_invocation = dataform_v1beta1.WorkflowInvocation(
