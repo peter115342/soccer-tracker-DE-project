@@ -59,7 +59,6 @@ def load_matches_to_bigquery(event, context):
             bigquery_client.create_table(table)
             logging.info("Created external table 'matches_parquet'.")
 
-        # Count matches in the external table
         query = """
             SELECT COUNT(*) as match_count 
             FROM `sports_data_raw_parquet.matches_parquet`
