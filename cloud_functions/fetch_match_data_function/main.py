@@ -13,20 +13,28 @@ def fetch_football_data(event, context):
     with Discord notifications for success or failure and Pub/Sub trigger for next function.
     """
     try:
-        date_to = datetime.now().strftime("%Y-%m-%d")
-        date_from = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-        logging.info(f"Fetching matches from {date_from} to {date_to}")
-        matches = fetch_matches_for_competitions(date_from, date_to)
+        logging.info(
+            f"Fetching matches for today ({today}) and yesterday ({yesterday})"
+        )
 
         new_matches = 0
         error_count = 0
         processed_matches = []
 
-        if not matches:
-            message = (
-                f"No new matches found on date {date_from}. Skipping conversion step."
-            )
+        today_matches = fetch_matches_for_competitions(today, today)
+        yesterday_matches = fetch_matches_for_competitions(yesterday, yesterday)
+
+        all_matches = []
+        if today_matches:
+            all_matches.extend(today_matches)
+        if yesterday_matches:
+            all_matches.extend(yesterday_matches)
+
+        if not all_matches:
+            message = f"No new matches found for {yesterday} and {today}. Skipping conversion step."
             logging.info(message)
             send_discord_notification(
                 "ℹ️ Fetch Match Data: No New Matches", message, 16776960
@@ -50,7 +58,7 @@ def fetch_football_data(event, context):
             )
             return "No new matches to process.", 200
 
-        for match in matches:
+        for match in all_matches:
             try:
                 match_id = match["id"]
                 save_to_gcs(match, match_id)
