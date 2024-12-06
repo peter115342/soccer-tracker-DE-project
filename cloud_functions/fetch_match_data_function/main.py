@@ -25,7 +25,7 @@ def fetch_football_data(event, context):
 
         if not matches:
             message = (
-                f"No new matches found on date {date_from}. Skipping conversion step."
+                f"No new matches found on date {date_to}. Skipping conversion step."
             )
             logging.info(message)
             send_discord_notification(

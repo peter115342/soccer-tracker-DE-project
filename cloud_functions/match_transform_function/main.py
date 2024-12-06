@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import logging
+import time
 import requests
 from google.cloud import bigquery, pubsub_v1, dataform_v1beta1
 from datetime import datetime
@@ -20,24 +21,40 @@ def trigger_dataform_workflow():
         repository=repository_id,
     )
 
-    compilation_result = dataform_v1beta1.CompilationResult()
-    compilation_result.git_commitish = "main"
+    compilation_result = dataform_v1beta1.CompilationResult({"git_commitish": "main"})
 
     compile_response = client.create_compilation_result(
         parent=repository,
         compilation_result=compilation_result,
-    ).result()
-
-    workflow_invocation = dataform_v1beta1.WorkflowInvocation(
-        compilation_result=compile_response.name
     )
 
-    operation = client.create_workflow_invocation(
+    workflow_invocation = dataform_v1beta1.WorkflowInvocation(
+        {"compilation_result": compile_response.name}
+    )
+
+    invocation_response = client.create_workflow_invocation(
         parent=repository,
         workflow_invocation=workflow_invocation,
     )
 
-    return operation.result()
+    workflow_invocation_name = invocation_response.name
+
+    while True:
+        current_workflow_invocation = client.get_workflow_invocation(
+            name=workflow_invocation_name
+        )
+        state = current_workflow_invocation.state
+
+        if state in [
+            dataform_v1beta1.WorkflowInvocation.State.SUCCEEDED,
+            dataform_v1beta1.WorkflowInvocation.State.FAILED,
+            dataform_v1beta1.WorkflowInvocation.State.CANCELLED,
+        ]:
+            break
+
+        time.sleep(5)
+
+    return current_workflow_invocation
 
 
 def send_discord_notification(title: str, message: str, color: int):
@@ -90,6 +107,7 @@ def transform_matches(event, context):
             return error_message, 400
 
         workflow_result = trigger_dataform_workflow()
+        workflow_end_time = workflow_result.end_time
 
         client = bigquery.Client()
         count_query = (
@@ -101,7 +119,7 @@ def transform_matches(event, context):
         status_message = (
             f"Match transformation completed successfully.\n"
             f"Total matches processed: {match_count}\n"
-            f"DataForm workflow completion time: {workflow_result.end_time}"
+            f"DataForm workflow completion time: {workflow_end_time}"
         )
 
         logging.info(status_message)
