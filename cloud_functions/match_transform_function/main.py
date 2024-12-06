@@ -107,7 +107,11 @@ def transform_matches(event, context):
             return error_message, 400
 
         workflow_result = trigger_dataform_workflow()
-        workflow_end_time = workflow_result.end_time
+        logging.info(f"Workflow result: {workflow_result}")  # Debug logging
+
+        # Handle workflow completion time
+        workflow_state = workflow_result.state
+        status_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         client = bigquery.Client()
         count_query = (
@@ -119,7 +123,8 @@ def transform_matches(event, context):
         status_message = (
             f"Match transformation completed successfully.\n"
             f"Total matches processed: {match_count}\n"
-            f"DataForm workflow completion time: {workflow_end_time}"
+            f"DataForm workflow state: {workflow_state}\n"
+            f"Completion time: {status_time}"
         )
 
         logging.info(status_message)
