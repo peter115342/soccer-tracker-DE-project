@@ -7,18 +7,21 @@ from utils.weather_data_helper import fetch_weather_by_coordinates, save_weather
 from google.cloud import bigquery, pubsub_v1
 from datetime import datetime
 
+
 def fetch_weather_data(data, context):
     """Fetches and stores weather data for football match locations in GCS."""
     try:
         if isinstance(data, str):
             input_data = json.loads(data)
         else:
-            input_data = json.loads(base64.b64decode(data['data']).decode('utf-8'))
+            input_data = json.loads(base64.b64decode(data["data"]).decode("utf-8"))
 
-        if 'action' not in input_data or input_data['action'] != 'fetch_weather':
+        if "action" not in input_data or input_data["action"] != "fetch_weather":
             error_message = "Invalid message format or incorrect action"
             logging.error(error_message)
-            send_discord_notification("❌ Weather Data: Invalid Trigger", error_message, 16711680)
+            send_discord_notification(
+                "❌ Weather Data: Invalid Trigger", error_message, 16711680
+            )
             return error_message, 500
 
         logging.info(f"Received processed match data: {input_data}")
@@ -31,24 +34,27 @@ def fetch_weather_data(data, context):
             send_discord_notification("Weather Data Update", message, 16776960)
 
             publisher = pubsub_v1.PublisherClient()
-            topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_weather_to_parquet_topic')
+            topic_path = publisher.topic_path(
+                os.environ["GCP_PROJECT_ID"], "convert_weather_to_parquet_topic"
+            )
 
             publish_data = {
                 "weather_data": [],
                 "stats": {
                     "processed_count": 0,
                     "error_count": 0,
-                    "timestamp": datetime.now().isoformat()
-                }
+                    "timestamp": datetime.now().isoformat(),
+                },
             }
 
             future = publisher.publish(
-                topic_path,
-                data=json.dumps(publish_data).encode('utf-8')
+                topic_path, data=json.dumps(publish_data).encode("utf-8")
             )
 
             publish_result = future.result()
-            logging.info(f"Published empty message to convert-weather-to-parquet-topic with ID: {publish_result}")
+            logging.info(
+                f"Published empty message to convert-weather-to-parquet-topic with ID: {publish_result}"
+            )
 
             return "No matches to process weather data for.", 200
 
@@ -69,13 +75,17 @@ def fetch_weather_data(data, context):
                     continue
 
                 try:
-                    lat, lon = map(lambda x: float(x.strip()), coords_str.split(','))
+                    lat, lon = map(lambda x: float(x.strip()), coords_str.split(","))
                 except ValueError as e:
-                    logging.warning(f"Invalid coordinates format '{coords_str}' for match {match_id}: {e}")
+                    logging.warning(
+                        f"Invalid coordinates format '{coords_str}' for match {match_id}: {e}"
+                    )
                     error_count += 1
                     continue
 
-                match_datetime = datetime.strptime(match_datetime_str, "%Y-%m-%dT%H:%M:%S%z")
+                match_datetime = datetime.strptime(
+                    match_datetime_str, "%Y-%m-%dT%H:%M:%S%z"
+                )
                 weather_data = fetch_weather_by_coordinates(lat, lon, match_datetime)
 
                 if weather_data:
@@ -91,7 +101,9 @@ def fetch_weather_data(data, context):
                 logging.error(f"Error processing match {match_id}: {e}")
 
         if processed_count > 0:
-            success_message = f"🌤️ Successfully saved weather data for {processed_count} new matches"
+            success_message = (
+                f"🌤️ Successfully saved weather data for {processed_count} new matches"
+            )
             logging.info(success_message)
             send_discord_notification("Weather Data Update", success_message, 65280)
 
@@ -101,7 +113,9 @@ def fetch_weather_data(data, context):
             send_discord_notification("Weather Data Update", message, 16776960)
 
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(os.environ['GCP_PROJECT_ID'], 'convert_weather_to_parquet_topic')
+        topic_path = publisher.topic_path(
+            os.environ["GCP_PROJECT_ID"], "convert_weather_to_parquet_topic"
+        )
 
         publish_data = {
             "action": "convert_weather",
@@ -109,17 +123,18 @@ def fetch_weather_data(data, context):
             "stats": {
                 "processed_count": processed_count,
                 "error_count": error_count,
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         }
 
         future = publisher.publish(
-            topic_path,
-            data=json.dumps(publish_data).encode('utf-8')
+            topic_path, data=json.dumps(publish_data).encode("utf-8")
         )
 
         publish_result = future.result()
-        logging.info(f"Published message to convert-weather-to-parquet-topic with ID: {publish_result}")
+        logging.info(
+            f"Published message to convert-weather-to-parquet-topic with ID: {publish_result}"
+        )
 
         return "Process completed.", 200
 
@@ -129,28 +144,28 @@ def fetch_weather_data(data, context):
         logging.exception(error_message)
         return error_message, 500
 
+
 def send_discord_notification(title: str, message: str, color: int):
     """Sends a notification to Discord with the specified title, message, and color."""
-    webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
         logging.warning("Discord webhook URL not set.")
         return
 
     discord_data = {
         "content": None,
-        "embeds": [
-            {
-                "title": title,
-                "description": message,
-                "color": color
-            }
-        ]
+        "embeds": [{"title": title, "description": message, "color": color}],
     }
 
     headers = {"Content-Type": "application/json"}
-    response = requests.post(webhook_url, data=json.dumps(discord_data), headers=headers)
+    response = requests.post(
+        webhook_url, data=json.dumps(discord_data), headers=headers
+    )
     if response.status_code != 204:
-        logging.error(f"Failed to send Discord notification: {response.status_code}, {response.text}")
+        logging.error(
+            f"Failed to send Discord notification: {response.status_code}, {response.text}"
+        )
+
 
 def get_match_data():
     """
@@ -166,7 +181,7 @@ def get_match_data():
             m.homeTeam.id AS home_team_id,
             m.homeTeam.name AS home_team_name,
             t.address AS home_team_address
-        FROM `{client.project}.sports_data_eu.match_data` AS m
+        FROM `{client.project}.sports_data_eu.matches_processed` AS m
         JOIN `{client.project}.sports_data_eu.teams` AS t
         ON m.homeTeam.id = t.id
     """
@@ -174,17 +189,19 @@ def get_match_data():
     results = query_job.result()
     matches = []
     for row in results:
-        matches.append({
-            'id': row.match_id,
-            'utcDate': row.utcDate.isoformat(),
-            'homeTeam': {
-                'id': row.home_team_id,
-                'name': row.home_team_name,
-                'address': row.home_team_address
-            },
-            'competition': {
-                'code': row.competition_code,
-                'name': row.competition_name
+        matches.append(
+            {
+                "id": row.match_id,
+                "utcDate": row.utcDate.isoformat(),
+                "homeTeam": {
+                    "id": row.home_team_id,
+                    "name": row.home_team_name,
+                    "address": row.home_team_address,
+                },
+                "competition": {
+                    "code": row.competition_code,
+                    "name": row.competition_name,
+                },
             }
-        })
+        )
     return matches
