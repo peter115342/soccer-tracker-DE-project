@@ -26,13 +26,9 @@ def trigger_dataform_workflow():
         compilation_result={"git_commitish": "main"},
     )
 
-    invocation_config = dataform_v1beta1.WorkflowInvocation.InvocationConfig(
-        included_tags=["matches"]
-    )
-
     workflow_invocation = dataform_v1beta1.WorkflowInvocation(
         compilation_result=compile_response.name,
-        invocation_config=invocation_config,
+        included_tags=["matches"],
     )
 
     invocation_response = client.create_workflow_invocation(
