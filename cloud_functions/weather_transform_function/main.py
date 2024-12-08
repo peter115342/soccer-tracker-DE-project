@@ -28,6 +28,7 @@ def trigger_dataform_workflow():
 
     workflow_invocation = {
         "compilation_result": compile_response.name,
+        "invocation_config": {"included_tags": ["weather"]},
     }
 
     invocation_response = client.create_workflow_invocation(
