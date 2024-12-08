@@ -11,7 +11,6 @@ config {
 SELECT
   DISTINCT id,
   TIMESTAMP(utcDate) AS utcDate,
-  TIMESTAMP_ADD(TIMESTAMP(utcDate), INTERVAL 1 HOUR) AS cetDate,
   status,
   matchday,
   stage,
