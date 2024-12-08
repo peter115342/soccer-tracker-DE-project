@@ -21,15 +21,18 @@ def trigger_dataform_workflow():
         repository=repository_id,
     )
 
-    compilation_result = dataform_v1beta1.CompilationResult({"git_commitish": "main"})
-
     compile_response = client.create_compilation_result(
         parent=repository,
-        compilation_result=compilation_result,
+        compilation_result={"git_commitish": "main"},
+    )
+
+    invocation_config = dataform_v1beta1.WorkflowInvocation.InvocationConfig(
+        included_tags=["weather"]
     )
 
     workflow_invocation = dataform_v1beta1.WorkflowInvocation(
-        {"compilation_result": compile_response.name}
+        compilation_result=compile_response.name,
+        invocation_config=invocation_config,
     )
 
     invocation_response = client.create_workflow_invocation(
