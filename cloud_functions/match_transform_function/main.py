@@ -28,7 +28,6 @@ def trigger_dataform_workflow():
 
     workflow_invocation = {
         "compilation_result": compile_response.name,
-        "included_tags": ["matches"],
     }
 
     invocation_response = client.create_workflow_invocation(
