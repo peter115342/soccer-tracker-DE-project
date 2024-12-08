@@ -4,7 +4,7 @@ import os
 import logging
 import time
 import requests
-from google.cloud import bigquery, pubsub_v1, dataform_v1beta1
+from google.cloud import bigquery, dataform_v1beta1
 from datetime import datetime
 
 
