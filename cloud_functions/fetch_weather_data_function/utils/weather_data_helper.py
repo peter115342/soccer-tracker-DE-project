@@ -8,7 +8,7 @@ import os
 
 BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
-GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")
+GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def fetch_weather_by_coordinates(
