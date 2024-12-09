@@ -43,6 +43,7 @@ def fetch_weather_by_coordinates(
             "weather_code",
             "pressure_msl",
             "cloud_cover",
+            "visibility",
             "wind_speed_10m",
             "wind_direction_10m",
             "wind_gusts_10m",
@@ -58,27 +59,30 @@ def fetch_weather_by_coordinates(
         responses = openmeteo.weather_api(url, params=params)
         response = responses[0]
 
+        hourly = response.Hourly()
+
         data = {
-            "latitude": response.Latitude,
-            "longitude": response.Longitude,
-            "timezone": response.Timezone,
-            "timezone_abbreviation": response.TimezoneAbbreviation,
+            "latitude": response.Latitude(),
+            "longitude": response.Longitude(),
+            "timezone": response.Timezone(),
+            "timezone_abbreviation": response.TimezoneAbbreviation(),
             "hourly": {
-                "time": response.Hourly.Time,
-                "temperature_2m": response.Hourly.Temperature2m,
-                "relativehumidity_2m": response.Hourly.RelativeHumidity2m,
-                "dewpoint_2m": response.Hourly.Dewpoint2m,
-                "apparent_temperature": response.Hourly.ApparentTemperature,
-                "precipitation": response.Hourly.Precipitation,
-                "rain": response.Hourly.Rain,
-                "snowfall": response.Hourly.Snowfall,
-                "snow_depth": response.Hourly.SnowDepth,
-                "weathercode": response.Hourly.WeatherCode,
-                "pressure_msl": response.Hourly.PressureMsl,
-                "cloudcover": response.Hourly.CloudCover,
-                "windspeed_10m": response.Hourly.WindSpeed10m,
-                "winddirection_10m": response.Hourly.WindDirection10m,
-                "windgusts_10m": response.Hourly.WindGusts10m,
+                "time": hourly.Variables(0).ValuesAsNumpy().tolist(),
+                "temperature_2m": hourly.Variables(1).ValuesAsNumpy().tolist(),
+                "relativehumidity_2m": hourly.Variables(2).ValuesAsNumpy().tolist(),
+                "dewpoint_2m": hourly.Variables(3).ValuesAsNumpy().tolist(),
+                "apparent_temperature": hourly.Variables(4).ValuesAsNumpy().tolist(),
+                "precipitation": hourly.Variables(5).ValuesAsNumpy().tolist(),
+                "rain": hourly.Variables(6).ValuesAsNumpy().tolist(),
+                "snowfall": hourly.Variables(7).ValuesAsNumpy().tolist(),
+                "snow_depth": hourly.Variables(8).ValuesAsNumpy().tolist(),
+                "weathercode": hourly.Variables(9).ValuesAsNumpy().tolist(),
+                "pressure_msl": hourly.Variables(10).ValuesAsNumpy().tolist(),
+                "cloudcover": hourly.Variables(11).ValuesAsNumpy().tolist(),
+                "visibility": hourly.Variables(12).ValuesAsNumpy().tolist(),
+                "windspeed_10m": hourly.Variables(13).ValuesAsNumpy().tolist(),
+                "winddirection_10m": hourly.Variables(14).ValuesAsNumpy().tolist(),
+                "windgusts_10m": hourly.Variables(15).ValuesAsNumpy().tolist(),
             },
         }
 
