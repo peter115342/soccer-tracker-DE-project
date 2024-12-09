@@ -4,8 +4,11 @@ import json
 import requests
 import base64
 from utils.weather_data_helper import fetch_weather_by_coordinates, save_weather_to_gcs
-from google.cloud import bigquery, pubsub_v1
+from google.cloud import bigquery, pubsub_v1, storage
 from datetime import datetime
+
+GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
+GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def fetch_weather_data(data, context):
@@ -35,7 +38,7 @@ def fetch_weather_data(data, context):
 
             publisher = pubsub_v1.PublisherClient()
             topic_path = publisher.topic_path(
-                os.environ["GCP_PROJECT_ID"], "convert_weather_to_parquet_topic"
+                GCP_PROJECT_ID, "convert_weather_to_parquet_topic"
             )
 
             publish_data = {
@@ -61,10 +64,21 @@ def fetch_weather_data(data, context):
         processed_count = 0
         error_count = 0
         processed_weather_data = []
+        storage_client = storage.Client(project=GCP_PROJECT_ID)
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
 
         for match in match_data:
             try:
                 match_id = match["id"]
+
+                # Check if weather data already exists in GCS
+                blob = bucket.blob(f"weather_data/{match_id}.json")
+                if blob.exists():
+                    logging.info(
+                        f"Weather data for match {match_id} already exists, skipping"
+                    )
+                    continue
+
                 match_datetime_str = match["utcDate"]
                 home_team = match["homeTeam"]
                 coords_str = home_team.get("address", "")
@@ -114,7 +128,7 @@ def fetch_weather_data(data, context):
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(
-            os.environ["GCP_PROJECT_ID"], "convert_weather_to_parquet_topic"
+            GCP_PROJECT_ID, "convert_weather_to_parquet_topic"
         )
 
         publish_data = {
