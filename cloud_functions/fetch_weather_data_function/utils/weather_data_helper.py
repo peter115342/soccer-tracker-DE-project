@@ -1,10 +1,12 @@
-import requests
 import logging
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from datetime import datetime, timezone
 import json
 from google.cloud import storage
 import os
+from openmeteo_requests import Client
+from retry_requests import retry
+import requests
 
 BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -14,75 +16,82 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 def fetch_weather_by_coordinates(
     lat: float, lon: float, match_datetime: datetime
 ) -> Dict[str, Any]:
-    """Fetches historical or forecast weather data from Open-Meteo API based on coordinates and match datetime."""
+    """Fetches historical or forecast weather data using openmeteo-requests client."""
 
     date_str = match_datetime.strftime("%Y-%m-%d")
     current_datetime = datetime.now(timezone.utc)
 
-    hourly_variables = [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "dew_point_2m",
-        "apparent_temperature",
-        "precipitation",
-        "rain",
-        "snowfall",
-        "snow_depth",
-        "weather_code",
-        "pressure_msl",
-        "cloud_cover",
-        "wind_speed_10m",
-        "wind_direction_10m",
-        "wind_gusts_10m",
-    ]
+    cache_session = requests.Session()
+    retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+    openmeteo = Client(session=retry_session)
 
-    if match_datetime < current_datetime:
-        base_url = "https://archive-api.open-meteo.com/v1/archive"
-        params: Dict[str, Union[str, float]] = {  # type: ignore[no-redef]
-            "latitude": f"{lat:.7f}",
-            "longitude": f"{lon:.7f}",
-            "start_date": date_str,
-            "end_date": date_str,
-            "hourly": ",".join(hourly_variables),
-            "timezone": "UTC",
-        }
-    else:
-        base_url = "https://api.open-meteo.com/v1/forecast"
-        params: Dict[str, Union[str, float]] = {  # type: ignore[no-redef]
-            "latitude": f"{lat:.7f}",
-            "longitude": f"{lon:.7f}",
-            "start_date": date_str,
-            "end_date": date_str,
-            "hourly": ",".join(hourly_variables),
-            "timezone": "UTC",
-        }
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "start_date": date_str,
+        "end_date": date_str,
+        "timezone": "UTC",
+        "hourly": [
+            "temperature_2m",
+            "relative_humidity_2m",
+            "dew_Zpoint_2m",
+            "apparent_temperature",
+            "precipitation",
+            "rain",
+            "snowfall",
+            "snow_depth",
+            "weather_code",
+            "pressure_msl",
+            "cloud_cover",
+            "wind_speed_10m",
+            "wind_direction_10m",
+            "wind_gusts_10m",
+        ],
+    }
 
     try:
-        logging.debug(f"Making API request to: {base_url}")
-        logging.debug(f"Parameters: {json.dumps(params, indent=2)}")
+        if match_datetime < current_datetime:
+            url = "https://archive-api.open-meteo.com/v1/archive"
+        else:
+            url = "https://api.open-meteo.com/v1/forecast"
 
-        response = requests.get(base_url, params=params)
-        logging.debug(f"API Request URL: {response.url}")
-        response.raise_for_status()
-        data = response.json()
+        responses = openmeteo.weather_api(url, params=params)
+        response = responses[0]
+
+        data = {
+            "latitude": response.Latitude,
+            "longitude": response.Longitude,
+            "timezone": response.Timezone,
+            "timezone_abbreviation": response.TimezoneAbbreviation,
+            "hourly": {
+                "time": response.Hourly.Time,
+                "temperature_2m": response.Hourly.Temperature2m,
+                "relativehumidity_2m": response.Hourly.RelativeHumidity2m,
+                "dewpoint_2m": response.Hourly.Dewpoint2m,
+                "apparent_temperature": response.Hourly.ApparentTemperature,
+                "precipitation": response.Hourly.Precipitation,
+                "rain": response.Hourly.Rain,
+                "snowfall": response.Hourly.Snowfall,
+                "snow_depth": response.Hourly.SnowDepth,
+                "weathercode": response.Hourly.WeatherCode,
+                "pressure_msl": response.Hourly.PressureMsl,
+                "cloudcover": response.Hourly.CloudCover,
+                "windspeed_10m": response.Hourly.WindSpeed10m,
+                "winddirection_10m": response.Hourly.WindDirection10m,
+                "windgusts_10m": response.Hourly.WindGusts10m,
+            },
+        }
+
         logging.info(
-            f"Fetched weather data from Open-Meteo for coordinates ({lat}, {lon}) on {date_str}"
+            f"Successfully fetched weather data for coordinates ({lat}, {lon}) on {date_str}"
         )
-
-        logging.debug(f"Open-Meteo API response: {json.dumps(data, indent=2)}")
+        logging.debug(f"Weather data: {json.dumps(data, indent=2)}")
 
         return data
-    except requests.exceptions.HTTPError as e:
-        logging.error(
-            f"HTTP error occurred while fetching weather data from Open-Meteo: {e}"
-        )
-        logging.debug(f"Response content: {response.text}")
-    except Exception as e:
-        logging.error(
-            f"An error occurred while fetching weather data from Open-Meteo: {e}"
-        )
 
-    return {}
+    except Exception as e:
+        logging.error(f"Error fetching weather data: {str(e)}")
+        return {}
 
 
 def save_weather_to_gcs(data: dict, match_id: int) -> bool:

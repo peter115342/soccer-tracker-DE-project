@@ -1,4 +1,6 @@
-requests
 google-cloud-bigquery
 google-cloud-storage
 google-cloud-pubsub
+openmeteo-requests
+requests-cache
+retry-requests
