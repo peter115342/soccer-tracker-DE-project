@@ -34,7 +34,7 @@ def fetch_weather_by_coordinates(
         "hourly": [
             "temperature_2m",
             "relative_humidity_2m",
-            "dew_Zpoint_2m",
+            "dew_point_2m",
             "apparent_temperature",
             "precipitation",
             "rain",
