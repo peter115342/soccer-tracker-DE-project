@@ -64,7 +64,6 @@ def fetch_weather_by_coordinates(
             "timezone": response.Timezone,
             "timezone_abbreviation": response.TimezoneAbbreviation,
             "hourly": {
-                "time": response.Hourly.Time,
                 "temperature_2m": response.Hourly.Temperature2m,
                 "relativehumidity_2m": response.Hourly.RelativeHumidity2m,
                 "dewpoint_2m": response.Hourly.Dewpoint2m,
