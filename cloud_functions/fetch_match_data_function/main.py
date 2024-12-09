@@ -2,7 +2,7 @@ import requests
 import json
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from google.cloud import pubsub_v1
 from utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs
 
