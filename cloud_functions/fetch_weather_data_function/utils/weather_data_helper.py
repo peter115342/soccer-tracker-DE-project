@@ -38,7 +38,7 @@ def fetch_weather_by_coordinates(
 
     if match_datetime < current_datetime:
         base_url = "https://archive-api.open-meteo.com/v1/archive"
-        params: Dict[str, Union[str, float]] = {
+        params: Dict[str, Union[str, float]] = {  # type: ignore[no-redef]
             "latitude": f"{lat:.7f}",
             "longitude": f"{lon:.7f}",
             "start_date": date_str,
@@ -48,7 +48,7 @@ def fetch_weather_by_coordinates(
         }
     else:
         base_url = "https://api.open-meteo.com/v1/forecast"
-        params: Dict[str, Union[str, float]] = {
+        params: Dict[str, Union[str, float]] = {  # type: ignore[no-redef]
             "latitude": f"{lat:.7f}",
             "longitude": f"{lon:.7f}",
             "start_date": date_str,
