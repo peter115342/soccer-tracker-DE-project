@@ -39,44 +39,37 @@ def fetch_weather_by_coordinates(
     ]
 
     if match_datetime < current_datetime:
-        base_url = "https://archive-api.open-meteo.com/v1/archive"
-        params: Dict[str, Union[str, float]] = {  # type: ignore[no-redef]
-            "latitude": f"{lat:.7f}",
-            "longitude": f"{lon:.7f}",
+        params = {
+            "latitude": lat,
+            "longitude": lon,
             "start_date": date_str,
             "end_date": date_str,
             "hourly": ",".join(hourly_variables),
             "timezone": "UTC",
-            "models": "best_match",
-            "format": "json",
         }
+        response = requests.get(BASE_URL, params=params)
     else:
-        base_url = "https://api.open-meteo.com/v1/forecast"
-        params: Dict[str, Union[str, float]] = {  # type: ignore[no-redef]
-            "latitude": f"{lat:.7f}",
-            "longitude": f"{lon:.7f}",
-            "start_date": date_str,
-            "end_date": date_str,
+        forecast_url = "https://api.open-meteo.com/v1/forecast"
+        params = {
+            "latitude": lat,
+            "longitude": lon,
             "hourly": ",".join(hourly_variables),
             "timezone": "UTC",
         }
+        response = requests.get(forecast_url, params=params)
 
     try:
-        logging.debug(f"Making API request to: {base_url}")
-        logging.debug(f"Parameters: {json.dumps(params, indent=2)}")
-
         time.sleep(RATE_LIMIT_DELAY)
-        response = requests.get(base_url, params=params)
-        logging.debug(f"API Request URL: {response.url}")
         response.raise_for_status()
         data = response.json()
-        logging.info(
-            f"Fetched weather data from Open-Meteo for coordinates ({lat}, {lon}) on {date_str}"
-        )
 
-        logging.debug(f"Open-Meteo API response: {json.dumps(data, indent=2)}")
+        # Add validation
+        if "hourly" in data and any(data["hourly"].values()):
+            return data
+        else:
+            logging.error(f"Invalid or empty data received: {data}")
+            return {}
 
-        return data
     except requests.exceptions.HTTPError as e:
         logging.error(
             f"HTTP error occurred while fetching weather data from Open-Meteo: {e}"

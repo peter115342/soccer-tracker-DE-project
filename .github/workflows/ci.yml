@@ -72,18 +72,18 @@ jobs:
       #       --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
       #     cd ../..
 
-      - name: Deploy fetch_football_data Function
-        run: |
-          cd cloud_functions/fetch_match_data_function
-          uv run gcloud functions deploy fetch_football_data \
-            --runtime python39 \
-            --trigger-topic fetch_football_data_topic \
-            --entry-point fetch_football_data \
-            --timeout 540s \
-            --memory 1GiB \
-            --region europe-central2 \
-            --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},BUCKET_NAME=${{secrets.BUCKET_NAME}}"
-          cd ../..
+      # - name: Deploy fetch_football_data Function
+      #   run: |
+      #     cd cloud_functions/fetch_match_data_function
+      #     uv run gcloud functions deploy fetch_football_data \
+      #       --runtime python39 \
+      #       --trigger-topic fetch_football_data_topic \
+      #       --entry-point fetch_football_data \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},BUCKET_NAME=${{secrets.BUCKET_NAME}}"
+      #     cd ../..
 
       - name: Deploy fetch_weather_data Function
         run: |
