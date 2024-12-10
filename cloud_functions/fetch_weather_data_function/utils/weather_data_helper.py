@@ -1,6 +1,6 @@
 import requests
 import logging
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from datetime import datetime, timezone
 import json
 from google.cloud import storage
