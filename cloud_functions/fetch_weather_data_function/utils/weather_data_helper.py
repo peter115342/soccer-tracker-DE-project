@@ -5,10 +5,12 @@ from datetime import datetime, timezone
 import json
 from google.cloud import storage
 import os
+import time
 
 BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
+RATE_LIMIT_DELAY = 0.5
 
 
 def fetch_weather_by_coordinates(
@@ -45,6 +47,8 @@ def fetch_weather_by_coordinates(
             "end_date": date_str,
             "hourly": ",".join(hourly_variables),
             "timezone": "UTC",
+            "models": "best_match",
+            "format": "json",
         }
     else:
         base_url = "https://api.open-meteo.com/v1/forecast"
@@ -61,6 +65,7 @@ def fetch_weather_by_coordinates(
         logging.debug(f"Making API request to: {base_url}")
         logging.debug(f"Parameters: {json.dumps(params, indent=2)}")
 
+        time.sleep(RATE_LIMIT_DELAY)
         response = requests.get(base_url, params=params)
         logging.debug(f"API Request URL: {response.url}")
         response.raise_for_status()
