@@ -12,9 +12,11 @@ venv/
 # Credentials
 *.json
 
-# GCP service account keys (do not upload these)
+# GCP service account keys
 service-account-key.json
 
 # Others
 .idea/
 .DS_Store
+dataform.json
+delete_files_by_match_id.ps1
