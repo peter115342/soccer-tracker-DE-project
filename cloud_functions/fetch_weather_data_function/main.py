@@ -71,7 +71,6 @@ def fetch_weather_data(data, context):
             try:
                 match_id = match["id"]
 
-                # Check if weather data already exists in GCS
                 blob = bucket.blob(f"weather_data/{match_id}.json")
                 if blob.exists():
                     logging.info(

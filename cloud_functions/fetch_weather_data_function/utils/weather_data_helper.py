@@ -24,7 +24,7 @@ def fetch_weather_by_coordinates(
     hourly_variables = [
         "temperature_2m",
         "relativehumidity_2m",
-        "dew_point_2m",
+        "dewpoint_2m",
         "apparent_temperature",
         "precipitation",
         "rain",
