@@ -97,9 +97,10 @@ def fetch_weather_data(data, context):
                     error_count += 1
                     continue
 
-                match_datetime = datetime.strptime(
-                    match_datetime_str, "%Y-%m-%dT%H:%M:%S%z"
+                match_datetime = datetime.fromisoformat(
+                    match_datetime_str.replace("Z", "+00:00")
                 )
+
                 weather_data = fetch_weather_by_coordinates(lat, lon, match_datetime)
 
                 if weather_data:
@@ -195,7 +196,7 @@ def get_match_data():
             m.homeTeam.id AS home_team_id,
             m.homeTeam.name AS home_team_name,
             t.address AS home_team_address
-        FROM `{client.project}.sports_data_eu.matches_processedXX` AS m
+        FROM `{client.project}.sports_data_eu.matches_processed` AS m
         JOIN `{client.project}.sports_data_eu.teams` AS t
         ON m.homeTeam.id = t.id
     """

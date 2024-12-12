@@ -38,7 +38,7 @@ def fetch_weather_by_coordinates(
         "wind_gusts_10m",
     ]
 
-    if match_datetime < current_datetime:
+    if match_datetime <= current_datetime:
         params = {
             "latitude": lat,
             "longitude": lon,
@@ -63,7 +63,6 @@ def fetch_weather_by_coordinates(
         response.raise_for_status()
         data = response.json()
 
-        # Add validation
         if "hourly" in data and any(data["hourly"].values()):
             return data
         else:
