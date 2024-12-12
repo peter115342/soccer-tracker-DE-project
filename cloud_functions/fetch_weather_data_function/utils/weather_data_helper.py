@@ -23,19 +23,19 @@ def fetch_weather_by_coordinates(
 
     hourly_variables = [
         "temperature_2m",
-        "relative_humidity_2m",
+        "relativehumidity_2m",
         "dew_point_2m",
         "apparent_temperature",
         "precipitation",
         "rain",
         "snowfall",
         "snow_depth",
-        "weather_code",
+        "weathercode",
         "pressure_msl",
-        "cloud_cover",
-        "wind_speed_10m",
-        "wind_direction_10m",
-        "wind_gusts_10m",
+        "cloudcover",
+        "windspeed_10m",
+        "winddirection_10m",
+        "windgusts_10m",
     ]
 
     if match_datetime <= current_datetime:
