@@ -18,11 +18,11 @@ def fetch_weather_by_coordinates(
 ) -> Dict[str, Any]:
     """Fetches historical or forecast weather data from Open-Meteo API based on coordinates and match datetime."""
 
-    date_str = match_datetime.strftime("%Y-%m-%d")
-    current_datetime = datetime.now(timezone.utc)
-
     if match_datetime.tzinfo is None:
         match_datetime = match_datetime.replace(tzinfo=timezone.utc)
+
+    date_str = match_datetime.strftime("%Y-%m-%d")
+
     hourly_variables = [
         "temperature_2m",
         "relativehumidity_2m",
@@ -40,6 +40,7 @@ def fetch_weather_by_coordinates(
         "windgusts_10m",
     ]
 
+    current_datetime = datetime.now(timezone.utc)
     if match_datetime.date() <= current_datetime.date():
         params = {
             "latitude": lat,
@@ -48,6 +49,7 @@ def fetch_weather_by_coordinates(
             "end_date": date_str,
             "hourly": ",".join(hourly_variables),
             "timezone": "UTC",
+            "models": "best_match",
         }
         response = requests.get(BASE_URL, params=params)
     else:
@@ -55,10 +57,11 @@ def fetch_weather_by_coordinates(
         params = {
             "latitude": lat,
             "longitude": lon,
-            "start_date": date_str,
-            "end_date": date_str,
             "hourly": ",".join(hourly_variables),
             "timezone": "UTC",
+            "forecast_days": 1,
+            "start_date": date_str,
+            "end_date": date_str,
         }
         response = requests.get(forecast_url, params=params)
 
