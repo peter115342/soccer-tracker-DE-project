@@ -1,7 +1,7 @@
 import requests
 import logging
 from typing import Dict, Any
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import json
 from google.cloud import storage
 import os
@@ -18,11 +18,8 @@ def fetch_weather_by_coordinates(
 ) -> Dict[str, Any]:
     """Fetches historical or forecast weather data from Open-Meteo API based on coordinates and match datetime."""
 
-    if match_datetime.tzinfo is None:
-        match_datetime = match_datetime.replace(tzinfo=timezone.utc)
-
-    start_date = match_datetime.date()
-    end_date = (match_datetime + timedelta(days=1)).date()
+    date_str = match_datetime.strftime("%Y-%m-%d")
+    current_datetime = datetime.now(timezone.utc)
 
     hourly_variables = [
         "temperature_2m",
@@ -41,42 +38,34 @@ def fetch_weather_by_coordinates(
         "windgusts_10m",
     ]
 
-    current_datetime = datetime.now(timezone.utc)
-    yesterday = current_datetime.date() - timedelta(days=1)
+    if match_datetime <= current_datetime:
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "start_date": date_str,
+            "end_date": date_str,
+            "hourly": ",".join(hourly_variables),
+            "timezone": "UTC",
+        }
+        response = requests.get(BASE_URL, params=params)
+    else:
+        forecast_url = "https://api.open-meteo.com/v1/forecast"
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "start_date": date_str,
+            "end_date": date_str,
+            "hourly": ",".join(hourly_variables),
+            "timezone": "UTC",
+        }
+        response = requests.get(forecast_url, params=params)
 
     try:
-        if match_datetime.date() >= yesterday:
-            forecast_url = "https://api.open-meteo.com/v1/forecast"
-            params = {
-                "latitude": lat,
-                "longitude": lon,
-                "hourly": ",".join(hourly_variables),
-                "timezone": "UTC",
-                "start_date": start_date.strftime("%Y-%m-%d"),
-                "end_date": end_date.strftime("%Y-%m-%d"),
-                "past_days": 1,
-            }
-            response = requests.get(forecast_url, params=params)
-        else:
-            params = {
-                "latitude": lat,
-                "longitude": lon,
-                "start_date": start_date.strftime("%Y-%m-%d"),
-                "end_date": end_date.strftime("%Y-%m-%d"),
-                "hourly": ",".join(hourly_variables),
-                "timezone": "UTC",
-                "models": "best_match",
-            }
-            response = requests.get(BASE_URL, params=params)
-
         time.sleep(RATE_LIMIT_DELAY)
         response.raise_for_status()
         data = response.json()
 
         if "hourly" in data and any(data["hourly"].values()):
-            logging.info(
-                f"Successfully fetched weather data for coordinates: {lat}, {lon}"
-            )
             return data
         else:
             logging.error(f"Invalid or empty data received: {data}")

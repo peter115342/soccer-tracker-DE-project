@@ -195,7 +195,7 @@ def get_match_data():
             m.homeTeam.id AS home_team_id,
             m.homeTeam.name AS home_team_name,
             t.address AS home_team_address
-        FROM `{client.project}.sports_data_eu.matches_processed` AS m
+        FROM `{client.project}.sports_data_eu.matches_processedINEEDTOFIXTHIS` AS m
         JOIN `{client.project}.sports_data_eu.teams` AS t
         ON m.homeTeam.id = t.id
     """
