@@ -21,6 +21,7 @@ def fetch_weather_by_coordinates(
     if match_datetime.tzinfo is None:
         match_datetime = match_datetime.replace(tzinfo=timezone.utc)
 
+    # Get start and end date as the same day
     date_str = match_datetime.strftime("%Y-%m-%d")
 
     hourly_variables = [
@@ -52,6 +53,7 @@ def fetch_weather_by_coordinates(
             "models": "best_match",
         }
         response = requests.get(BASE_URL, params=params)
+
     else:
         forecast_url = "https://api.open-meteo.com/v1/forecast"
         params = {
@@ -59,7 +61,6 @@ def fetch_weather_by_coordinates(
             "longitude": lon,
             "hourly": ",".join(hourly_variables),
             "timezone": "UTC",
-            "forecast_days": 1,
             "start_date": date_str,
             "end_date": date_str,
         }
