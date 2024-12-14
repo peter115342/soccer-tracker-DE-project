@@ -21,6 +21,8 @@ def fetch_weather_by_coordinates(
     date_str = match_datetime.strftime("%Y-%m-%d")
     current_datetime = datetime.now(timezone.utc)
 
+    if match_datetime.tzinfo is None:
+        match_datetime = match_datetime.replace(tzinfo=timezone.utc)
     hourly_variables = [
         "temperature_2m",
         "relativehumidity_2m",
@@ -38,7 +40,7 @@ def fetch_weather_by_coordinates(
         "windgusts_10m",
     ]
 
-    if match_datetime <= current_datetime:
+    if match_datetime.date() <= current_datetime.date():
         params = {
             "latitude": lat,
             "longitude": lon,
