@@ -106,9 +106,8 @@ def transform_matches(event, context):
             return error_message, 400
 
         workflow_result = trigger_dataform_workflow()
-        logging.info(f"Workflow result: {workflow_result}")  # Debug logging
+        logging.info(f"Workflow result: {workflow_result}")
 
-        # Handle workflow completion time
         workflow_state = workflow_result.state
         status_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

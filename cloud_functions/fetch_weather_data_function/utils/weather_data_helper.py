@@ -16,10 +16,10 @@ RATE_LIMIT_DELAY = 0.5
 def fetch_weather_by_coordinates(
     lat: float, lon: float, match_datetime: datetime
 ) -> Dict[str, Any]:
-    """Fetches historical or forecast weather data from Open-Meteo API based on coordinates and match datetime."""
-
+    match_datetime = match_datetime.astimezone(timezone.utc)
     date_str = match_datetime.strftime("%Y-%m-%d")
-    current_datetime = datetime.now(timezone.utc)
+    current_date = datetime.now(timezone.utc)
+    days_difference = (current_date - match_datetime).days
 
     hourly_variables = [
         "temperature_2m",
@@ -38,47 +38,56 @@ def fetch_weather_by_coordinates(
         "windgusts_10m",
     ]
 
-    if match_datetime <= current_datetime:
-        params = {
-            "latitude": lat,
-            "longitude": lon,
-            "start_date": date_str,
-            "end_date": date_str,
-            "hourly": ",".join(hourly_variables),
-            "timezone": "UTC",
-        }
-        response = requests.get(BASE_URL, params=params)
-    else:
+    def try_forecast_api():
         forecast_url = "https://api.open-meteo.com/v1/forecast"
-        params = {
+        forecast_params = {
             "latitude": lat,
             "longitude": lon,
             "hourly": ",".join(hourly_variables),
+            "past_days": days_difference + 1,
             "timezone": "UTC",
         }
-        response = requests.get(forecast_url, params=params)
-
-    try:
+        response = requests.get(forecast_url, params=forecast_params)
         time.sleep(RATE_LIMIT_DELAY)
         response.raise_for_status()
-        data = response.json()
+        return response.json()
 
-        if "hourly" in data and any(data["hourly"].values()):
-            return data
-        else:
-            logging.error(f"Invalid or empty data received: {data}")
-            return {}
+    if days_difference <= 1:
+        data = try_forecast_api()
+    else:
+        try:
+            archive_url = "https://archive-api.open-meteo.com/v1/archive"
+            params = {
+                "latitude": lat,
+                "longitude": lon,
+                "start_date": date_str,
+                "end_date": date_str,
+                "hourly": ",".join(hourly_variables),
+                "timezone": "UTC",
+            }
+            response = requests.get(archive_url, params=params)
+            time.sleep(RATE_LIMIT_DELAY)
+            response.raise_for_status()
+            data = response.json()
 
-    except requests.exceptions.HTTPError as e:
-        logging.error(
-            f"HTTP error occurred while fetching weather data from Open-Meteo: {e}"
-        )
-        logging.debug(f"Response content: {response.text}")
-    except Exception as e:
-        logging.error(
-            f"An error occurred while fetching weather data from Open-Meteo: {e}"
-        )
+            if (
+                "hourly" in data
+                and "relativehumidity_2m" in data["hourly"]
+                and all(v is None for v in data["hourly"]["relativehumidity_2m"])
+            ):
+                logging.info(
+                    "Archive API returned null values, trying forecast API as fallback"
+                )
+                data = try_forecast_api()
 
+        except Exception as e:
+            logging.info(f"Archive API failed, trying forecast API as fallback: {e}")
+            data = try_forecast_api()
+
+    if "hourly" in data and any(data["hourly"].values()):
+        return data
+
+    logging.error(f"Invalid or empty data received: {data}")
     return {}
 
 
