@@ -16,10 +16,10 @@ RATE_LIMIT_DELAY = 0.5
 def fetch_weather_by_coordinates(
     lat: float, lon: float, match_datetime: datetime
 ) -> Dict[str, Any]:
-    """Fetches historical or forecast weather data from Open-Meteo API based on coordinates and match datetime."""
+    """Fetches historical weather data from Open-Meteo Archive API."""
 
+    match_datetime = match_datetime.astimezone(timezone.utc)
     date_str = match_datetime.strftime("%Y-%m-%d")
-    current_datetime = datetime.now(timezone.utc)
 
     hourly_variables = [
         "temperature_2m",
@@ -38,29 +38,17 @@ def fetch_weather_by_coordinates(
         "windgusts_10m",
     ]
 
-    if match_datetime <= current_datetime:
-        params = {
-            "latitude": lat,
-            "longitude": lon,
-            "start_date": date_str,
-            "end_date": date_str,
-            "hourly": ",".join(hourly_variables),
-            "timezone": "UTC",
-        }
-        response = requests.get(BASE_URL, params=params)
-    else:
-        forecast_url = "https://api.open-meteo.com/v1/forecast"
-        params = {
-            "latitude": lat,
-            "longitude": lon,
-            "start_date": date_str,
-            "end_date": date_str,
-            "hourly": ",".join(hourly_variables),
-            "timezone": "UTC",
-        }
-        response = requests.get(forecast_url, params=params)
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "start_date": date_str,
+        "end_date": date_str,
+        "hourly": ",".join(hourly_variables),
+        "timezone": "UTC",
+    }
 
     try:
+        response = requests.get(BASE_URL, params=params)
         time.sleep(RATE_LIMIT_DELAY)
         response.raise_for_status()
         data = response.json()
@@ -72,14 +60,9 @@ def fetch_weather_by_coordinates(
             return {}
 
     except requests.exceptions.HTTPError as e:
-        logging.error(
-            f"HTTP error occurred while fetching weather data from Open-Meteo: {e}"
-        )
-        logging.debug(f"Response content: {response.text}")
+        logging.error(f"HTTP error: {e}, Response: {response.text}")
     except Exception as e:
-        logging.error(
-            f"An error occurred while fetching weather data from Open-Meteo: {e}"
-        )
+        logging.error(f"Error fetching weather data: {e}")
 
     return {}
 
