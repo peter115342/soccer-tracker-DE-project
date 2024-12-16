@@ -16,10 +16,11 @@ RATE_LIMIT_DELAY = 0.5
 def fetch_weather_by_coordinates(
     lat: float, lon: float, match_datetime: datetime
 ) -> Dict[str, Any]:
-    """Fetches historical weather data from Open-Meteo Archive API."""
-
+    """Fetches weather data using either forecast or archive API based on date."""
     match_datetime = match_datetime.astimezone(timezone.utc)
     date_str = match_datetime.strftime("%Y-%m-%d")
+    current_date = datetime.now(timezone.utc)
+    days_difference = (current_date - match_datetime).days
 
     hourly_variables = [
         "temperature_2m",
@@ -38,17 +39,30 @@ def fetch_weather_by_coordinates(
         "windgusts_10m",
     ]
 
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "start_date": date_str,
-        "end_date": date_str,
-        "hourly": ",".join(hourly_variables),
-        "timezone": "UTC",
-    }
+    if days_difference <= 1:
+        forecast_url = "https://api.open-meteo.com/v1/forecast"
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "hourly": ",".join(hourly_variables),
+            "past_days": days_difference + 1,
+            "timezone": "UTC",
+        }
+        api_url = forecast_url
+    else:
+        archive_url = "https://archive-api.open-meteo.com/v1/archive"
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "start_date": date_str,
+            "end_date": date_str,
+            "hourly": ",".join(hourly_variables),
+            "timezone": "UTC",
+        }
+        api_url = archive_url
 
     try:
-        response = requests.get(BASE_URL, params=params)
+        response = requests.get(api_url, params=params)
         time.sleep(RATE_LIMIT_DELAY)
         response.raise_for_status()
         data = response.json()
