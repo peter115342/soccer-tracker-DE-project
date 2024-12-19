@@ -38,6 +38,8 @@ jobs:
           uv run ruff check .
 
       - name: Run Tests
+        env:
+          API_FOOTBALL_KEY: "dummy_value_for_testing"
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/test_fetch_league_data_function/test_main.py
