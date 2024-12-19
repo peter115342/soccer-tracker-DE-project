@@ -33,7 +33,7 @@ def sample_weather_data():
 
 
 @pytest.mark.asyncio
-async def test_fetch_weather_data_success():
+async def test_fetch_weather_data_success(sample_matches):
     input_data = {
         "data": base64.b64encode(json.dumps({"action": "fetch_weather"}).encode())
     }
