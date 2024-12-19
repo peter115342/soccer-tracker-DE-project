@@ -25,7 +25,7 @@ def get_unique_dates() -> List[str]:
     client = bigquery.Client()
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
-        FROM `{}.soccer_data.matches_processed`
+        FROM `{}.sports_data_eu.matches_processed`
         ORDER BY match_date DESC
     """.format(GCP_PROJECT_ID)
 
