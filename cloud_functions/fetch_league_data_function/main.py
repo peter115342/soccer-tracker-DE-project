@@ -1,12 +1,11 @@
 from typing import List, Dict, Any
 
-from utils.api_helpers_league import get_league_data
-from utils.bigquery_helpers_league import insert_data_into_bigquery
+from .utils.api_helpers_league import get_league_data
+from .utils.bigquery_helpers_league import insert_data_into_bigquery
 import requests
 import json
 import os
 import logging
-
 
 
 def fetch_league_data(event, context):
@@ -17,7 +16,13 @@ def fetch_league_data(event, context):
     """
 
     try:
-        league_codes = ['PL', 'FL1', 'BL1', 'SA', 'PD']  # Premier League, Ligue 1, Bundesliga, Serie A, La Liga
+        league_codes = [
+            "PL",
+            "FL1",
+            "BL1",
+            "SA",
+            "PD",
+        ]  # Premier League, Ligue 1, Bundesliga, Serie A, La Liga
         league_data_list = []
 
         for code in league_codes:
@@ -27,58 +32,62 @@ def fetch_league_data(event, context):
         load_data_into_bigquery(league_data_list)
 
         send_discord_notification(
-            "✅ Fetch League Data: Success", 
+            "✅ Fetch League Data: Success",
             "League data fetched, loaded into BigQuery successfully.",
-            65280  # Green
+            65280,  # Green
         )
-        return 'League data processed and pipeline triggered successfully.', 200
-    
+        return "League data processed and pipeline triggered successfully.", 200
+
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"
         send_discord_notification(
-            "❌ Fetch League Data: Failure", 
+            "❌ Fetch League Data: Failure",
             error_message,
-            16711680  # Red
+            16711680,  # Red
         )
         raise
 
+
 def load_data_into_bigquery(league_data_list: List[Dict[str, Any]]):
-    league_table_name = 'leagues'
-    team_table_name = 'teams'
+    league_table_name = "leagues"
+    team_table_name = "teams"
 
     leagues = []
     teams = []
 
     for league_data in league_data_list:
         league_info = {
-            'id': league_data['id'],
-            'name': league_data['name'],
-            'code': league_data['code'],
-            'logo': league_data.get('emblem'),
-            'current_season_start_date': league_data['currentSeason']['startDate'],
-            'current_season_end_date': league_data['currentSeason']['endDate'],
-            'current_season_matchday': league_data['currentSeason'].get('currentMatchday'),
+            "id": league_data["id"],
+            "name": league_data["name"],
+            "code": league_data["code"],
+            "logo": league_data.get("emblem"),
+            "current_season_start_date": league_data["currentSeason"]["startDate"],
+            "current_season_end_date": league_data["currentSeason"]["endDate"],
+            "current_season_matchday": league_data["currentSeason"].get(
+                "currentMatchday"
+            ),
         }
         leagues.append(league_info)
 
-    if league_data['teams']:
-        for team in league_data['teams']:
+    if league_data["teams"]:
+        for team in league_data["teams"]:
             team_info = {
-                'id': team['id'],
-                'name': team['name'],
-                'tla': team.get('tla'),
-                'logo': team.get('crest'),
-                'venue': team.get('venue'),
-                'address': team.get('address'),
-                'league_id': league_data['id'],
+                "id": team["id"],
+                "name": team["name"],
+                "tla": team.get("tla"),
+                "logo": team.get("crest"),
+                "venue": team.get("venue"),
+                "address": team.get("address"),
+                "league_id": league_data["id"],
             }
             teams.append(team_info)
 
     insert_data_into_bigquery(league_table_name, leagues)
     insert_data_into_bigquery(team_table_name, teams)
 
+
 def send_discord_notification(title: str, message: str, color: int):
-    webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
         logging.warning("Discord webhook URL not set.")
         return
@@ -90,11 +99,13 @@ def send_discord_notification(title: str, message: str, color: int):
                 "description": message,
                 "color": color,
             }
-        ]
+        ],
     }
-    headers = {
-        "Content-Type": "application/json"
-    }
-    response = requests.post(webhook_url, data=json.dumps(discord_data), headers=headers)
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(
+        webhook_url, data=json.dumps(discord_data), headers=headers
+    )
     if response.status_code != 204:
-        logging.error(f"Failed to send Discord notification: {response.status_code}, {response.text}")
+        logging.error(
+            f"Failed to send Discord notification: {response.status_code}, {response.text}"
+        )

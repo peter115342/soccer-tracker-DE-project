@@ -39,6 +39,7 @@ jobs:
 
       - name: Run Tests
         run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/test_fetch_weather_data_function/test_main.py
           uv run pytest tests/test_fetch_match_data_function/test_main.py
           uv run pytest tests/test_convert_match_data_function/test_main.py
