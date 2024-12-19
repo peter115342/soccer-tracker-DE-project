@@ -1,104 +1,123 @@
 import pytest
 from unittest.mock import patch, MagicMock
-import base64
-import json
 from datetime import datetime
+import json
+import base64
+
 from cloud_functions.fetch_weather_data_function.main import (
     fetch_weather_data,
     get_match_data,
 )
 
+GCP_PROJECT_ID = "your-gcp-project-id"
+GCS_BUCKET_NAME = "your-bucket-name"
+
 
 @pytest.fixture
-def sample_matches():
-    return [
+def mock_env_vars(monkeypatch):
+    monkeypatch.setenv("GCP_PROJECT_ID", GCP_PROJECT_ID)
+    monkeypatch.setenv("BUCKET_NAME", GCS_BUCKET_NAME)
+
+
+@pytest.fixture
+def sample_data():
+    return {
+        "data": base64.b64encode(
+            json.dumps({"action": "fetch_weather"}).encode("utf-8")
+        )
+    }
+
+
+def test_fetch_weather_data_no_action(mock_env_vars):
+    data = {"data": base64.b64encode(json.dumps({}).encode("utf-8"))}
+    result = fetch_weather_data(data, None)
+    assert result == ("Invalid message format or incorrect action", 500)
+
+
+@patch("cloud_functions.fetch_weather_data_function.main.get_match_data")
+@patch("cloud_functions.fetch_weather_data_function.main.pubsub_v1.PublisherClient")
+@patch("cloud_functions.fetch_weather_data_function.main.storage.Client")
+def test_fetch_weather_data_no_matches(
+    mock_storage_client,
+    mock_publisher_client,
+    mock_get_match_data,
+    sample_data,
+    mock_env_vars,
+):
+    mock_get_match_data.return_value = []
+    mock_publisher_instance = mock_publisher_client.return_value
+    mock_publisher_instance.topic_path.return_value = "projects/{}/topics/{}".format(
+        GCP_PROJECT_ID, "convert_weather_to_parquet_topic"
+    )
+
+    result = fetch_weather_data(sample_data, None)
+    assert result == ("No matches to process weather data for.", 200)
+    mock_publisher_instance.publish.assert_called_once()
+
+
+@patch("cloud_functions.fetch_weather_data_function.main.fetch_weather_by_coordinates")
+@patch("cloud_functions.fetch_weather_data_function.main.save_weather_to_gcs")
+@patch("cloud_functions.fetch_weather_data_function.main.get_match_data")
+@patch("cloud_functions.fetch_weather_data_function.main.pubsub_v1.PublisherClient")
+@patch("cloud_functions.fetch_weather_data_function.main.storage.Client")
+def test_fetch_weather_data_with_matches(
+    mock_storage_client,
+    mock_publisher_client,
+    mock_get_match_data,
+    mock_save_weather_to_gcs,
+    mock_fetch_weather,
+    sample_data,
+    mock_env_vars,
+):
+    mock_get_match_data.return_value = [
         {
-            "id": 1234,
-            "utcDate": "2023-01-01T15:00:00Z",
-            "homeTeam": {"id": 1, "name": "Test Team", "address": "51.123,-0.456"},
-            "competition": {"code": "PL", "name": "Premier League"},
+            "id": 1,
+            "utcDate": datetime.now().isoformat(),
+            "homeTeam": {"address": "40.7128, -74.0060"},
         }
     ]
 
+    mock_bucket = MagicMock()
+    mock_blob = MagicMock()
+    mock_blob.exists.return_value = False
+    mock_bucket.blob.return_value = mock_blob
+    mock_storage_client.return_value.bucket.return_value = mock_bucket
 
-@pytest.fixture
-def sample_weather_data():
-    return {
-        "hourly": {
-            "temperature_2m": [20.5],
-            "relativehumidity_2m": [65],
-            "precipitation": [0],
-        }
-    }
+    mock_fetch_weather.return_value = {"weather": "sunny"}
+    mock_save_weather_to_gcs.return_value = True
 
+    mock_publisher_instance = mock_publisher_client.return_value
+    mock_publisher_instance.topic_path.return_value = "projects/{}/topics/{}".format(
+        GCP_PROJECT_ID, "convert_weather_to_parquet_topic"
+    )
+    mock_future = MagicMock()
+    mock_future.result.return_value = "message-id"
+    mock_publisher_instance.publish.return_value = mock_future
 
-@pytest.mark.asyncio
-async def test_fetch_weather_data_success(sample_matches):
-    input_data = {
-        "data": base64.b64encode(json.dumps({"action": "fetch_weather"}).encode())
-    }
-
-    with (
-        patch(
-            "cloud_functions.fetch_weather_data_function.main.get_match_data"
-        ) as mock_get_matches,
-        patch(
-            "cloud_functions.fetch_weather_data_function.main.fetch_weather_by_coordinates"
-        ) as mock_fetch_weather,
-        patch(
-            "cloud_functions.fetch_weather_data_function.main.save_weather_to_gcs"
-        ) as mock_save,
-        patch("google.cloud.pubsub_v1.PublisherClient") as mock_publisher,
-    ):
-        mock_get_matches.return_value = sample_matches()
-        mock_fetch_weather.return_value = sample_weather_data()
-        mock_save.return_value = True
-        mock_publisher.return_value.topic_path.return_value = "test-topic"
-
-        result, status_code = fetch_weather_data(input_data, None)
-
-        assert status_code == 200
-        assert result == "Process completed."
+    result = fetch_weather_data(sample_data, None)
+    assert result == ("Process completed.", 200)
+    mock_fetch_weather.assert_called_once()
+    mock_save_weather_to_gcs.assert_called_once()
+    mock_publisher_instance.publish.assert_called_once()
 
 
-@pytest.mark.asyncio
-async def test_fetch_weather_data_no_matches():
-    input_data = {
-        "data": base64.b64encode(json.dumps({"action": "fetch_weather"}).encode())
-    }
+@patch("cloud_functions.fetch_weather_data_function.main.bigquery.Client")
+def test_get_match_data(mock_bq_client, mock_env_vars):
+    mock_query_job = MagicMock()
+    mock_row = MagicMock()
+    mock_row.match_id = 1
+    mock_row.utcDate = datetime.now()
+    mock_row.competition_code = "PL"
+    mock_row.competition_name = "Premier League"
+    mock_row.home_team_id = 100
+    mock_row.home_team_name = "Home Team"
+    mock_row.home_team_address = "Address"
 
-    with (
-        patch(
-            "cloud_functions.fetch_weather_data_function.main.get_match_data"
-        ) as mock_get_matches,
-        patch("google.cloud.pubsub_v1.PublisherClient") as mock_publisher,
-    ):
-        mock_get_matches.return_value = []
-        mock_publisher.return_value.topic_path.return_value = "test-topic"
+    mock_query_job.result.return_value = [mock_row]
+    mock_bq_client.return_value.query.return_value = mock_query_job
 
-        result, status_code = fetch_weather_data(input_data, None)
-
-        assert status_code == 200
-        assert "No matches to process" in result
-
-
-def test_get_match_data():
-    with patch("google.cloud.bigquery.Client") as mock_client:
-        mock_query_job = MagicMock()
-        mock_query_job.result.return_value = [
-            MagicMock(
-                match_id=1234,
-                utcDate=datetime(2023, 1, 1, 15, 0),
-                competition_code="PL",
-                competition_name="Premier League",
-                home_team_id=1,
-                home_team_name="Test Team",
-                home_team_address="51.123,-0.456",
-            )
-        ]
-        mock_client.return_value.query.return_value = mock_query_job
-
-        results = get_match_data()
-
-        assert len(results) == 1
-        assert results[0]["id"] == 1234
+    matches = get_match_data()
+    assert len(matches) == 1
+    assert matches[0]["id"] == 1
+    assert matches[0]["homeTeam"]["id"] == 100
+    assert matches[0]["homeTeam"]["address"] == "Address"
