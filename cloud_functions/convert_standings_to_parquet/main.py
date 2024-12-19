@@ -78,23 +78,20 @@ def transform_to_parquet(event, context):
             blob = bucket.blob(json_file)
             json_content = json.loads(blob.download_as_string())
 
-            if isinstance(json_content, dict):
-                flattened_standings = []
-                for standing in json_content.get("standings", []):
-                    for table_row in standing.get("table", []):
-                        row_data = {
-                            "fetchDate": json_content.get("fetchDate"),
-                            "competitionCode": json_content.get("competitionCode"),
-                            "season": json_content.get("season", {}).get("id"),
-                            "stage": json_content.get("stage"),
-                            "type": standing.get("type"),
-                            **table_row,
-                        }
-                        flattened_standings.append(row_data)
+            flattened_data = []
+            for standing_type in json_content.get("standings", []):
+                table_type = standing_type.get("type", "TOTAL")
+                for team in standing_type.get("table", []):
+                    team_data = {
+                        "fetchDate": json_content["fetchDate"],
+                        "competitionCode": json_content["competitionCode"],
+                        "season": json_content["season"],
+                        "standingType": table_type,
+                        **team,
+                    }
+                    flattened_data.append(team_data)
 
-                json_content = flattened_standings
-
-            df = pl.DataFrame(json_content)
+            df = pl.DataFrame(flattened_data)
 
             df.write_parquet("/tmp/temp.parquet")
             parquet_blob.upload_from_filename("/tmp/temp.parquet")

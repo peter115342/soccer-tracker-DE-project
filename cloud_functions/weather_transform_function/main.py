@@ -4,7 +4,7 @@ import os
 import logging
 import time
 import requests
-from google.cloud import bigquery, dataform_v1beta1
+from google.cloud import bigquery, dataform_v1beta1, pubsub_v1
 from datetime import datetime
 
 
@@ -128,6 +128,25 @@ def transform_weather(event, context):
         send_discord_notification(
             "✅ Weather Transform: Success", status_message, 65280
         )
+
+        if workflow_state == dataform_v1beta1.WorkflowInvocation.State.SUCCEEDED:
+            publisher = pubsub_v1.PublisherClient()
+            standings_topic_path = publisher.topic_path(
+                os.environ["GCP_PROJECT_ID"], "fetch_standings_data_topic"
+            )
+
+            standings_message = {"action": "fetch_standings"}
+
+            future = publisher.publish(
+                standings_topic_path,
+                data=json.dumps(standings_message).encode("utf-8"),
+                timestamp=datetime.now().isoformat(),
+            )
+
+            publish_result = future.result()
+            logging.info(
+                f"Published trigger message to fetch_standings_data_topic with ID: {publish_result}"
+            )
 
         return status_message, 200
 

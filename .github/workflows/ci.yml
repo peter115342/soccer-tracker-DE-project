@@ -73,6 +73,10 @@ jobs:
           uv run gcloud pubsub topics create weather_to_bigquery_topic || true
           uv run gcloud pubsub topics create transform_matches_topic || true
           uv run gcloud pubsub topics create transform_weather_topic || true
+          uv run gcloud pubsub topics create fetch_standings_data_topic || true
+          uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
+          uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
+          uv run gcloud pubsub topics create standings_to_bigquery_topic || true
 
       # - name: Deploy fetch_league_data Function
       #   run: |
@@ -178,15 +182,41 @@ jobs:
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
-      # - name: Deploy weather_transform Function
-      #   run: |
-      #     cd cloud_functions/weather_transform_function
-      #     uv run gcloud functions deploy transform_weather \
-      #       --runtime python39 \
-      #       --trigger-topic transform_weather_topic \
-      #       --entry-point transform_weather \
-      #       --timeout 540s \
-      #       --memory 1GiB \
-      #       --region europe-central2 \
-      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
-      #     cd ../..
+      - name: Deploy weather_transform Function
+        run: |
+          cd cloud_functions/weather_transform_function
+          uv run gcloud functions deploy transform_weather \
+            --runtime python39 \
+            --trigger-topic transform_weather_topic \
+            --entry-point transform_weather \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
+          cd ../..
+
+      - name: Deploy fetch_standings_data Function
+        run: |
+          cd cloud_functions/fetch_standings_data_function
+          uv run gcloud functions deploy fetch_standings_data \
+          --runtime python39 \
+          --trigger-topic fetch_standings_data_topic \
+          --entry-point fetch_standings_data \
+          --timeout 540s \
+          --memory 1GiB \
+          --region europe-central2 \
+          --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},BUCKET_NAME=${{secrets.BUCKET_NAME}}"
+          cd ../..
+
+      - name: Deploy convert_standings_data Function
+        run: |
+          cd cloud_functions/convert_standings_data_function
+          uv run gcloud functions deploy transform_standings_to_parquet \
+          --runtime python39 \
+          --trigger-topic convert_standings_to_parquet_topic \
+          --entry-point transform_to_parquet \
+          --timeout 540s \
+          --memory 1GiB \
+          --region europe-central2 \
+          --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+          cd ../..
