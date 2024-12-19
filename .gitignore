@@ -20,3 +20,5 @@ service-account-key.json
 .DS_Store
 dataform.json
 delete_files_by_match_id.ps1
+soccer_tracker_de_project.egg-info
+match_ids.json

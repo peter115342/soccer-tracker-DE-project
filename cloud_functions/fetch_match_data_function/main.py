@@ -4,7 +4,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from google.cloud import pubsub_v1
-from utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs
+from .utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs
 
 
 def fetch_football_data(event, context):

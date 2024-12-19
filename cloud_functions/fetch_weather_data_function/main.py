@@ -3,7 +3,7 @@ import os
 import json
 import requests
 import base64
-from utils.weather_data_helper import fetch_weather_by_coordinates, save_weather_to_gcs
+from .utils.weather_data_helper import fetch_weather_by_coordinates, save_weather_to_gcs
 from google.cloud import bigquery, pubsub_v1, storage
 from datetime import datetime
 
