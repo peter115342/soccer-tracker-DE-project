@@ -132,7 +132,8 @@ def transform_weather(event, context):
         if workflow_state == dataform_v1beta1.WorkflowInvocation.State.SUCCEEDED:
             publisher = pubsub_v1.PublisherClient()
             standings_topic_path = publisher.topic_path(
-                os.environ["GCP_PROJECT_ID"], "fetch_standings_data_topic"
+                os.environ["GCP_PROJECT_ID"],
+                "fetch_standings_data_topic",
             )
 
             standings_message = {"action": "fetch_standings"}
