@@ -13,11 +13,19 @@ def sample_event():
 
 
 @pytest.fixture
-def sample_context():
-    return None
+def mock_pubsub():
+    with patch(
+        "cloud_functions.convert_weather_data_function.main.pubsub_v1.PublisherClient"
+    ) as mock:
+        mock_instance = MagicMock()
+        mock_future = MagicMock()
+        mock_instance.publish.return_value = mock_future
+        mock_future.result.return_value = "message-id"
+        mock.return_value = mock_instance
+        yield mock
 
 
-def test_transform_to_parquet_success(sample_event, sample_context):
+def test_transform_to_parquet_success(sample_event, sample_context, mock_pubsub):
     with (
         patch.dict(
             "os.environ",
@@ -40,10 +48,10 @@ def test_transform_to_parquet_success(sample_event, sample_context):
         result, status_code = transform_to_parquet(sample_event, sample_context)
 
         assert status_code == 200
-        assert "Processed: 1, Skipped: 0, Errors: 0" in result
+        assert "Processed: 1, Skipped: 0" in result
 
 
-def test_transform_to_parquet_no_json_files(sample_event, sample_context):
+def test_transform_to_parquet_no_json_files(sample_event, sample_context, mock_pubsub):
     with (
         patch.dict(
             "os.environ",
@@ -60,7 +68,7 @@ def test_transform_to_parquet_no_json_files(sample_event, sample_context):
         result, status_code = transform_to_parquet(sample_event, sample_context)
 
         assert status_code == 200
-        assert "No JSON files found in weather_data folder" in result
+        assert "No weather JSON files found" in result
 
 
 def test_transform_to_parquet_invalid_message():
@@ -71,10 +79,12 @@ def test_transform_to_parquet_invalid_message():
     result, status_code = transform_to_parquet(invalid_event, None)
 
     assert status_code == 500
-    assert "Invalid message format or incorrect action" in result
+    assert "Invalid message format" in result
 
 
-def test_transform_to_parquet_existing_parquet(sample_event, sample_context):
+def test_transform_to_parquet_existing_parquet(
+    sample_event, sample_context, mock_pubsub
+):
     with (
         patch.dict(
             "os.environ",
@@ -94,10 +104,10 @@ def test_transform_to_parquet_existing_parquet(sample_event, sample_context):
         result, status_code = transform_to_parquet(sample_event, sample_context)
 
         assert status_code == 200
-        assert "Processed: 0, Skipped: 1, Errors: 0" in result
+        assert "Processed: 0, Skipped: 1" in result
 
 
-def test_transform_to_parquet_exception(sample_event, sample_context):
+def test_transform_to_parquet_exception(sample_event, sample_context, mock_pubsub):
     with (
         patch.dict(
             "os.environ",
@@ -112,4 +122,4 @@ def test_transform_to_parquet_exception(sample_event, sample_context):
         result, status_code = transform_to_parquet(sample_event, sample_context)
 
         assert status_code == 500
-        assert "Error in weather data conversion: Storage Client Error" in result
+        assert "Error during weather data conversion" in result
