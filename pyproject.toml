@@ -4,11 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-   "ruff>=0.8.0",
-    "mypy>=1.13.0",
-    "pytest>=8.3.3",
-]
+dependencies = ["ruff>=0.8.0", "mypy>=1.13.0", "pytest>=8.3.3"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
