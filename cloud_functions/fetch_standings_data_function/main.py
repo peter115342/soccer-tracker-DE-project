@@ -42,28 +42,36 @@ def fetch_standings_data(event, context):
             )
             return "No dates to process.", 200
 
-        processed_count = 0
+        total_dates = len(unique_dates)
+        processed_dates_count = 0
+        processed_standings_count = 0
         error_count = 0
 
         for date in unique_dates:
             if should_fetch_standings(date, processed_dates):
                 standings_list = fetch_standings_for_date(date)
+                processed_dates_count += 1
 
                 for standings in standings_list:
                     try:
-                        competition_code = standings["competitionCode"]
-                        save_standings_to_gcs(standings, date, competition_code)
-                        processed_count += 1
+                        competition_id = standings["competitionId"]
+                        save_standings_to_gcs(standings, date, competition_id)
+                        processed_standings_count += 1
                     except Exception as e:
                         error_count += 1
                         logging.error(f"Error processing standings for {date}: {e}")
             else:
                 logging.info(f"Skipping {date} - already processed")
 
-        success_message = f"Processed standings for {processed_count} date-competition pairs. Errors: {error_count}"
+        success_message = (
+            f"Processed {processed_dates_count} dates out of {total_dates}\n"
+            f"Total standings entries: {processed_standings_count}\n"
+            f"Errors: {error_count}"
+        )
+
         logging.info(success_message)
         send_discord_notification(
-            "✅ Fetch Standings Data: Success", success_message, 65280
+            "✅ Fetch Standings Data: Complete", success_message, 65280
         )
 
         publisher = pubsub_v1.PublisherClient()
@@ -81,7 +89,7 @@ def fetch_standings_data(event, context):
         publish_result = future.result()
         logging.info(f"Published trigger message with ID: {publish_result}")
 
-        return "Process completed.", 200
+        return "Process completed successfully.", 200
 
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"

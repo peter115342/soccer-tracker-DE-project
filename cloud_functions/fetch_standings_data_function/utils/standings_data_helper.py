@@ -48,6 +48,20 @@ def get_processed_standings_dates() -> List[str]:
     return list(processed_dates)
 
 
+def get_competitions_for_date(date: str) -> List[str]:
+    """Get competitions that had matches on a specific date."""
+    client = bigquery.Client()
+    query = f"""
+        SELECT DISTINCT competition.id as competition_id
+        FROM `{GCP_PROJECT_ID}.sports_data_eu.matches_processed`
+        WHERE DATE(utcDate) = '{date}'
+        AND competition.id IN (2021, 2014, 2019, 2015, 2002)
+    """
+
+    query_job = client.query(query)
+    return [str(row.competition_id) for row in query_job]
+
+
 def should_fetch_standings(date: str, processed_dates: List[str]) -> bool:
     """Determine if standings should be fetched for a given date."""
     today = datetime.now().strftime("%Y-%m-%d")
@@ -61,10 +75,11 @@ def should_fetch_standings(date: str, processed_dates: List[str]) -> bool:
 
 
 def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
-    """Fetches standings for all competitions for a specific date."""
+    """Fetches standings only for competitions that had matches on the specific date."""
     all_standings = []
+    competitions = get_competitions_for_date(date)
 
-    for competition in COMPETITION_CODES:
+    for competition in competitions:
         logging.info(f"Fetching standings for competition {competition} on {date}")
         url = f"{BASE_URL}/competitions/{competition}/standings"
         params = {"date": date}
@@ -80,7 +95,7 @@ def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
             standings_data = response.json()
 
             standings_data["fetchDate"] = date
-            standings_data["competitionCode"] = competition
+            standings_data["competitionId"] = competition
             all_standings.append(standings_data)
 
             time.sleep(REQUEST_INTERVAL)
