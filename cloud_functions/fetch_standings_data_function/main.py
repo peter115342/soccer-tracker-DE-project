@@ -10,62 +10,53 @@ from .utils.standings_data_helper import (
     fetch_standings_for_date,
     save_standings_to_gcs,
     get_processed_standings_dates,
-    should_fetch_standings,
 )
 
 
 def fetch_standings_data(event, context):
-    """
-    Cloud Function to fetch standings data from top 5 leagues and save to GCS,
-    with Discord notifications for success or failure and Pub/Sub trigger for next function.
-    """
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
 
         if message_data.get("action") != "fetch_standings":
-            error_message = "Invalid message format or action."
-            logging.error(error_message)
-            send_discord_notification(
-                "❌ Fetch Standings Data: Invalid Trigger", error_message, 16711680
-            )
-            return error_message, 400
+            raise ValueError("Invalid message format or action")
 
         unique_dates = get_unique_dates()
         processed_dates = get_processed_standings_dates()
 
-        if not unique_dates:
-            message = "No match dates found in matches_processed table."
+        dates_to_process = [
+            date for date in unique_dates if date not in processed_dates
+        ]
+
+        if not dates_to_process:
+            message = "No new dates to process"
             logging.info(message)
             send_discord_notification(
-                "ℹ️ Fetch Standings Data: No Dates", message, 16776960
+                "ℹ️ Fetch Standings Data: No New Dates", message, 16776960
             )
-            return "No dates to process.", 200
+            return "No new dates to process.", 200
 
-        total_dates = len(unique_dates)
-        processed_dates_count = 0
-        processed_standings_count = 0
+        # Process each date
+        processed_count = 0
         error_count = 0
 
-        for date in unique_dates:
-            if should_fetch_standings(date, processed_dates):
+        for date in dates_to_process:
+            try:
                 standings_list = fetch_standings_for_date(date)
-                processed_dates_count += 1
 
                 for standings in standings_list:
-                    try:
-                        competition_id = standings["competitionId"]
-                        save_standings_to_gcs(standings, date, competition_id)
-                        processed_standings_count += 1
-                    except Exception as e:
-                        error_count += 1
-                        logging.error(f"Error processing standings for {date}: {e}")
-            else:
-                logging.info(f"Skipping {date} - already processed")
+                    competition_id = standings["competitionId"]
+                    save_standings_to_gcs(standings, date, competition_id)
+                    processed_count += 1
 
+            except Exception as e:
+                error_count += 1
+                logging.error(f"Error processing date {date}: {str(e)}")
+
+        # Send success notification
         success_message = (
-            f"Processed {processed_dates_count} dates out of {total_dates}\n"
-            f"Total standings entries: {processed_standings_count}\n"
+            f"Processed {len(dates_to_process)} new dates\n"
+            f"Total standings entries: {processed_count}\n"
             f"Errors: {error_count}"
         )
 
@@ -86,8 +77,7 @@ def fetch_standings_data(event, context):
             timestamp=datetime.now().isoformat(),
         )
 
-        publish_result = future.result()
-        logging.info(f"Published trigger message with ID: {publish_result}")
+        future.result()
 
         return "Process completed successfully.", 200
 

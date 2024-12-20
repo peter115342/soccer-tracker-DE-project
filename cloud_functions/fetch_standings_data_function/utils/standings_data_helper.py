@@ -17,25 +17,37 @@ HEADERS = {"X-Auth-Token": API_KEY}
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
-COMPETITION_CODES = ["PL", "BL1", "PD", "SA", "FL1"]
-REQUEST_INTERVAL = 6
+COMPETITION_MAPPING = {
+    "2021": "PL",  # Premier League
+    "2014": "PD",  # La Liga
+    "2019": "SA",  # Serie A
+    "2015": "FL1",  # Ligue 1
+    "2002": "BL1",  # Bundesliga
+}
+REQUEST_INTERVAL = 6  # Seconds between API requests
 
 
 def get_unique_dates() -> List[str]:
-    """Fetch unique utcDates from matches_processed table."""
+    """
+    Fetch only unprocessed unique dates from matches_processed table.
+    Returns only dates up to current date in descending order.
+    """
     client = bigquery.Client()
     query = f"""
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `{GCP_PROJECT_ID}.sports_data_eu.matches_processed`
+        WHERE DATE(utcDate) <= CURRENT_DATE()
         ORDER BY match_date DESC
     """
-
     query_job = client.query(query)
     return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
 
 
 def get_processed_standings_dates() -> List[str]:
-    """Get dates that already have standings data in GCS."""
+    """
+    Get dates that already have standings data in GCS.
+    Checks existing files in the standings_data/ prefix.
+    """
     storage_client = storage.Client(project=GCP_PROJECT_ID)
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
     blobs = bucket.list_blobs(prefix="standings_data/")
@@ -48,22 +60,11 @@ def get_processed_standings_dates() -> List[str]:
     return list(processed_dates)
 
 
-def get_competitions_for_date(date: str) -> List[str]:
-    """Get competitions that had matches on a specific date."""
-    client = bigquery.Client()
-    query = f"""
-        SELECT DISTINCT competition.id as competition_id
-        FROM `{GCP_PROJECT_ID}.sports_data_eu.matches_processed`
-        WHERE DATE(utcDate) = '{date}'
-        AND competition.id IN (2021, 2014, 2019, 2015, 2002)
-    """
-
-    query_job = client.query(query)
-    return [str(row.competition_id) for row in query_job]
-
-
 def should_fetch_standings(date: str, processed_dates: List[str]) -> bool:
-    """Determine if standings should be fetched for a given date."""
+    """
+    Determine if standings should be fetched for a given date.
+    Returns True for today's date or unprocessed past dates.
+    """
     today = datetime.now().strftime("%Y-%m-%d")
 
     if date == today:
@@ -75,13 +76,17 @@ def should_fetch_standings(date: str, processed_dates: List[str]) -> bool:
 
 
 def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
-    """Fetches standings only for competitions that had matches on the specific date."""
+    """
+    Fetches standings for all competitions on a specific date.
+    Handles rate limiting and includes error handling for each request.
+    """
     all_standings = []
-    competitions = get_competitions_for_date(date)
 
-    for competition in competitions:
-        logging.info(f"Fetching standings for competition {competition} on {date}")
-        url = f"{BASE_URL}/competitions/{competition}/standings"
+    for comp_id, comp_code in COMPETITION_MAPPING.items():
+        logging.info(
+            f"Fetching standings for competition {comp_id} ({comp_code}) on {date}"
+        )
+        url = f"{BASE_URL}/competitions/{comp_code}/standings"
         params = {"date": date}
 
         try:
@@ -95,15 +100,15 @@ def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
             standings_data = response.json()
 
             standings_data["fetchDate"] = date
-            standings_data["competitionId"] = competition
+            standings_data["competitionId"] = comp_id
             all_standings.append(standings_data)
 
             time.sleep(REQUEST_INTERVAL)
 
         except requests.exceptions.HTTPError as e:
-            logging.error(f"HTTP error occurred for competition {competition}: {e}")
+            logging.error(f"HTTP error occurred for competition {comp_code}: {e}")
         except Exception as e:
-            logging.error(f"An error occurred for competition {competition}: {e}")
+            logging.error(f"An error occurred for competition {comp_code}: {e}")
 
     return all_standings
 
@@ -111,7 +116,10 @@ def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
 def save_standings_to_gcs(
     standings_data: dict, date: str, competition_code: str
 ) -> None:
-    """Saves the standings data to GCS using date_competitioncode.json format."""
+    """
+    Saves the standings data to GCS using date_competitioncode.json format.
+    Includes error handling and logging for storage operations.
+    """
     storage_client = storage.Client(project=GCP_PROJECT_ID)
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
 
@@ -124,7 +132,8 @@ def save_standings_to_gcs(
         )
         logging.info(f"Saved standings for {competition_code} on {date} to GCS")
     except Exception as e:
-        logging.error(
+        error_msg = (
             f"Error saving standings for {competition_code} on {date} to GCS: {e}"
         )
-        raise
+        logging.error(error_msg)
+        raise Exception(error_msg)
