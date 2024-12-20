@@ -52,22 +52,22 @@ def should_fetch_standings(date: str, processed_dates: List[str]) -> bool:
     """Determine if standings should be fetched for a given date"""
     today = datetime.now().strftime("%Y-%m-%d")
 
-    if date == today:
+    if date <= today and date not in processed_dates:
         return True
-    elif date > today:
-        return False
-    else:
-        return date not in processed_dates
+    return False
 
 
 def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
     """Fetches standings for all competitions for a specific date"""
     all_standings = []
 
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
+    season = date_obj.year if date_obj.month >= 7 else date_obj.year - 1
+
     for competition in COMPETITION_CODES:
         logging.info(f"Fetching standings for competition {competition} on {date}")
         url = f"{BASE_URL}/competitions/{competition}/standings"
-        params = {"season": date[:4]}
+        params = {"season": season}
 
         try:
             response = requests.get(url, headers=HEADERS, params=params)
@@ -82,6 +82,10 @@ def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
             standings_data["fetchDate"] = date
             standings_data["competitionCode"] = competition
             all_standings.append(standings_data)
+
+            logging.info(
+                f"Successfully fetched standings for {competition} season {season}"
+            )
 
             time.sleep(REQUEST_INTERVAL)
 
