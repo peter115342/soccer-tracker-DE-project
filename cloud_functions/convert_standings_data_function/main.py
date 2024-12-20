@@ -84,7 +84,7 @@ def transform_to_parquet(event, context):
                 for team in standing_type.get("table", []):
                     team_data = {
                         "fetchDate": json_content["fetchDate"],
-                        "competitionId": json_content["competitionId"],
+                        "competitionId": int(json_content["competitionId"]),
                         "season": json_content["season"],
                         "standingType": table_type,
                         **team,
