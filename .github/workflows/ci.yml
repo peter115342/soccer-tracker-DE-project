@@ -150,7 +150,7 @@ jobs:
       #       --runtime python39 \
       #       --trigger-topic match_to_bigquery_topic \
       #       --entry-point load_matches_to_bigquery \
-      #       --timeout 1200s \
+      #       --timeout 540s \
       #       --memory 1GiB \
       #       --region europe-central2 \
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
@@ -163,7 +163,7 @@ jobs:
       #       --runtime python39 \
       #       --trigger-topic weather_to_bigquery_topic \
       #       --entry-point load_weather_to_bigquery \
-      #       --timeout 1200s \
+      #       --timeout 540s \
       #       --memory 1GiB \
       #       --region europe-central2 \
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
@@ -228,7 +228,7 @@ jobs:
             --runtime python39 \
             --trigger-topic standings_to_bigquery_topic \
             --entry-point load_standings_to_bigquery \
-            --timeout 1200s \
+            --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
             --set-env-vars "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }},BUCKET_NAME=${{ secrets.BUCKET_NAME }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
