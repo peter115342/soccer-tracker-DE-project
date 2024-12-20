@@ -49,7 +49,7 @@ def get_matches_data() -> List[Dict]:
             "competition_code": competition_map.get(row.competition_id),
         }
         for row in query_job
-        if row.competition in competition_map
+        if row.competition_id in competition_map
     ]
 
 
