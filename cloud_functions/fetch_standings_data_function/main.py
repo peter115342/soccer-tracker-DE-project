@@ -9,6 +9,8 @@ from .utils.standings_data_helper import (
     get_unique_dates,
     fetch_standings_for_date,
     save_standings_to_gcs,
+    get_processed_standings_dates,
+    should_fetch_standings,
 )
 
 
@@ -28,7 +30,10 @@ def fetch_standings_data(event, context):
                 "❌ Fetch Standings Data: Invalid Trigger", error_message, 16711680
             )
             return error_message, 400
+
         unique_dates = get_unique_dates()
+        processed_dates = get_processed_standings_dates()
+
         if not unique_dates:
             message = "No match dates found in matches_processed table."
             logging.info(message)
@@ -37,22 +42,25 @@ def fetch_standings_data(event, context):
             )
             return "No dates to process.", 200
 
-        processed_dates = 0
+        processed_count = 0
         error_count = 0
 
         for date in unique_dates:
-            standings_list = fetch_standings_for_date(date)
+            if should_fetch_standings(date, processed_dates):
+                standings_list = fetch_standings_for_date(date)
 
-            for standings in standings_list:
-                try:
-                    competition_code = standings["competitionCode"]
-                    save_standings_to_gcs(standings, date, competition_code)
-                    processed_dates += 1
-                except Exception as e:
-                    error_count += 1
-                    logging.error(f"Error processing standings for {date}: {e}")
+                for standings in standings_list:
+                    try:
+                        competition_code = standings["competitionCode"]
+                        save_standings_to_gcs(standings, date, competition_code)
+                        processed_count += 1
+                    except Exception as e:
+                        error_count += 1
+                        logging.error(f"Error processing standings for {date}: {e}")
+            else:
+                logging.info(f"Skipping {date} - already processed")
 
-        success_message = f"Processed standings for {processed_dates} date-competition pairs. Errors: {error_count}"
+        success_message = f"Processed standings for {processed_count} date-competition pairs. Errors: {error_count}"
         logging.info(success_message)
         send_discord_notification(
             "✅ Fetch Standings Data: Success", success_message, 65280

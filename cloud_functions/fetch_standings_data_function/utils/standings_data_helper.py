@@ -3,6 +3,7 @@ import json
 import logging
 import time
 from typing import List, Dict, Any
+from datetime import datetime
 import requests
 from google.cloud import storage
 from google.cloud import bigquery
@@ -31,6 +32,32 @@ def get_unique_dates() -> List[str]:
 
     query_job = client.query(query)
     return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
+
+
+def get_processed_standings_dates() -> List[str]:
+    """Get dates that already have standings data in GCS"""
+    storage_client = storage.Client(project=GCP_PROJECT_ID)
+    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+    blobs = bucket.list_blobs(prefix="standings_data/")
+
+    processed_dates = set()
+    for blob in blobs:
+        date = blob.name.split("/")[1].split("_")[0]
+        processed_dates.add(date)
+
+    return list(processed_dates)
+
+
+def should_fetch_standings(date: str, processed_dates: List[str]) -> bool:
+    """Determine if standings should be fetched for a given date"""
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    if date == today:
+        return True
+    elif date > today:
+        return False
+    else:
+        return date not in processed_dates
 
 
 def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
