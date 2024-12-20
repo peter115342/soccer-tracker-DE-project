@@ -141,7 +141,7 @@ def transform_weather(event, context):
             future = publisher.publish(
                 standings_topic_path,
                 data=json.dumps(standings_message).encode("utf-8"),
-                timestamp=datetime.now().isoformat(),
+                attributes={"timestamp": datetime.now().isoformat()},
             )
 
             publish_result = future.result()

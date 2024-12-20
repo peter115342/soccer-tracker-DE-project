@@ -1,5 +1,6 @@
 import logging
 import json
+import base64
 import os
 from datetime import datetime
 from google.cloud import pubsub_v1
@@ -17,6 +18,16 @@ def fetch_standings_data(event, context):
     with Discord notifications for success or failure and Pub/Sub trigger for next function.
     """
     try:
+        pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
+        message_data = json.loads(pubsub_message)
+
+        if message_data.get("action") != "fetch_standings":
+            error_message = "Invalid message format or action."
+            logging.error(error_message)
+            send_discord_notification(
+                "❌ Fetch Standings Data: Invalid Trigger", error_message, 16711680
+            )
+            return error_message, 400
         unique_dates = get_unique_dates()
         if not unique_dates:
             message = "No match dates found in matches_processed table."
