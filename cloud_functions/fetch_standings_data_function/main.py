@@ -34,36 +34,33 @@ def fetch_standings_data(event, context):
             send_discord_notification(
                 "ℹ️ Fetch Standings Data: No New Dates", message, 16776960
             )
-            return "No new dates to process.", 200
+        else:
+            processed_count = 0
+            error_count = 0
 
-        # Process each date
-        processed_count = 0
-        error_count = 0
+            for date in dates_to_process:
+                try:
+                    standings_list = fetch_standings_for_date(date)
 
-        for date in dates_to_process:
-            try:
-                standings_list = fetch_standings_for_date(date)
+                    for standings in standings_list:
+                        competition_id = standings["competitionId"]
+                        save_standings_to_gcs(standings, date, competition_id)
+                        processed_count += 1
 
-                for standings in standings_list:
-                    competition_id = standings["competitionId"]
-                    save_standings_to_gcs(standings, date, competition_id)
-                    processed_count += 1
+                except Exception as e:
+                    error_count += 1
+                    logging.error(f"Error processing date {date}: {str(e)}")
 
-            except Exception as e:
-                error_count += 1
-                logging.error(f"Error processing date {date}: {str(e)}")
+            success_message = (
+                f"Processed {len(dates_to_process)} new dates\n"
+                f"Total standings entries: {processed_count}\n"
+                f"Errors: {error_count}"
+            )
 
-        # Send success notification
-        success_message = (
-            f"Processed {len(dates_to_process)} new dates\n"
-            f"Total standings entries: {processed_count}\n"
-            f"Errors: {error_count}"
-        )
-
-        logging.info(success_message)
-        send_discord_notification(
-            "✅ Fetch Standings Data: Complete", success_message, 65280
-        )
+            logging.info(success_message)
+            send_discord_notification(
+                "✅ Fetch Standings Data: Complete", success_message, 65280
+            )
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(
