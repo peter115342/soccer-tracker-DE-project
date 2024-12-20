@@ -44,9 +44,7 @@ def fetch_standings_data(event, context):
 
         processed_count = 0
         error_count = 0
-        today = datetime.now().strftime("%Y-%m-%d")
 
-        # Process unique date-competition combinations
         processed_combinations = set()
 
         for match in matches_data:
@@ -74,7 +72,6 @@ def fetch_standings_data(event, context):
             "✅ Fetch Standings Data: Success", success_message, 65280
         )
 
-        # Trigger next function via Pub/Sub
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(
             os.environ["GCP_PROJECT_ID"], "convert_standings_to_parquet_topic"
