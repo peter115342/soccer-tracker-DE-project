@@ -28,19 +28,28 @@ def get_matches_data() -> List[Dict]:
         SELECT DISTINCT 
             DATE(utcDate) as match_date,
             matchday,
-            competition_code
+            competition.id as competition_id
         FROM `{}.sports_data_eu.matches_processed`
         ORDER BY match_date DESC
     """.format(GCP_PROJECT_ID)
+
+    competition_map = {
+        2021: "PL",  # Premier League
+        2002: "BL1",  # Bundesliga
+        2014: "PD",  # La Liga
+        2019: "SA",  # Serie A
+        2015: "FL1",  # Ligue 1
+    }
 
     query_job = client.query(query)
     return [
         {
             "date": row.match_date.strftime("%Y-%m-%d"),
             "matchday": row.matchday,
-            "competition_code": row.competition_code,
+            "competition_code": competition_map.get(row.competition_id),
         }
         for row in query_job
+        if row.competition in competition_map
     ]
 
 
