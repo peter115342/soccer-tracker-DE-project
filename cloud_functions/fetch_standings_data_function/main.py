@@ -6,8 +6,8 @@ from datetime import datetime
 from google.cloud import pubsub_v1
 import requests
 from .utils.standings_data_helper import (
-    get_matches_data,
-    fetch_standings_for_match,
+    get_unique_dates,
+    fetch_standings_for_date,
     save_standings_to_gcs,
     get_processed_standings_dates,
     should_fetch_standings,
@@ -16,7 +16,7 @@ from .utils.standings_data_helper import (
 
 def fetch_standings_data(event, context):
     """
-    Cloud Function to fetch standings data from top 5 leagues and save to bucket,
+    Cloud Function to fetch standings data from top 5 leagues and save to GCS,
     with Discord notifications for success or failure and Pub/Sub trigger for next function.
     """
     try:
@@ -31,40 +31,34 @@ def fetch_standings_data(event, context):
             )
             return error_message, 400
 
-        matches_data = get_matches_data()
+        unique_dates = get_unique_dates()
         processed_dates = get_processed_standings_dates()
 
-        if not matches_data:
-            message = "No matches found in matches_processed table."
+        if not unique_dates:
+            message = "No match dates found in matches_processed table."
             logging.info(message)
             send_discord_notification(
-                "ℹ️ Fetch Standings Data: No Matches", message, 16776960
+                "ℹ️ Fetch Standings Data: No Dates", message, 16776960
             )
-            return "No matches to process.", 200
+            return "No dates to process.", 200
 
         processed_count = 0
         error_count = 0
 
-        processed_combinations = set()
+        for date in unique_dates:
+            if should_fetch_standings(date, processed_dates):
+                standings_list = fetch_standings_for_date(date)
 
-        for match in matches_data:
-            combination = (match["date"], match["competition_code"])
-
-            if combination not in processed_combinations and should_fetch_standings(
-                match, processed_dates
-            ):
-                try:
-                    standings_data = fetch_standings_for_match(match)
-                    save_standings_to_gcs(
-                        standings_data, match["date"], match["competition_code"]
-                    )
-                    processed_count += 1
-                    processed_combinations.add(combination)
-                except Exception as e:
-                    error_count += 1
-                    logging.error(
-                        f"Error processing standings for {match['date']}: {e}"
-                    )
+                for standings in standings_list:
+                    try:
+                        competition_code = standings["competitionCode"]
+                        save_standings_to_gcs(standings, date, competition_code)
+                        processed_count += 1
+                    except Exception as e:
+                        error_count += 1
+                        logging.error(f"Error processing standings for {date}: {e}")
+            else:
+                logging.info(f"Skipping {date} - already processed")
 
         success_message = f"Processed standings for {processed_count} date-competition pairs. Errors: {error_count}"
         logging.info(success_message)

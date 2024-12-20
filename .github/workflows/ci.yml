@@ -182,18 +182,18 @@ jobs:
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
-      # - name: Deploy weather_transform Function
-      #   run: |
-      #     cd cloud_functions/weather_transform_function
-      #     uv run gcloud functions deploy transform_weather \
-      #       --runtime python39 \
-      #       --trigger-topic transform_weather_topic \
-      #       --entry-point transform_weather \
-      #       --timeout 540s \
-      #       --memory 1GiB \
-      #       --region europe-central2 \
-      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
-      #     cd ../..
+      - name: Deploy weather_transform Function
+        run: |
+          cd cloud_functions/weather_transform_function
+          uv run gcloud functions deploy transform_weather \
+            --runtime python39 \
+            --trigger-topic transform_weather_topic \
+            --entry-point transform_weather \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
+          cd ../..
 
       - name: Deploy fetch_standings_data Function
         run: |
