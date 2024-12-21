@@ -99,6 +99,11 @@ def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
             response.raise_for_status()
             standings_data = response.json()
 
+            if standings_data.get("season", {}).get("winner"):
+                standings_data["season"]["winner"] = standings_data["season"]["winner"][
+                    "id"
+                ]
+
             standings_data["fetchDate"] = date
             standings_data["competitionId"] = comp_id
             all_standings.append(standings_data)
