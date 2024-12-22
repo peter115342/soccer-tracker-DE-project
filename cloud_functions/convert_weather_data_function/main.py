@@ -122,7 +122,6 @@ def transform_to_parquet(event, context):
             f"Published trigger message to weather_to_bigquery_topic with ID: {publish_result}"
         )
 
-        # Trigger transform weather function
         transform_topic_path = publisher.topic_path(
             os.environ["GCP_PROJECT_ID"], "transform_weather_topic"
         )

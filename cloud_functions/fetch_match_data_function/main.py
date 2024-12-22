@@ -53,6 +53,8 @@ def fetch_football_data(event, context):
         for match in matches:
             try:
                 match_id = match["id"]
+                if "season" in match and "winner" in match["season"]:
+                    match["season"]["winner"] = None
                 save_to_gcs(match, match_id)
                 processed_matches.append(match)
                 new_matches += 1
