@@ -55,7 +55,7 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
-
+          
       - name: Create Pub/Sub Topics
         run: |
           uv run gcloud pubsub topics create fetch_league_data_topic || true
@@ -190,6 +190,7 @@ jobs:
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
+
       # - name: Deploy fetch_standings_data Function
       #   run: |
       #     cd cloud_functions/fetch_standings_data_function
@@ -241,3 +242,5 @@ jobs:
       #     --region europe-central2 \
       #     --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
+
+      
