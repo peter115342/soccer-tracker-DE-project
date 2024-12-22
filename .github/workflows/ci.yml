@@ -190,7 +190,6 @@ jobs:
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
-
       # - name: Deploy fetch_standings_data Function
       #   run: |
       #     cd cloud_functions/fetch_standings_data_function
@@ -228,4 +227,17 @@ jobs:
       #       --memory 1GiB \
       #       --region europe-central2 \
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }},BUCKET_NAME=${{ secrets.BUCKET_NAME }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}"
+      #     cd ../..
+
+      # - name: Deploy standings_transform Function
+      #   run: |
+      #     cd cloud_functions/standings_transform_function
+      #     uv run gcloud functions deploy transform_standings \
+      #     --runtime python39 \
+      #     --trigger-topic transform_standings_topic \
+      #     --entry-point transform_standings \
+      #     --timeout 540s \
+      #     --memory 1GiB \
+      #     --region europe-central2 \
+      #     --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
