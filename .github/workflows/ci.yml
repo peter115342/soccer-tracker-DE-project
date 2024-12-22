@@ -56,16 +56,6 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
 
-      - name: Run Tests
-        env:
-          API_FOOTBALL_KEY: "dummy_key"
-          GOOGLE_MAPS_API_KEY: "dummy_key"
-          GCP_PROJECT_ID: "dummy_id"
-
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          uv run pytest tests/
-
       - name: Create Pub/Sub Topics
         run: |
           uv run gcloud pubsub topics create fetch_league_data_topic || true
