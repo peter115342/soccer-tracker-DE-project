@@ -23,7 +23,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = ["cloud_functions"]
 
-
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
@@ -31,3 +30,17 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.pytest]
 pythonpath = "."
 testpaths = ["tests"]
+
+[tool.mypy]
+ignore_missing_imports = true
+explicit_package_bases = true
+exclude = "Airflow/"
+disable_error_code = [
+    "attr-defined",
+    "call-overload",
+    "call-arg",
+    "import-untyped",
+]
+follow_imports = "skip"
+warn_return_any = false
+warn_unused_configs = false

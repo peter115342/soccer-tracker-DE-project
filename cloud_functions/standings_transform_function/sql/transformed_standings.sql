@@ -4,12 +4,13 @@ config {
   name: "standings_processed",
   description: "Processed soccer standings data with standings for all teams per competition",
   bigquery: {
-    partitionBy: "DATE(fetchDate)"
-  }
+    partitionBy: "fetchDate"
+  },
+  tags: ["standings"]
 }
 
 SELECT
-  fetchDate,
+  DATE(fetchDate) AS fetchDate,
   SAFE_CAST(competitionId AS INT64) AS competitionId,
   season.id AS seasonId,
   season.startDate AS seasonStartDate,
