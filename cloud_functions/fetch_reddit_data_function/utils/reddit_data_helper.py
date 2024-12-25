@@ -54,7 +54,7 @@ def get_processed_matches() -> List[Dict]:
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     """Find matching Reddit thread for a specific match"""
     subreddit = reddit.subreddit("soccer")
-    match_date = datetime.strptime(match["utcDate"], "%Y-%m-%dT%H:%M:%SZ")
+    match_date = match["utcDate"]
     search_start = match_date - timedelta(hours=2)
     search_end = match_date + timedelta(hours=4)
 
