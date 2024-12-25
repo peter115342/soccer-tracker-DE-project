@@ -14,7 +14,7 @@ REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
-def initialize_reddit():
+def initializeaaa_reddit():
     """Initialize Reddit API client"""
     return praw.Reddit(
         client_id=REDDIT_CLIENT_ID,
