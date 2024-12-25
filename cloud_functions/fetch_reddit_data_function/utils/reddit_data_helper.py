@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import praw
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
