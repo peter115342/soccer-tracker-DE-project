@@ -3,7 +3,7 @@ import json
 import logging
 import praw
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
 
@@ -51,7 +51,7 @@ def get_processed_matches() -> List[Dict]:
     return unprocessed_matches
 
 
-def find_match_thread(reddit, match: Dict) -> Dict | None:
+def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     """Find matching Reddit thread for a specific match"""
     subreddit = reddit.subreddit("soccer")
     match_date = datetime.strptime(match["utcDate"], "%Y-%m-%dT%H:%M:%SZ")
