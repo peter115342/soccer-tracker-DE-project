@@ -72,6 +72,7 @@ jobs:
           uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
           uv run gcloud pubsub topics create standings_to_bigquery_topic || true
           uv run gcloud pubsub topics create transform_standings_topic || true
+          uv run gcloud pubsub topics create fetch_reddit_data_topic || true
           uv run gcloud pubsub topics create reddit_to_parquet_topic || true
 
       # - name: Deploy fetch_league_data Function
