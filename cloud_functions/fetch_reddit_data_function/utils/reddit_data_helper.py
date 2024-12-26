@@ -6,6 +6,7 @@ from datetime import timedelta
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
+import time
 
 logging.basicConfig(level=logging.INFO)
 
@@ -66,11 +67,23 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     search_query = f'flair:"Match Thread" timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
     logging.info(f"Using search query: {search_query}")
 
-    threads = subreddit.search(search_query, sort="new", limit=50)
+    try:
+        threads = subreddit.search(search_query, sort="new", limit=50)
+        time.sleep(0.5)
+    except Exception as e:
+        logging.error(f"Error during Reddit API call: {e}")
+        return None
 
     for thread in threads:
         if is_matching_thread(thread.title, match):
-            logging.info(f"Found matching thread: {thread.title}")
+            logging.info(f"Found matching thread:")
+            logging.info(f" - Title: {thread.title}")
+            logging.info(f" - URL: {thread.url}")
+            logging.info(f" - Thread ID: {thread.id}")
+            logging.info(f" - Created UTC: {thread.created_utc}")
+            logging.info(f" - Author: {thread.author}")
+            logging.info(f" - Score: {thread.score}")
+            logging.info(f" - Number of Comments: {thread.num_comments}")
             return extract_thread_data(thread)
 
     logging.info(
