@@ -15,18 +15,24 @@ from .utils.reddit_data_helper import (
 def fetch_reddit_data(event, context):
     """Cloud Function to fetch Reddit match thread data"""
     try:
+        logging.info("Starting Reddit data fetch process")
         reddit = initialize_reddit()
+        logging.info("Reddit client initialized successfully")
+
         matches = get_processed_matches()
+        logging.info(f"Retrieved {len(matches)} matches to process")
 
         processed_count = 0
         not_found_count = 0
 
         for match in matches:
+            logging.info(f"Processing match ID: {match['match_id']}")
             thread_data = find_match_thread(reddit, match)
 
             if thread_data:
                 save_to_gcs(thread_data, match["match_id"])
                 processed_count += 1
+                logging.info(f"Successfully processed match ID {match['match_id']}")
             else:
                 not_found_count += 1
                 logging.info(

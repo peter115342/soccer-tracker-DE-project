@@ -14,7 +14,7 @@ REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
-def initializeaaa_reddit():
+def initialize_reddit():
     """Initialize Reddit API client"""
     return praw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -29,6 +29,7 @@ def get_processed_matches() -> List[Dict]:
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
 
+    logging.info("Fetching matches from BigQuery matches_processed table")
     query = """
         SELECT 
             homeTeam.name as home_team,
@@ -53,18 +54,28 @@ def get_processed_matches() -> List[Dict]:
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     """Find matching Reddit thread for a specific match"""
+    logging.info(
+        f"Searching for Reddit thread for match: {match['home_team']} vs {match['away_team']}"
+    )
+
     subreddit = reddit.subreddit("soccer")
     match_date = match["utcDate"]
     search_start = match_date - timedelta(hours=2)
     search_end = match_date + timedelta(hours=4)
 
     search_query = f'flair:"Match Thread" timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
+    logging.info(f"Using search query: {search_query}")
+
     threads = subreddit.search(search_query, sort="new", limit=50)
 
     for thread in threads:
         if is_matching_thread(thread.title, match):
+            logging.info(f"Found matching thread: {thread.title}")
             return extract_thread_data(thread)
 
+    logging.info(
+        f"No matching thread found for {match['home_team']} vs {match['away_team']}"
+    )
     return None
 
 
@@ -87,6 +98,7 @@ def is_matching_thread(title: str, match: Dict) -> bool:
 
 def extract_thread_data(thread) -> Dict:
     """Extract relevant data from Reddit thread"""
+    logging.info(f"Extracting data from thread: {thread.title}")
     thread.comments.replace_more(limit=0)
     top_comments = []
 
@@ -100,6 +112,7 @@ def extract_thread_data(thread) -> Dict:
             }
         )
 
+    logging.info(f"Extracted {len(top_comments)} top comments from thread")
     return {
         "thread_id": thread.id,
         "title": thread.title,
