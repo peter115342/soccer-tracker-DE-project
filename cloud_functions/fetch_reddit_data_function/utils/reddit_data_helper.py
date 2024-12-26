@@ -76,7 +76,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
     for thread in threads:
         if is_matching_thread(thread.title, match):
-            logging.info(f"Found matching thread:")
+            logging.info("Found matching thread:")
             logging.info(f" - Title: {thread.title}")
             logging.info(f" - URL: {thread.url}")
             logging.info(f" - Thread ID: {thread.id}")
