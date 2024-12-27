@@ -56,7 +56,7 @@ def fetch_reddit_data(event, context):
         send_discord_notification(
             title="Reddit Data Fetch Successful",
             message=status_message,
-            color=3066993,  # Green
+            color=65280,  # Green
         )
 
         publisher = pubsub_v1.PublisherClient()

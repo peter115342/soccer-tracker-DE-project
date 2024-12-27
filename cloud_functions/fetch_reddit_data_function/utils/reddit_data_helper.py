@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import praw
+import re
 from datetime import timedelta
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
@@ -13,6 +14,21 @@ logging.basicConfig(level=logging.INFO)
 REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
+
+# Team name variations mapping
+TEAM_VARIATIONS = {
+    "manchester united": ["man united", "man utd", "manchester utd", "mufc"],
+    "manchester city": ["man city", "mcfc", "man. city"],
+    "tottenham": ["tottenham hotspur", "spurs"],
+    "wolverhampton": ["wolves", "wolverhampton wanderers"],
+    "newcastle united": ["newcastle", "nufc"],
+    "west ham": ["west ham united", "westham"],
+    "leeds united": ["leeds", "lufc"],
+    "nottingham forest": ["nottm forest", "forest", "nffc"],
+    "paris saint-germain": ["psg", "paris sg", "paris saint germain"],
+    "real madrid": ["madrid", "rmcf"],
+    "barcelona": ["fc barcelona", "barca", "fcb"],
+}
 
 
 def initialize_reddit():
@@ -37,7 +53,7 @@ def initialize_reddit():
 
 
 def get_processed_matches() -> List[Dict]:
-    """Fetch matches from BigQuery matches_processed table and filter out ones that already have Reddit data in GCS"""
+    """Fetch matches from BigQuery matches_processed table with scores"""
     client = bigquery.Client()
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
@@ -49,9 +65,12 @@ def get_processed_matches() -> List[Dict]:
             awayTeam.name as away_team,
             competition.name as competition,
             utcDate,
-            id as match_id
+            id as match_id,
+            score.fullTime.homeTeam as home_score,
+            score.fullTime.awayTeam as away_score
         FROM sports_data_eu.matches_processed
         WHERE status = 'FINISHED'
+            AND DATE(utcDate) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
         ORDER BY utcDate DESC
     """
 
@@ -61,7 +80,7 @@ def get_processed_matches() -> List[Dict]:
     unprocessed_matches = []
     for match in matches:
         logging.info(
-            f"Match found: {match['home_team']} vs {match['away_team']} on {match['utcDate']}"
+            f"Match found: {match['home_team']} vs {match['away_team']} ({match['home_score']}-{match['away_score']})"
         )
         blob = bucket.blob(f"reddit_data/{match['match_id']}.json")
         if not blob.exists():
@@ -71,39 +90,40 @@ def get_processed_matches() -> List[Dict]:
     return unprocessed_matches
 
 
+def get_team_variations(team_name: str) -> List[str]:
+    """Get all possible variations of a team name"""
+    team_name = team_name.lower()
+    for key, variations in TEAM_VARIATIONS.items():
+        if team_name in [key] + variations:
+            return [key] + variations
+    return [team_name]
+
+
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     """Find matching Reddit thread for a specific match with enhanced search"""
     logging.info(
-        f"Searching for Reddit thread for match: {match['home_team']} vs {match['away_team']}"
+        f"Searching for Reddit thread for match: {match['home_team']} vs {match['away_team']} ({match['home_score']}-{match['away_score']})"
     )
 
     subreddit = reddit.subreddit("soccer")
     match_date = match["utcDate"]
-    search_start = match_date - timedelta(hours=2)
-    search_end = match_date + timedelta(hours=4)
+    search_start = match_date - timedelta(hours=6)
+    search_end = match_date + timedelta(hours=24)
 
     max_retries = 3
     retry_delay = 2
 
     for attempt in range(max_retries):
         try:
-            search_query = f'title:"Match Thread" {match["home_team"]} {match["away_team"]} timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
+            search_query = f'title:"Match Thread" timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
             logging.info(f"Using search query: {search_query}")
 
-            threads = list(subreddit.search(search_query, sort="new", limit=50))
+            threads = list(subreddit.search(search_query, sort="new", limit=100))
             logging.info(f"Found {len(threads)} potential threads")
             time.sleep(1)
 
             for thread in threads:
-                if is_matching_thread(thread.title, match):
-                    return extract_thread_data(thread)
-
-            alt_search_query = f'title:"Match Thread" {match["home_team"]} timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
-            threads = list(subreddit.search(alt_search_query, sort="new", limit=50))
-            time.sleep(1)
-
-            for thread in threads:
-                if is_matching_thread(thread.title, match):
+                if is_matching_thread(thread, match):
                     return extract_thread_data(thread)
 
             return None
@@ -122,40 +142,82 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     return None
 
 
-def is_matching_thread(title: str, match: Dict) -> bool:
+def is_matching_thread(thread, match: Dict) -> bool:
     """Enhanced matching logic for Reddit match threads"""
-    title_lower = title.lower()
+    title_lower = thread.title.lower()
+    body = thread.selftext.lower()
     home_team = match["home_team"].lower()
     away_team = match["away_team"].lower()
     competition = match["competition"].lower()
 
-    if home_team in title_lower and away_team in title_lower:
-        return True
-
-    home_variations = [
-        home_team,
-        home_team.replace(" fc", ""),
-        home_team.replace(" fc", "").replace(" ", ""),
-    ]
-    away_variations = [
-        away_team,
-        away_team.replace(" fc", ""),
-        away_team.replace(" fc", "").replace(" ", ""),
+    title_patterns = [
+        r"match thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+))?$",
+        r"match thread:?\s*(.+?)\s*(?:\d+\s*-\s*\d+)\s*(.+?)(?:\s*\|\s*(.+))?$",
     ]
 
-    for home in home_variations:
-        for away in away_variations:
-            if home in title_lower and away in title_lower:
-                return True
+    found_match = False
+    for pattern in title_patterns:
+        title_match = re.match(pattern, title_lower)
+        if title_match:
+            reddit_home_team = title_match.group(1).strip()
+            reddit_away_team = title_match.group(2).strip()
+            reddit_competition = (
+                title_match.group(3).strip() if title_match.group(3) else ""
+            )
 
-    home_words = [word for word in home_team.split() if len(word) > 3]
-    away_words = [word for word in away_team.split() if len(word) > 3]
+            home_variations = get_team_variations(home_team)
+            away_variations = get_team_variations(away_team)
 
-    home_match = any(fuzz.partial_ratio(word, title_lower) > 80 for word in home_words)
-    away_match = any(fuzz.partial_ratio(word, title_lower) > 80 for word in away_words)
-    comp_match = fuzz.partial_ratio(competition, title_lower) > 70
+            home_scores = [
+                fuzz.token_set_ratio(var, reddit_home_team) for var in home_variations
+            ]
+            away_scores = [
+                fuzz.token_set_ratio(var, reddit_away_team) for var in away_variations
+            ]
 
-    return home_match and away_match and comp_match
+            best_home_score = max(home_scores)
+            best_away_score = max(away_scores)
+
+            logging.debug(
+                f"Best match scores - Home: {best_home_score}, Away: {best_away_score}"
+            )
+
+            score_pattern = r"(?:ft|full.?time|ht|half.?time).*?(\d+)[-–](\d+)"
+            score_match = re.search(score_pattern, body, re.IGNORECASE)
+
+            if score_match:
+                reddit_home_score = int(score_match.group(1))
+                reddit_away_score = int(score_match.group(2))
+                score_matches = (
+                    reddit_home_score == match["home_score"]
+                    and reddit_away_score == match["away_score"]
+                )
+                logging.debug(
+                    f"Score comparison: {reddit_home_score}-{reddit_away_score} vs {match['home_score']}-{match['away_score']}"
+                )
+            else:
+                score_matches = False
+
+            comp_match = True
+            if reddit_competition:
+                comp_match = fuzz.token_set_ratio(competition, reddit_competition) > 60
+                logging.debug(
+                    f"Competition match ratio: {fuzz.token_set_ratio(competition, reddit_competition)}"
+                )
+
+            if (
+                best_home_score > 75
+                and best_away_score > 75
+                and comp_match
+                and score_matches
+            ):
+                found_match = True
+                logging.info(
+                    f"Match found with confidence - Home: {best_home_score}%, Away: {best_away_score}%"
+                )
+                break
+
+    return found_match
 
 
 def extract_thread_data(thread) -> Dict:
@@ -196,3 +258,5 @@ def save_to_gcs(thread_data: Dict, match_id: int) -> None:
             data=json.dumps(thread_data), content_type="application/json"
         )
         logging.info(f"Saved Reddit thread for match ID {match_id} to GCS")
+    else:
+        logging.info(f"Reddit thread for match ID {match_id} already exists in GCS")
