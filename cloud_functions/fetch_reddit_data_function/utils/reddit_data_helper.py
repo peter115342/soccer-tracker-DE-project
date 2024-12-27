@@ -58,9 +58,13 @@ def get_processed_matches() -> List[Dict]:
     """
 
     matches = list(client.query(query).result())
-    unprocessed_matches = []
+    logging.info(f"Query returned {len(matches)} matches")
 
+    unprocessed_matches = []
     for match in matches:
+        logging.info(
+            f"Match found: {match['home_team']} vs {match['away_team']} on {match['utcDate']}"
+        )
         blob = bucket.blob(f"reddit_data/{match['match_id']}.json")
         if not blob.exists():
             unprocessed_matches.append(match)
@@ -70,7 +74,7 @@ def get_processed_matches() -> List[Dict]:
 
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Find matching Reddit thread for a specific match"""
+    """Find matching Reddit thread for a specific match with enhanced search"""
     logging.info(
         f"Searching for Reddit thread for match: {match['home_team']} vs {match['away_team']}"
     )
@@ -80,40 +84,69 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     search_start = match_date - timedelta(hours=2)
     search_end = match_date + timedelta(hours=4)
 
-    search_query = f'flair:"Match Thread" timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
-    logging.info(f"Using search query: {search_query}")
+    max_retries = 3
+    retry_delay = 2
 
-    try:
-        threads = subreddit.search(search_query, sort="new", limit=50)
-        time.sleep(1)
-    except Exception as e:
-        logging.error(f"Error during Reddit API call: {e}")
-        return None
+    for attempt in range(max_retries):
+        try:
+            search_query = f'title:"Match Thread" {match["home_team"]} {match["away_team"]} timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
+            logging.info(f"Using search query: {search_query}")
 
-    for thread in threads:
-        if is_matching_thread(thread.title, match):
-            logging.info("Found matching thread:")
-            logging.info(f" - Title: {thread.title}")
-            logging.info(f" - URL: {thread.url}")
-            logging.info(f" - Thread ID: {thread.id}")
-            logging.info(f" - Created UTC: {thread.created_utc}")
-            logging.info(f" - Author: {thread.author}")
-            logging.info(f" - Score: {thread.score}")
-            logging.info(f" - Number of Comments: {thread.num_comments}")
-            return extract_thread_data(thread)
+            threads = list(subreddit.search(search_query, sort="new", limit=50))
+            logging.info(f"Found {len(threads)} potential threads")
+            time.sleep(1)
 
-    logging.info(
-        f"No matching thread found for {match['home_team']} vs {match['away_team']}"
-    )
-    return None
+            for thread in threads:
+                if is_matching_thread(thread.title, match):
+                    return extract_thread_data(thread)
+
+            alt_search_query = f'title:"Match Thread" {match["home_team"]} timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
+            threads = list(subreddit.search(alt_search_query, sort="new", limit=50))
+            time.sleep(1)
+
+            for thread in threads:
+                if is_matching_thread(thread.title, match):
+                    return extract_thread_data(thread)
+
+            return None
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logging.warning(
+                    f"Attempt {attempt + 1} failed, retrying in {retry_delay} seconds..."
+                )
+                time.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                logging.error(f"All attempts failed: {str(e)}")
+                raise
 
 
 def is_matching_thread(title: str, match: Dict) -> bool:
-    """Check if thread title matches match details using fuzzy matching"""
+    """Enhanced matching logic for Reddit match threads"""
     title_lower = title.lower()
     home_team = match["home_team"].lower()
     away_team = match["away_team"].lower()
     competition = match["competition"].lower()
+
+    if home_team in title_lower and away_team in title_lower:
+        return True
+
+    home_variations = [
+        home_team,
+        home_team.replace(" fc", ""),
+        home_team.replace(" fc", "").replace(" ", ""),
+    ]
+    away_variations = [
+        away_team,
+        away_team.replace(" fc", ""),
+        away_team.replace(" fc", "").replace(" ", ""),
+    ]
+
+    for home in home_variations:
+        for away in away_variations:
+            if home in title_lower and away in title_lower:
+                return True
 
     home_words = [word for word in home_team.split() if len(word) > 3]
     away_words = [word for word in away_team.split() if len(word) > 3]
