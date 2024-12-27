@@ -17,11 +17,20 @@ def fetch_reddit_data(event, context):
     try:
         logging.info("Starting Reddit data fetch process")
         reddit = initialize_reddit()
+        if not reddit:
+            raise Exception("Failed to initialize Reddit client")
         logging.info("Reddit client initialized successfully")
 
         matches = get_processed_matches()
         logging.info(f"Retrieved {len(matches)} matches to process")
 
+        if not matches:
+            send_discord_notification(
+                title="Reddit Data Fetch Warning",
+                message="No matches found to process",
+                color=16776960,  # Yellow
+            )
+            return "No matches found", 200
         processed_count = 0
         not_found_count = 0
 
@@ -43,6 +52,12 @@ def fetch_reddit_data(event, context):
             f"Processed {processed_count} threads. Not found: {not_found_count}"
         )
         logging.info(status_message)
+
+        send_discord_notification(
+            title="Reddit Data Fetch Successful",
+            message=status_message,
+            color=3066993,  # Green
+        )
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(
@@ -68,6 +83,13 @@ def fetch_reddit_data(event, context):
     except Exception as e:
         error_message = f"Error fetching Reddit data: {str(e)}"
         logging.exception(error_message)
+
+        send_discord_notification(
+            title="Reddit Data Fetch Failed",
+            message=error_message,
+            color=15158332,  # Red
+        )
+
         return error_message, 500
 
 

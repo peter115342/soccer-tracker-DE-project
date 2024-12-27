@@ -16,7 +16,19 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def initialize_reddit():
-    """Initialize Reddit API client"""
+    """Initialize Reddit API client with validation"""
+    required_vars = {
+        "REDDIT_CLIENT_ID": REDDIT_CLIENT_ID,
+        "REDDIT_CLIENT_SECRET": REDDIT_CLIENT_SECRET,
+        "BUCKET_NAME": GCS_BUCKET_NAME,
+    }
+
+    missing_vars = [var for var, value in required_vars.items() if not value]
+    if missing_vars:
+        error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+        logging.error(error_msg)
+        raise ValueError(error_msg)
+
     return praw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
@@ -40,6 +52,9 @@ def get_processed_matches() -> List[Dict]:
             id as match_id
         FROM sports_data_eu.matches_processed
         WHERE DATE(utcDate) = '2024-12-22'
+        AND status = 'FINISHED'
+        ORDER BY utcDate DESC
+        LIMIT 5
     """
 
     matches = list(client.query(query).result())
@@ -70,7 +85,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
     try:
         threads = subreddit.search(search_query, sort="new", limit=50)
-        time.sleep(0.5)
+        time.sleep(1)
     except Exception as e:
         logging.error(f"Error during Reddit API call: {e}")
         return None
