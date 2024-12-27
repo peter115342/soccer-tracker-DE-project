@@ -51,10 +51,8 @@ def get_processed_matches() -> List[Dict]:
             utcDate,
             id as match_id
         FROM sports_data_eu.matches_processed
-        WHERE DATE(utcDate) = '2024-12-22'
-        AND status = 'FINISHED'
+        WHERE status = 'FINISHED'
         ORDER BY utcDate DESC
-        LIMIT 5
     """
 
     matches = list(client.query(query).result())
