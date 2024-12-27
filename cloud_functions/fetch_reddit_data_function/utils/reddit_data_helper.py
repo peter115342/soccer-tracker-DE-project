@@ -64,13 +64,12 @@ def get_processed_matches() -> List[Dict]:
             homeTeam.name as home_team,
             awayTeam.name as away_team,
             competition.name as competition,
-            utcDate,
+            utcDate,  # This was missing
             id as match_id,
             score.fullTime.homeTeam as home_score,
             score.fullTime.awayTeam as away_score
         FROM sports_data_eu.matches_processed
         WHERE status = 'FINISHED'
-            AND DATE(utcDate) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
         ORDER BY utcDate DESC
     """
 
