@@ -121,6 +121,8 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 logging.error(f"All attempts failed: {str(e)}")
                 return None
 
+    return None
+
 
 def is_matching_thread(title: str, match: Dict) -> bool:
     """Enhanced matching logic for Reddit match threads"""
