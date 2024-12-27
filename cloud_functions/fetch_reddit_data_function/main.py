@@ -124,17 +124,39 @@ def send_discord_notification(title: str, message: str, color: int):
         logging.warning("Discord webhook URL not set")
         return
 
-    discord_data = {
-        "content": None,
-        "embeds": [{"title": title, "description": message, "color": color}],
-    }
+    if len(message) > 1900:
+        message_parts = [message[i : i + 1900] for i in range(0, len(message), 1900)]
+        for i, part in enumerate(message_parts):
+            discord_data = {
+                "embeds": [
+                    {
+                        "title": f"{title} (Part {i+1}/{len(message_parts)})",
+                        "description": part,
+                        "color": color,
+                    }
+                ]
+            }
 
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers
-    )
+            headers = {"Content-Type": "application/json"}
+            response = requests.post(
+                webhook_url, data=json.dumps(discord_data), headers=headers
+            )
 
-    if response.status_code != 204:
-        logging.error(
-            f"Failed to send Discord notification: {response.status_code}, {response.text}"
+            if response.status_code != 204:
+                logging.error(
+                    f"Failed to send Discord notification part {i+1}: {response.status_code}, {response.text}"
+                )
+    else:
+        discord_data = {
+            "embeds": [{"title": title, "description": message, "color": color}]
+        }
+
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(
+            webhook_url, data=json.dumps(discord_data), headers=headers
         )
+
+        if response.status_code != 204:
+            logging.error(
+                f"Failed to send Discord notification: {response.status_code}, {response.text}"
+            )
