@@ -13,7 +13,7 @@ from .utils.reddit_data_helper import (
 
 
 def fetch_reddit_data(event, context):
-    """Cloud Function to fetch Reddit match thread data"""
+    """Cloud Function to fetch Reddit match thread data with enhanced tracking"""
     try:
         logging.info("Starting Reddit data fetch process")
         reddit = initialize_reddit()
@@ -25,14 +25,16 @@ def fetch_reddit_data(event, context):
         logging.info(f"Retrieved {len(matches)} matches to process")
 
         if not matches:
+            message = "No matches found to process"
             send_discord_notification(
-                title="Reddit Data Fetch Warning",
-                message="No matches found to process",
+                title="Reddit Data Fetch Status",
+                message=message,
                 color=16776960,  # Yellow
             )
-            return "No matches found", 200
+            return message, 200
+
         processed_count = 0
-        not_found_count = 0
+        not_found_matches = []
 
         for match in matches:
             logging.info(f"Processing match ID: {match['match_id']}")
@@ -43,20 +45,41 @@ def fetch_reddit_data(event, context):
                 processed_count += 1
                 logging.info(f"Successfully processed match ID {match['match_id']}")
             else:
-                not_found_count += 1
-                logging.info(
-                    f"No matching thread found for match ID {match['match_id']}"
+                match_info = (
+                    f"{match['home_team']} vs {match['away_team']} "
+                    f"({match['competition']}) on "
+                    f"{match['utcDate'].strftime('%Y-%m-%d %H:%M UTC')}"
                 )
+                not_found_matches.append(match_info)
+                logging.info(f"No thread found for: {match_info}")
 
-        status_message = (
-            f"Processed {processed_count} threads. Not found: {not_found_count}"
-        )
-        logging.info(status_message)
+        status_message = [
+            f"Processed {processed_count} threads out of {len(matches)} matches.",
+            f"Success rate: {(processed_count/len(matches))*100:.1f}%\n",
+        ]
+
+        if not_found_matches:
+            status_message.extend(
+                [
+                    "Matches without threads found:",
+                    *[f"• {match}" for match in not_found_matches],
+                ]
+            )
+        else:
+            status_message.append("All matches were successfully processed!")
+
+        final_message = "\n".join(status_message)
+        logging.info(final_message)
+
+        if processed_count == len(matches):
+            color = 65280  # Green for 100% success
+        elif processed_count > 0:
+            color = 16776960  # Yellow for partial success
+        else:
+            color = 15158332  # Red for no matches processed
 
         send_discord_notification(
-            title="Reddit Data Fetch Successful",
-            message=status_message,
-            color=65280,  # Green
+            title="Reddit Data Fetch Results", message=final_message, color=color
         )
 
         publisher = pubsub_v1.PublisherClient()
@@ -67,18 +90,19 @@ def fetch_reddit_data(event, context):
         publish_data = {
             "action": "convert_reddit",
             "timestamp": datetime.now().isoformat(),
+            "processed_matches": processed_count,
+            "total_matches": len(matches),
         }
 
         future = publisher.publish(
             topic_path, data=json.dumps(publish_data).encode("utf-8")
         )
-
         publish_result = future.result()
         logging.info(
             f"Published message to reddit_to_parquet_topic with ID: {publish_result}"
         )
 
-        return status_message, 200
+        return final_message, 200
 
     except Exception as e:
         error_message = f"Error fetching Reddit data: {str(e)}"
@@ -94,10 +118,10 @@ def fetch_reddit_data(event, context):
 
 
 def send_discord_notification(title: str, message: str, color: int):
-    """Sends a notification to Discord with the specified title, message, and color."""
+    """Sends a notification to Discord with the specified title, message, and color"""
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
-        logging.warning("Discord webhook URL not set.")
+        logging.warning("Discord webhook URL not set")
         return
 
     discord_data = {
@@ -109,6 +133,7 @@ def send_discord_notification(title: str, message: str, color: int):
     response = requests.post(
         webhook_url, data=json.dumps(discord_data), headers=headers
     )
+
     if response.status_code != 204:
         logging.error(
             f"Failed to send Discord notification: {response.status_code}, {response.text}"
