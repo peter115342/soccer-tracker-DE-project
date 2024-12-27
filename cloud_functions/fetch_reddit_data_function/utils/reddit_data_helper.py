@@ -119,7 +119,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 retry_delay *= 2
             else:
                 logging.error(f"All attempts failed: {str(e)}")
-                raise
+                return None
 
 
 def is_matching_thread(title: str, match: Dict) -> bool:
