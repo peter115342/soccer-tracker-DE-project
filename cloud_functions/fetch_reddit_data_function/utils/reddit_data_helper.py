@@ -6,6 +6,7 @@ import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
+import time
 import unicodedata
 
 logging.basicConfig(level=logging.INFO)
@@ -16,10 +17,28 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def clean_team_name(team_name: str) -> str:
-    """Normalize and clean team name"""
+    """Enhanced team name cleaning with common replacements"""
+    replacements = {
+        "united": "utd",
+        "manchester": "man",
+        "tottenham hotspur": "tottenham",
+        "wolverhampton wanderers": "wolves",
+        "brighton & hove albion": "brighton",
+        "newcastle united": "newcastle",
+        "leeds united": "leeds",
+        "crystal palace": "palace",
+        "nottingham forest": "forest",
+        "west ham united": "west ham",
+        "aston villa": "villa",
+    }
+
     team_name = unicodedata.normalize("NFKD", team_name)
     team_name = re.sub(r"[^a-zA-Z\s]", "", team_name)
-    team_name = team_name.lower()
+    team_name = team_name.lower().strip()
+
+    for old, new in replacements.items():
+        team_name = team_name.replace(old, new)
+
     tokens = team_name.split()
     cleaned_tokens = [
         token
@@ -89,45 +108,64 @@ def get_processed_matches() -> List[Dict]:
 
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Find matching Reddit thread for a specific match with enhanced search."""
+    """Enhanced match thread finding with multiple search strategies"""
     logging.info(
         f"Searching for Reddit thread for match: {match['home_team']} vs {match['away_team']} ({match['home_score']}-{match['away_score']})"
     )
 
     subreddit = reddit.subreddit("soccer")
-    match_date = match["utcDate"]
 
-    search_start = int(
-        match_date.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-    )
-    search_end = int(
-        match_date.replace(
-            hour=23, minute=59, second=59, microsecond=999999
-        ).timestamp()
-    )
+    home_team = clean_team_name(match["home_team"])
+    away_team = clean_team_name(match["away_team"])
 
-    submissions = subreddit.submissions(start=search_start, end=search_end)
-    logging.info(f"Fetching submissions from {search_start} to {search_end}")
+    search_queries = [
+        f'title:"{home_team} vs {away_team}" flair:"Match Thread"',
+        f'title:"{home_team} v {away_team}" flair:"Match Thread"',
+        f'title:"{home_team}-{away_team}" flair:"Match Thread"',
+        f'title:"Match Thread: {home_team}" flair:"Match Thread"',
+    ]
 
+    max_retries = 3
+    retry_delay = 2
     matching_threads = []
-    for submission in submissions:
-        if submission.link_flair_text and "Match Thread" in submission.link_flair_text:
-            match_score = is_matching_thread(submission, match)
-            if match_score is not None:
-                matching_threads.append((match_score, submission))
 
-    if matching_threads:
-        best_match = max(matching_threads, key=lambda x: x[0])[1]
-        return extract_thread_data(best_match)
+    for attempt in range(max_retries):
+        try:
+            for query in search_queries:
+                search_results = subreddit.search(
+                    query, sort="new", time_filter="all", syntax="lucene"
+                )
 
-    logging.info("No matching threads found.")
+                for thread in search_results:
+                    match_score = is_matching_thread(thread, match)
+                    if match_score is not None:
+                        matching_threads.append((match_score, thread))
+
+            if matching_threads:
+                best_match = max(matching_threads, key=lambda x: x[0])[1]
+                return extract_thread_data(best_match)
+
+            logging.info("No matching thread found")
+            return None
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logging.warning(
+                    f"Attempt {attempt + 1} failed, retrying in {retry_delay} seconds..."
+                )
+                time.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                logging.error(f"All attempts failed: {str(e)}")
+                return None
+
     return None
 
 
-def is_matching_thread(submission, match: Dict) -> Optional[int]:
-    """Enhanced matching logic for Reddit match threads."""
-    title_lower = submission.title.lower()
-    body = submission.selftext.lower()
+def is_matching_thread(thread, match: Dict) -> Optional[int]:
+    """Enhanced matching logic for Reddit match threads"""
+    title_lower = thread.title.lower()
+    body = thread.selftext.lower()
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
     competition = clean_team_name(match["competition"])
@@ -135,6 +173,9 @@ def is_matching_thread(submission, match: Dict) -> Optional[int]:
     title_patterns = [
         r"match thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)\s*(?:\|\s*(.+))?$",
         r"match thread:?\s*(.+?)\s*(?:\d+\s*[-–]\s*\d+)\s*(.+?)\s*(?:\|\s*(.+))?$",
+        r"(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)\s*\|\s*(.+?)$",
+        r"(.+?)\s+(?:vs\.?|v\.?|\-)\s+(.+)$",
+        r"match thread:?\s*(.+?)\s+v\s+(.+?)(?:\s*\((.+?)\))?$",
     ]
 
     for pattern in title_patterns:
@@ -160,26 +201,29 @@ def is_matching_thread(submission, match: Dict) -> Optional[int]:
                 f"Match scores - Home: {home_score}, Away: {away_score}, Competition: {competition_score}"
             )
 
-            score_pattern = r"(?:ft|full.?time|ht|half.?time).*?(\d+)[-–](\d+)"
-            score_match = re.search(score_pattern, body, re.IGNORECASE)
+            score_patterns = [
+                r"(?:ft|full.?time|ht|half.?time).*?(\d+)[-–](\d+)",
+                r"(\d+)[-–](\d+)\s*(?:ft|full.?time)",
+                r"score:?\s*(\d+)[-–](\d+)",
+            ]
 
-            if score_match:
-                reddit_home_score = int(score_match.group(1))
-                reddit_away_score = int(score_match.group(2))
-                score_matches = (
-                    reddit_home_score == match["home_score"]
-                    and reddit_away_score == match["away_score"]
-                )
-                logging.debug(
-                    f"Score comparison: {reddit_home_score}-{reddit_away_score} vs {match['home_score']}-{match['away_score']}"
-                )
-            else:
-                score_matches = False
+            score_matches = False
+            for score_pattern in score_patterns:
+                score_match = re.search(score_pattern, body, re.IGNORECASE)
+                if score_match:
+                    reddit_home_score = int(score_match.group(1))
+                    reddit_away_score = int(score_match.group(2))
+                    score_matches = (
+                        reddit_home_score == match["home_score"]
+                        and reddit_away_score == match["away_score"]
+                    )
+                    if score_matches:
+                        break
 
             total_score = home_score + away_score + competition_score
 
             if (
-                home_score > 60 and away_score > 60 and competition_score > 50
+                home_score > 50 and away_score > 50 and competition_score > 40
             ) or score_matches:
                 logging.info(
                     f"Match found with confidence - Home: {home_score}%, Away: {away_score}%, Competition: {competition_score}%"
