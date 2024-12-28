@@ -8,6 +8,8 @@ from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
 import time
 import unicodedata
+from datetime import datetime
+from prawcore.exceptions import RequestException, ResponseException
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,6 +32,8 @@ def clean_team_name(team_name: str) -> str:
         "nottingham forest": "forest",
         "west ham united": "west ham",
         "aston villa": "villa",
+        "fc": "",
+        "football club": "",
     }
 
     team_name = unicodedata.normalize("NFKD", team_name)
@@ -114,7 +118,6 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     )
 
     subreddit = reddit.subreddit("soccer")
-
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
 
@@ -123,17 +126,21 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
         f'title:"{home_team} v {away_team}" flair:"Match Thread"',
         f'title:"{home_team}-{away_team}" flair:"Match Thread"',
         f'title:"Match Thread: {home_team}" flair:"Match Thread"',
+        f'title:"Match Thread: {home_team} vs {away_team}"',
+        f'title:"Match Thread: {home_team} v {away_team}"',
+        f'title:"{home_team}" AND title:"{away_team}" AND flair:"Match Thread"',
+        f'selftext:"{home_team}" AND selftext:"{away_team}" AND flair:"Match Thread"',
     ]
 
-    max_retries = 3
-    retry_delay = 2
+    max_retries = 5
+    retry_delay = 5
     matching_threads = []
 
     for attempt in range(max_retries):
         try:
             for query in search_queries:
                 search_results = subreddit.search(
-                    query, sort="new", time_filter="all", syntax="lucene"
+                    query, sort="new", time_filter="all", syntax="lucene", limit=100
                 )
 
                 for thread in search_results:
@@ -148,13 +155,11 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
             logging.info("No matching thread found")
             return None
 
-        except Exception as e:
+        except (RequestException, ResponseException) as e:
             if attempt < max_retries - 1:
-                logging.warning(
-                    f"Attempt {attempt + 1} failed, retrying in {retry_delay} seconds..."
-                )
-                time.sleep(retry_delay)
-                retry_delay *= 2
+                sleep_time = retry_delay * (2**attempt)
+                logging.warning(f"Rate limit hit, waiting {sleep_time} seconds...")
+                time.sleep(sleep_time)
             else:
                 logging.error(f"All attempts failed: {str(e)}")
                 return None
@@ -197,10 +202,6 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
                 else 100
             )
 
-            logging.debug(
-                f"Match scores - Home: {home_score}, Away: {away_score}, Competition: {competition_score}"
-            )
-
             score_patterns = [
                 r"(?:ft|full.?time|ht|half.?time).*?(\d+)[-–](\d+)",
                 r"(\d+)[-–](\d+)\s*(?:ft|full.?time)",
@@ -222,9 +223,12 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
 
             total_score = home_score + away_score + competition_score
 
-            if (
-                home_score > 50 and away_score > 50 and competition_score > 40
-            ) or score_matches:
+            # Check date matching
+            thread_date = datetime.fromtimestamp(thread.created_utc)
+            match_date = match["utcDate"]
+            date_diff = abs((thread_date - match_date).days)
+
+            if (home_score > 40 and away_score > 40) or score_matches or date_diff <= 1:
                 logging.info(
                     f"Match found with confidence - Home: {home_score}%, Away: {away_score}%, Competition: {competition_score}%"
                 )
