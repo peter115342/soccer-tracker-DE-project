@@ -6,7 +6,6 @@ import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
-import time
 import unicodedata
 
 logging.basicConfig(level=logging.INFO)
