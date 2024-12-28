@@ -6,7 +6,8 @@ import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
-import time
+
+# import time
 import unicodedata
 
 logging.basicConfig(level=logging.INFO)
@@ -91,50 +92,24 @@ def get_processed_matches() -> List[Dict]:
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     """Find matching Reddit thread for a specific match with enhanced search"""
-    logging.info(
-        f"Searching for Reddit thread for match: {match['home_team']} vs {match['away_team']} ({match['home_score']}-{match['away_score']})"
-    )
-
     subreddit = reddit.subreddit("soccer")
-    match_date = match["utcDate"]
 
-    search_start = match_date.replace(hour=0, minute=0, second=0, microsecond=0)
-    search_end = match_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+    # Simplified search query similar to test script
+    search_query = f'title:"Match Thread: {match["home_team"]} vs {match["away_team"]}"'
+    logging.info(f"Using search query: {search_query}")
 
-    max_retries = 3
-    retry_delay = 2
+    threads = list(subreddit.search(search_query, sort="new", limit=200))
+    logging.info(f"Found {len(threads)} potential threads")
 
-    for attempt in range(max_retries):
-        try:
-            search_query = f'title:"Match Thread" timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
-            logging.info(f"Using search query: {search_query}")
+    matching_threads = []
+    for thread in threads:
+        match_score = is_matching_thread(thread, match)
+        if match_score is not None:
+            matching_threads.append((match_score, thread))
 
-            threads = list(subreddit.search(search_query, sort="new", limit=200))
-            logging.info(f"Found {len(threads)} potential threads")
-            time.sleep(1)
-
-            matching_threads = []
-            for thread in threads:
-                match_score = is_matching_thread(thread, match)
-                if match_score is not None:
-                    matching_threads.append((match_score, thread))
-
-            if matching_threads:
-                best_match = max(matching_threads, key=lambda x: x[0])[1]
-                return extract_thread_data(best_match)
-
-            return None
-
-        except Exception as e:
-            if attempt < max_retries - 1:
-                logging.warning(
-                    f"Attempt {attempt + 1} failed, retrying in {retry_delay} seconds..."
-                )
-                time.sleep(retry_delay)
-                retry_delay *= 2
-            else:
-                logging.error(f"All attempts failed: {str(e)}")
-                return None
+    if matching_threads:
+        best_match = max(matching_threads, key=lambda x: x[0])[1]
+        return extract_thread_data(best_match)
 
     return None
 
