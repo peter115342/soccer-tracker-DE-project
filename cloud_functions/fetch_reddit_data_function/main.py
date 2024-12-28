@@ -72,12 +72,11 @@ def fetch_reddit_data(event, context):
         logging.info(final_message)
 
         if processed_count == len(matches):
-            color = 65280  # Green for 100% success
+            color = 65280  # Green
         elif processed_count > 0:
-            color = 16776960  # Yellow for partial success
+            color = 16776960  # Yellow
         else:
-            color = 15158332  # Red for no matches processed
-
+            color = 15158332  # Red
         send_discord_notification(
             title="Reddit Data Fetch Results", message=final_message, color=color
         )
