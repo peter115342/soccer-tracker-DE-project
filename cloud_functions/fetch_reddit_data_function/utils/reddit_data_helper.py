@@ -8,6 +8,7 @@ from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
 import time
+import unicodedata
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,10 +18,18 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def clean_team_name(team_name: str) -> str:
-    """Remove short abbreviations and clean team name"""
-    parts = team_name.lower().split()
-    cleaned_parts = [part for part in parts if len(part) > 3]
-    return " ".join(cleaned_parts)
+    """Normalize and clean team name"""
+    team_name = unicodedata.normalize("NFKD", team_name)
+    team_name = re.sub(r"[^a-zA-Z\s]", "", team_name)
+    team_name = team_name.lower()
+    tokens = team_name.split()
+    cleaned_tokens = [
+        token
+        for token in tokens
+        if token not in ["fc", "cf", "sc", "afc", "cfc", "ac", "ss", "us"]
+        and len(token) > 2
+    ]
+    return " ".join(cleaned_tokens)
 
 
 def initialize_reddit():
@@ -89,8 +98,8 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
     subreddit = reddit.subreddit("soccer")
     match_date = match["utcDate"]
-    search_start = match_date - timedelta(hours=6)
-    search_end = match_date + timedelta(hours=24)
+    search_start = match_date - timedelta(hours=8)
+    search_end = match_date + timedelta(hours=14)
 
     max_retries = 3
     retry_delay = 2
@@ -104,9 +113,17 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
             logging.info(f"Found {len(threads)} potential threads")
             time.sleep(1)
 
+            matching_threads = []
+
             for thread in threads:
-                if is_matching_thread(thread, match):
-                    return extract_thread_data(thread)
+                match_score = is_matching_thread(thread, match)
+                if match_score:
+                    matching_threads.append((match_score, thread))
+
+            if matching_threads:
+                # Select the thread with the highest total score
+                best_match = max(matching_threads, key=lambda x: x[0])[1]
+                return extract_thread_data(best_match)
 
             return None
 
@@ -124,33 +141,41 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     return None
 
 
-def is_matching_thread(thread, match: Dict) -> bool:
+def is_matching_thread(thread, match: Dict) -> Optional[int]:
     """Enhanced matching logic for Reddit match threads"""
     title_lower = thread.title.lower()
     body = thread.selftext.lower()
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
-    competition = match["competition"].lower()
+    competition = clean_team_name(match["competition"])
 
     title_patterns = [
-        r"match thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+))?$",
-        r"match thread:?\s*(.+?)\s*(?:\d+\s*-\s*\d+)\s*(.+?)(?:\s*\|\s*(.+))?$",
+        r"match thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)\s*(?:\|\s*(.+))?$",
+        r"match thread:?\s*(.+?)\s*(?:\d+\s*[-–]\s*\d+)\s*(.+?)\s*(?:\|\s*(.+))?$",
     ]
 
-    found_match = False
     for pattern in title_patterns:
         title_match = re.match(pattern, title_lower)
         if title_match:
             reddit_home_team = clean_team_name(title_match.group(1).strip())
             reddit_away_team = clean_team_name(title_match.group(2).strip())
             reddit_competition = (
-                title_match.group(3).strip() if title_match.group(3) else ""
+                clean_team_name(title_match.group(3).strip())
+                if title_match.group(3)
+                else ""
             )
 
             home_score = fuzz.token_set_ratio(home_team, reddit_home_team)
             away_score = fuzz.token_set_ratio(away_team, reddit_away_team)
+            competition_score = (
+                fuzz.token_set_ratio(competition, reddit_competition)
+                if reddit_competition
+                else 100
+            )
 
-            logging.debug(f"Match scores - Home: {home_score}, Away: {away_score}")
+            logging.debug(
+                f"Match scores - Home: {home_score}, Away: {away_score}, Competition: {competition_score}"
+            )
 
             score_pattern = r"(?:ft|full.?time|ht|half.?time).*?(\d+)[-–](\d+)"
             score_match = re.search(score_pattern, body, re.IGNORECASE)
@@ -168,21 +193,24 @@ def is_matching_thread(thread, match: Dict) -> bool:
             else:
                 score_matches = False
 
-            comp_match = True
-            if reddit_competition:
-                comp_match = fuzz.token_set_ratio(competition, reddit_competition) > 60
-                logging.debug(
-                    f"Competition match ratio: {fuzz.token_set_ratio(competition, reddit_competition)}"
-                )
+            date_matches = (
+                abs(thread.created_utc - match["utcDate"].timestamp()) <= 48 * 3600
+            )
 
-            if home_score > 75 and away_score > 75 and comp_match and score_matches:
-                found_match = True
+            total_score = home_score + away_score + competition_score
+
+            if (
+                home_score > 60
+                and away_score > 60
+                and competition_score > 50
+                and date_matches
+            ) or (score_matches and date_matches):
                 logging.info(
-                    f"Match found with confidence - Home: {home_score}%, Away: {away_score}%"
+                    f"Match found with confidence - Home: {home_score}%, Away: {away_score}%, Competition: {competition_score}%"
                 )
-                break
+                return total_score
 
-    return found_match
+    return None
 
 
 def extract_thread_data(thread) -> Dict:
