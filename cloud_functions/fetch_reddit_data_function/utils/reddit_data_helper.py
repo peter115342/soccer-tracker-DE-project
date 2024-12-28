@@ -90,7 +90,7 @@ def get_processed_matches() -> List[Dict]:
 
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Find matching Reddit thread for a specific match with enhanced search"""
+    """Find matching Reddit thread for a specific match with enhanced search."""
     logging.info(
         f"Searching for Reddit thread for match: {match['home_team']} vs {match['away_team']} ({match['home_score']}-{match['away_score']})"
     )
@@ -107,52 +107,28 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
         ).timestamp()
     )
 
+    submissions = subreddit.submissions(start=search_start, end=search_end)
     logging.info(f"Fetching submissions from {search_start} to {search_end}")
 
-    max_retries = 3
-    retry_delay = 2
+    matching_threads = []
+    for submission in submissions:
+        if submission.link_flair_text and "Match Thread" in submission.link_flair_text:
+            match_score = is_matching_thread(submission, match)
+            if match_score is not None:
+                matching_threads.append((match_score, submission))
 
-    for attempt in range(max_retries):
-        try:
-            threads = list(subreddit.submissions(start=search_start, end=search_end))
-            logging.info(f"Found {len(threads)} submissions for the day")
+    if matching_threads:
+        best_match = max(matching_threads, key=lambda x: x[0])[1]
+        return extract_thread_data(best_match)
 
-            threads = [
-                thread for thread in threads if thread.link_flair_text == "Match Thread"
-            ]
-            logging.info(f"Filtered to {len(threads)} Match Thread posts")
-
-            matching_threads = []
-            for thread in threads:
-                match_score = is_matching_thread(thread, match)
-                if match_score is not None:
-                    matching_threads.append((match_score, thread))
-
-            if matching_threads:
-                best_match = max(matching_threads, key=lambda x: x[0])[1]
-                return extract_thread_data(best_match)
-
-            logging.info("No matching thread found")
-            return None
-
-        except Exception as e:
-            if attempt < max_retries - 1:
-                logging.warning(
-                    f"Attempt {attempt + 1} failed, retrying in {retry_delay} seconds..."
-                )
-                time.sleep(retry_delay)
-                retry_delay *= 2
-            else:
-                logging.error(f"All attempts failed: {str(e)}")
-                return None
-
+    logging.info("No matching threads found.")
     return None
 
 
-def is_matching_thread(thread, match: Dict) -> Optional[int]:
-    """Enhanced matching logic for Reddit match threads"""
-    title_lower = thread.title.lower()
-    body = thread.selftext.lower()
+def is_matching_thread(submission, match: Dict) -> Optional[int]:
+    """Enhanced matching logic for Reddit match threads."""
+    title_lower = submission.title.lower()
+    body = submission.selftext.lower()
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
     competition = clean_team_name(match["competition"])
