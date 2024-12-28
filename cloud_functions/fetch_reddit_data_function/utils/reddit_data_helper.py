@@ -8,7 +8,7 @@ from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
 import time
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timezone
 from prawcore.exceptions import RequestException, ResponseException
 
 logging.basicConfig(level=logging.INFO)
@@ -21,17 +21,6 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 def clean_team_name(team_name: str) -> str:
     """Enhanced team name cleaning with common replacements"""
     replacements = {
-        "united": "utd",
-        "manchester": "man",
-        "tottenham hotspur": "tottenham",
-        "wolverhampton wanderers": "wolves",
-        "brighton & hove albion": "brighton",
-        "newcastle united": "newcastle",
-        "leeds united": "leeds",
-        "crystal palace": "palace",
-        "nottingham forest": "forest",
-        "west ham united": "west ham",
-        "aston villa": "villa",
         "fc": "",
         "football club": "",
     }
@@ -223,9 +212,8 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
 
             total_score = home_score + away_score + competition_score
 
-            # Check date matching
-            thread_date = datetime.fromtimestamp(thread.created_utc)
-            match_date = match["utcDate"]
+            thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
+            match_date = match["utcDate"].replace(tzinfo=timezone.utc)
             date_diff = abs((thread_date - match_date).days)
 
             if (home_score > 40 and away_score > 40) or score_matches or date_diff <= 1:
