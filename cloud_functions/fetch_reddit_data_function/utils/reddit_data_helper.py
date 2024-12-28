@@ -165,9 +165,9 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
     competition = clean_team_name(match["competition"])
 
     title_patterns = [
-        r"match thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)\s*(?:\|\s*(.+))?$",
-        r"match thread:?\s*(.+?)\s*(?:\d+\s*[-–]\s*\d+)\s*(.+?)\s*(?:\|\s*(.+))?$",
-        r"(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)\s*\|\s*(.+?)$",
+        r"match thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+))?$",
+        r"match thread:?\s*(.+?)\s*(?:\d+\s*[-–]\s*\d+)\s*(.+?)(?:\s*\|\s*(.+))?$",
+        r"(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+?))?$",
         r"(.+?)\s+(?:vs\.?|v\.?|\-)\s+(.+)$",
         r"match thread:?\s*(.+?)\s+v\s+(.+?)(?:\s*\((.+?)\))?$",
     ]
@@ -179,7 +179,7 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
             reddit_away_team = clean_team_name(title_match.group(2).strip())
             reddit_competition = (
                 clean_team_name(title_match.group(3).strip())
-                if title_match.group(3)
+                if len(title_match.groups()) >= 3 and title_match.group(3)
                 else ""
             )
 
