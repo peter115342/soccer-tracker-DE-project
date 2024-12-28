@@ -98,8 +98,9 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
     subreddit = reddit.subreddit("soccer")
     match_date = match["utcDate"]
-    search_start = match_date - timedelta(hours=8)
-    search_end = match_date + timedelta(hours=14)
+
+    search_start = match_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    search_end = match_date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
     max_retries = 3
     retry_delay = 2
@@ -109,19 +110,17 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
             search_query = f'title:"Match Thread" timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
             logging.info(f"Using search query: {search_query}")
 
-            threads = list(subreddit.search(search_query, sort="new", limit=100))
+            threads = list(subreddit.search(search_query, sort="new", limit=200))
             logging.info(f"Found {len(threads)} potential threads")
             time.sleep(1)
 
             matching_threads = []
-
             for thread in threads:
                 match_score = is_matching_thread(thread, match)
-                if match_score:
+                if match_score is not None:
                     matching_threads.append((match_score, thread))
 
             if matching_threads:
-                # Select the thread with the highest total score
                 best_match = max(matching_threads, key=lambda x: x[0])[1]
                 return extract_thread_data(best_match)
 
@@ -193,18 +192,11 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
             else:
                 score_matches = False
 
-            date_matches = (
-                abs(thread.created_utc - match["utcDate"].timestamp()) <= 48 * 3600
-            )
-
             total_score = home_score + away_score + competition_score
 
             if (
-                home_score > 60
-                and away_score > 60
-                and competition_score > 50
-                and date_matches
-            ) or (score_matches and date_matches):
+                home_score > 40 and away_score > 40 and competition_score > 30
+            ) or score_matches:
                 logging.info(
                     f"Match found with confidence - Home: {home_score}%, Away: {away_score}%, Competition: {competition_score}%"
                 )
