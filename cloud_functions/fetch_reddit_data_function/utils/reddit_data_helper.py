@@ -98,20 +98,29 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     subreddit = reddit.subreddit("soccer")
     match_date = match["utcDate"]
 
-    search_start = match_date.replace(hour=0, minute=0, second=0, microsecond=0)
-    search_end = match_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+    search_start = int(
+        match_date.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    )
+    search_end = int(
+        match_date.replace(
+            hour=23, minute=59, second=59, microsecond=999999
+        ).timestamp()
+    )
+
+    logging.info(f"Fetching submissions from {search_start} to {search_end}")
 
     max_retries = 3
     retry_delay = 2
 
     for attempt in range(max_retries):
         try:
-            search_query = f'flair:"Match Thread" timestamp:{int(search_start.timestamp())}..{int(search_end.timestamp())}'
-            logging.info(f"Using search query: {search_query}")
+            threads = list(subreddit.submissions(start=search_start, end=search_end))
+            logging.info(f"Found {len(threads)} submissions for the day")
 
-            threads = list(subreddit.search(search_query, sort="new", limit=300))
-            logging.info(f"Found {len(threads)} Match Thread posts for the day")
-            time.sleep(1)
+            threads = [
+                thread for thread in threads if thread.link_flair_text == "Match Thread"
+            ]
+            logging.info(f"Filtered to {len(threads)} Match Thread posts")
 
             matching_threads = []
             for thread in threads:
@@ -123,6 +132,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 best_match = max(matching_threads, key=lambda x: x[0])[1]
                 return extract_thread_data(best_match)
 
+            logging.info("No matching thread found")
             return None
 
         except Exception as e:
