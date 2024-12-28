@@ -3,7 +3,6 @@ import json
 import logging
 import praw
 import re
-from datetime import timedelta
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from fuzzywuzzy import fuzz
