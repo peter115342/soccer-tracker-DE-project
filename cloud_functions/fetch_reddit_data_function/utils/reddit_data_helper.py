@@ -218,7 +218,7 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
 
             total_score = home_score + away_score + competition_score
 
-            if (home_score > 35 and away_score > 35) or score_matches:
+            if (home_score > 25 and away_score > 25) or score_matches:
                 logging.info(
                     f"Match found with confidence - Home: {home_score}%, Away: {away_score}%, Competition: {competition_score}%"
                 )
