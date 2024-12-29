@@ -5,7 +5,7 @@ import praw
 import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
-from rapidfuzz import fuzz
+from fuzzywuzzy import fuzz
 import time
 import unicodedata
 from datetime import datetime, timezone
@@ -156,7 +156,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     return None
 
 
-def is_matching_thread(thread, match: Dict) -> Optional[float]:
+def is_matching_thread(thread, match: Dict) -> Optional[int]:
     """Enhanced matching logic for Reddit match threads"""
     thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
     match_date = match["utcDate"].replace(tzinfo=timezone.utc)
@@ -194,7 +194,7 @@ def is_matching_thread(thread, match: Dict) -> Optional[float]:
             competition_score = (
                 fuzz.token_set_ratio(competition, reddit_competition)
                 if reddit_competition
-                else 100.0
+                else 100
             )
 
             score_patterns = [
@@ -218,9 +218,9 @@ def is_matching_thread(thread, match: Dict) -> Optional[float]:
 
             total_score = home_score + away_score + competition_score
 
-            if (home_score > 35.0 and away_score > 35.0) or score_matches:
+            if (home_score > 35 and away_score > 35) or score_matches:
                 logging.info(
-                    f"Match found with confidence - Home: {home_score:.2f}%, Away: {away_score:.2f}%, Competition: {competition_score:.2f}%"
+                    f"Match found with confidence - Home: {home_score}%, Away: {away_score}%, Competition: {competition_score}%"
                 )
                 return total_score
 
