@@ -5,5 +5,4 @@ datetime
 google-cloud-storage
 google-cloud-pubsub
 praw
-fuzzywuzzy
-python-Levenshtein
+rapidfuzz
