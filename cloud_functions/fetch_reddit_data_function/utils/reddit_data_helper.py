@@ -5,7 +5,7 @@ import praw
 import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz
 import time
 import unicodedata
 from datetime import datetime, timezone
