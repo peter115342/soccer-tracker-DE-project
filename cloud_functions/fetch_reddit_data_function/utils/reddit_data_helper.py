@@ -19,27 +19,22 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def clean_team_name(team_name: str) -> str:
-    """Enhanced team name cleaning with common replacements"""
-    replacements = {
-        "fc": "",
-        "football club": "",
-    }
+    """Enhanced team name cleaning with international naming patterns"""
+    name_parts = team_name.split()
+    if len(name_parts) > 2:
+        distinctive_parts = [
+            part
+            for part in name_parts
+            if len(part) > 2
+            and part.lower()
+            not in {"fc", "cf", "ac", "rc", "sc", "cd", "ud", "rcd", "hsc", "bc"}
+        ]
+        if distinctive_parts:
+            team_name = distinctive_parts[-1]
 
     team_name = unicodedata.normalize("NFKD", team_name)
     team_name = re.sub(r"[^a-zA-Z\s]", "", team_name)
-    team_name = team_name.lower().strip()
-
-    for old, new in replacements.items():
-        team_name = team_name.replace(old, new)
-
-    tokens = team_name.split()
-    cleaned_tokens = [
-        token
-        for token in tokens
-        if token not in ["fc", "cf", "sc", "afc", "cfc", "ac", "ss", "us"]
-        and len(token) > 2
-    ]
-    return " ".join(cleaned_tokens)
+    return team_name.lower().strip()
 
 
 def initialize_reddit():
@@ -109,6 +104,8 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     subreddit = reddit.subreddit("soccer")
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
+    home_team_simple = match["home_team"].split()[-1]
+    away_team_simple = match["away_team"].split()[-1]
 
     search_queries = [
         f'title:"{home_team} vs {away_team}" flair:"Match Thread"',
@@ -118,6 +115,9 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
         f'title:"Match Thread: {home_team} vs {away_team}"',
         f'title:"Match Thread: {home_team} v {away_team}"',
         f'title:"{home_team}" AND title:"{away_team}" AND flair:"Match Thread"',
+        f'title:"Match Thread" AND title:"{home_team}"',
+        f'title:"Post Match Thread" AND title:"{home_team}" AND title:"{away_team}"',
+        f'title:"{home_team_simple} vs {away_team_simple}"',
         f'selftext:"{home_team}" AND selftext:"{away_team}" AND flair:"Match Thread"',
     ]
 
@@ -158,6 +158,12 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
 def is_matching_thread(thread, match: Dict) -> Optional[int]:
     """Enhanced matching logic for Reddit match threads"""
+    thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
+    match_date = match["utcDate"].replace(tzinfo=timezone.utc)
+
+    if thread_date.date() != match_date.date():
+        return None
+
     title_lower = thread.title.lower()
     body = thread.selftext.lower()
     home_team = clean_team_name(match["home_team"])
@@ -212,11 +218,7 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
 
             total_score = home_score + away_score + competition_score
 
-            thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
-            match_date = match["utcDate"].replace(tzinfo=timezone.utc)
-            date_diff = abs((thread_date - match_date).days)
-
-            if (home_score > 40 and away_score > 40) or score_matches or date_diff <= 1:
+            if (home_score > 35 and away_score > 35) or score_matches:
                 logging.info(
                     f"Match found with confidence - Home: {home_score}%, Away: {away_score}%, Competition: {competition_score}%"
                 )
