@@ -18,6 +18,23 @@ REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
+def get_competition_variations(competition: str) -> List[str]:
+    """Generate variations of competition names"""
+    variations = {
+        "Primera Division": [
+            "La Liga",
+            "LaLiga",
+            "Spanish Primera",
+            "Primera División",
+        ],
+        "Serie A": ["Italian Serie A", "Serie A TIM", "Calcio"],
+        "Ligue 1": ["French Ligue 1", "Ligue 1 Uber Eats"],
+        "Premier League": ["EPL", "English Premier League", "BPL"],
+        "Bundesliga": ["German Bundesliga"],
+    }
+    return variations.get(competition, [competition])
+
+
 def clean_team_name(team_name: str) -> str:
     """Enhanced team name cleaning with more variations"""
     prefixes = {
@@ -124,7 +141,6 @@ def clean_team_name(team_name: str) -> str:
     }
 
     name_parts = team_name.lower().split()
-
     distinctive_parts = [part for part in name_parts if part not in prefixes]
 
     if distinctive_parts:
@@ -206,19 +222,33 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     subreddit = reddit.subreddit("soccer")
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
+    competition_variations = get_competition_variations(match["competition"])
 
     search_queries = [
         f'title:"{home_team}" AND title:"{away_team}"',
         f'title:"Match Thread" AND title:"{home_team}"',
         f'title:"Post Match Thread" AND title:"{home_team}"',
         f'title:"{match["home_score"]}-{match["away_score"]}" AND title:"{home_team}"',
-        f'title:"{home_team}" AND title:"{away_team}" AND title:"{match["competition"]}"',
         f'title:"{home_team} vs {away_team}"',
         f'title:"{home_team} v {away_team}"',
         f'title:"{home_team}-{away_team}"',
         f'title:"Match Thread: {home_team}"',
         f'selftext:"{home_team}" AND selftext:"{away_team}"',
     ]
+
+    # Add competition-specific queries
+    search_queries.extend(
+        [
+            f'title:"{home_team}" AND title:"{away_team}" AND title:"{comp}"'
+            for comp in competition_variations
+        ]
+    )
+    search_queries.extend(
+        [
+            f'title:"Match Thread" AND title:"{home_team}" AND title:"{comp}"'
+            for comp in competition_variations
+        ]
+    )
 
     max_retries = 5
     retry_delay = 5
@@ -267,7 +297,7 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
     body = thread.selftext.lower()
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
-    competition = clean_team_name(match["competition"])
+    competition_variations = get_competition_variations(match["competition"])
 
     title_patterns = [
         r"(?:match|post match) thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+))?$",
@@ -296,10 +326,10 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
 
             home_score = fuzz.token_set_ratio(home_team, reddit_home_team)
             away_score = fuzz.token_set_ratio(away_team, reddit_away_team)
-            competition_score = (
-                fuzz.token_set_ratio(competition, reddit_competition)
-                if reddit_competition
-                else 100
+
+            competition_match = any(
+                fuzz.token_set_ratio(clean_team_name(comp), reddit_competition) > 50
+                for comp in competition_variations
             )
 
             score_matches = False
@@ -317,13 +347,13 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
                     if score_matches:
                         break
 
-            if (home_score > 10 and away_score > 10) or score_matches:
-                score_bonus = 50 if score_matches else 0
-                competition_bonus = 30 if competition_score > 50 else 0
+            if (home_score > 30 and away_score > 30) or score_matches:
+                score_bonus = 80 if score_matches else 0
+                competition_bonus = 50 if competition_match else 0
                 total_score = (
                     home_score
                     + away_score
-                    + competition_score
+                    + (150 if competition_match else 0)
                     + score_bonus
                     + competition_bonus
                 )
