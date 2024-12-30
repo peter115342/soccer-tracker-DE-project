@@ -251,7 +251,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     search_queries = [
         f'title:"Match Thread" AND title:"{home_team}" AND title:"{away_team}"',
         f'title:"Post Match Thread" AND title:"{home_team}" AND title:"{away_team}"',
-        f'title:"{match["home_score"]}-{match["away_score"]}" AND title:"{home_team}" AND title:"{away_team}"',
+        f'title:"{home_team}" AND title:"{away_team}"',
         f'title:"{home_team} vs {away_team}"',
         f'title:"{home_team} v {away_team}"',
     ]
@@ -265,7 +265,11 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 logging.info(f"Trying search query: {query}")
                 search_results = list(
                     subreddit.search(
-                        query, sort="new", time_filter="week", syntax="lucene", limit=10
+                        query,
+                        sort="new",
+                        time_filter="month",
+                        syntax="lucene",
+                        limit=20,
                     )
                 )
 
@@ -275,6 +279,9 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                     match_score = is_matching_thread(thread, match)
                     if match_score is not None:
                         matching_threads.append((match_score, thread))
+                        logging.info(
+                            f"Thread '{thread.title}' matched with score {match_score}"
+                        )
 
                 break
 
@@ -293,51 +300,66 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
 
 def is_matching_thread(thread, match: Dict) -> Optional[int]:
-    """Enhanced matching logic with improved scoring system"""
+    """Enhanced matching logic with improved scoring system and competition matching."""
     thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
     match_date = match["utcDate"].replace(tzinfo=timezone.utc)
 
-    if abs((thread_date - match_date).total_seconds()) > 86400:
+    if abs((thread_date - match_date).total_seconds()) > 3 * 86400:
         return None
 
     title_lower = thread.title.lower()
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
+    competition = match["competition"]
+
+    competition_variations = get_competition_variations(competition)
+    competition_variations_lower = [comp.lower() for comp in competition_variations]
 
     title_patterns = [
-        r"(?:match|post match) thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+))?$",
-        r"(?:match|post match) thread:?\s*(.+?)\s*(?:\d+\s*[-–]\s*\d+)\s*(.+?)(?:\s*\|\s*(.+))?$",
-        r"(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+?))?$",
-        r"(.+?)\s+(?:\d+\s*[-–]\s*\d+)\s+(.+)$",
+        r"(?:match thread|post match thread):?\s*(.+?)\s+(?:vs\.?|v\.?)\s+(.+?)(?:\s*\|\s*(.+))?$",
+        r"(.+?)\s+(?:vs\.?|v\.?)\s+(.+?)(?:\s*\|\s*(.+))?$",
+        r"(?:match thread|post match thread):?\s*(.+?)\s+(\d+[-–]\d+)\s+(.+?)(?:\s*\|\s*(.+))?$",
     ]
 
     for pattern in title_patterns:
-        title_match = re.search(pattern, title_lower)
+        title_match = re.match(pattern, title_lower)
         if title_match:
-            reddit_home = clean_team_name(title_match.group(1).strip())
-            reddit_away = clean_team_name(title_match.group(2).strip())
-
-            home_words = set(word for word in home_team.split() if len(word) >= 3)
-            away_words = set(word for word in away_team.split() if len(word) >= 3)
-            reddit_home_words = set(
-                word for word in reddit_home.split() if len(word) >= 3
+            groups = title_match.groups()
+            reddit_home = clean_team_name(groups[0].strip())
+            reddit_away = clean_team_name(groups[1].strip())
+            reddit_competition = (
+                groups[2].strip() if len(groups) > 2 and groups[2] else ""
             )
-            reddit_away_words = set(
-                word for word in reddit_away.split() if len(word) >= 3
-            )
-
-            home_matches = bool(home_words & reddit_home_words)
-            away_matches = bool(away_words & reddit_away_words)
 
             home_score = fuzz.token_set_ratio(home_team, reddit_home)
             away_score = fuzz.token_set_ratio(away_team, reddit_away)
 
-            if (home_matches and away_matches) or (home_score > 45 and away_score > 45):
+            competition_score = (
+                max(
+                    fuzz.token_set_ratio(reddit_competition.lower(), comp)
+                    for comp in competition_variations_lower
+                )
+                if reddit_competition
+                else 0
+            )
+
+            logging.debug(f"Thread Title: {thread.title}")
+            logging.debug(f"Home Team Score: {home_score}")
+            logging.debug(f"Away Team Score: {away_score}")
+            logging.debug(f"Competition Score: {competition_score}")
+
+            team_threshold = 70
+            competition_threshold = 60
+
+            if home_score >= team_threshold and away_score >= team_threshold:
                 total_score = home_score + away_score
-                if "match thread" in title_lower:
-                    total_score += 50
-                if home_matches and away_matches:
-                    total_score += 75
+
+                if competition_score >= competition_threshold:
+                    total_score += competition_score
+
+                if "match thread" in title_lower or "post match thread" in title_lower:
+                    total_score += 20
+
                 logging.info(f"Match found - Total score: {total_score}")
                 return total_score
 
