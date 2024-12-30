@@ -40,126 +40,18 @@ def get_competition_variations(competition: str) -> List[str]:
 
 
 def clean_team_name(team_name: str) -> str:
-    """Enhanced team name cleaning with more variations"""
-    prefixes = {
-        "fc",
-        "cf",
-        "fk",
-        "ff",
-        "sf",
-        "fs",
-        "fv",
-        "vf",
-        "ac",
-        "ca",
-        "aa",
-        "af",
-        "fa",
-        "as",
-        "sa",
-        "ad",
-        "da",
-        "sc",
-        "cs",
-        "sv",
-        "vs",
-        "sp",
-        "ps",
-        "ss",
-        "sk",
-        "rc",
-        "cr",
-        "rcd",
-        "rcf",
-        "rca",
-        "rsc",
-        "rsb",
-        "cd",
-        "dc",
-        "cp",
-        "pc",
-        "ce",
-        "ec",
-        "cv",
-        "vc",
-        "spvgg",
-        "sgd",
-        "sge",
-        "sgf",
-        "sgl",
-        "bsc",
-        "bsv",
-        "bv",
-        "vfb",
-        "vfl",
-        "vfr",
-        "fsv",
-        "tsv",
-        "tsg",
-        "psv",
-        "cska",
-        "zska",
-        "csk",
-        "fcs",
-        "csm",
-        "ogc",
-        "ol",
-        "psg",
-        "rsca",
-        "rkc",
-        "aek",
-        "paok",
-        "pao",
-        "asd",
-        "usd",
-        "asc",
-        "usc",
-        "acr",
-        "acf",
-        "acn",
-        "pfc",
-        "cfc",
-        "spl",
-        "spf",
-        "scf",
-        "ud",
-        "us",
-        "su",
-        "un",
-        "afc",
-        "afa",
-        "afb",
-        "afs",
-        "bk",
-        "ks",
-        "lks",
-        "mks",
-        "gks",
-        "nk",
-        "hk",
-        "tk",
-        "rb",
-        "rk",
-        "rv",
-        "rw",
-    }
-
+    """Simplify team names for better matching."""
     team_name = team_name.lower()
     team_name = unicodedata.normalize("NFKD", team_name)
     team_name = re.sub(r"[^a-z\s]", "", team_name)
-
-    name_parts = team_name.split()
-    distinctive_parts = [part for part in name_parts if part not in prefixes]
-
-    if not distinctive_parts:
-        return team_name
-
-    if len(distinctive_parts) > 1 and len(distinctive_parts[-1]) > 3:
-        team_name = " ".join(distinctive_parts[-2:])
-    else:
-        team_name = distinctive_parts[-1]
-
-    return team_name.strip()
+    team_name = re.sub(
+        r"\b(fc|cf|sc|ac|united|city|club|cp|deportivo|real|cd|athletic|ssd|calcio|aas|ssc|as|udinese|torino|napoli|venezia|inter|internazionale)\b",
+        "",
+        team_name,
+    )
+    team_name = re.sub(r"\s+", " ", team_name)
+    team_name = team_name.strip()
+    return team_name
 
 
 def initialize_reddit():
@@ -238,7 +130,7 @@ def get_processed_matches() -> List[Dict]:
 
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Enhanced match thread finding with improved search strategies"""
+    """Enhanced match thread finding with flair filtering."""
     logging.info(
         f"Searching for match: {match['home_team']} vs {match['away_team']} "
         f"({match['home_score']}-{match['away_score']})"
@@ -249,11 +141,10 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     away_team = clean_team_name(match["away_team"])
 
     search_queries = [
-        f'title:"Match Thread" AND title:"{home_team}" AND title:"{away_team}"',
-        f'title:"Post Match Thread" AND title:"{home_team}" AND title:"{away_team}"',
-        f'title:"{home_team}" AND title:"{away_team}"',
-        f'title:"{home_team} vs {away_team}"',
-        f'title:"{home_team} v {away_team}"',
+        f'title:"{home_team} vs {away_team}" flair:"Match Thread"',
+        f'title:"{home_team} v {away_team}" flair:"Match Thread"',
+        f'title:"{away_team} vs {home_team}" flair:"Match Thread"',
+        f'title:"{away_team} v {home_team}" flair:"Match Thread"',
     ]
 
     max_retries = 3
@@ -267,7 +158,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                     subreddit.search(
                         query,
                         sort="new",
-                        time_filter="month",
+                        time_filter="day",
                         syntax="lucene",
                         limit=20,
                     )
@@ -300,68 +191,52 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
 
 def is_matching_thread(thread, match: Dict) -> Optional[int]:
-    """Enhanced matching logic with improved scoring system and competition matching."""
+    """Improved matching logic with consideration for team order swapping."""
     thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
     match_date = match["utcDate"].replace(tzinfo=timezone.utc)
 
-    if abs((thread_date - match_date).total_seconds()) > 3 * 86400:
+    if abs((thread_date - match_date).total_seconds()) > 2 * 86400:
         return None
 
     title_lower = thread.title.lower()
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
-    competition = match["competition"]
-
-    competition_variations = get_competition_variations(competition)
-    competition_variations_lower = [comp.lower() for comp in competition_variations]
 
     title_patterns = [
-        r"(?:match thread|post match thread):?\s*(.+?)\s+(?:vs\.?|v\.?)\s+(.+?)(?:\s*\|\s*(.+))?$",
-        r"(.+?)\s+(?:vs\.?|v\.?)\s+(.+?)(?:\s*\|\s*(.+))?$",
-        r"(?:match thread|post match thread):?\s*(.+?)\s+(\d+[-–]\d+)\s+(.+?)(?:\s*\|\s*(.+))?$",
+        r"^(?:match thread):\s*(.+?)\s+(?:vs\.?|v\.?|vs|v|-)\s+(.+?)(?:\s+\|.*)?$",
+        r"^(?:post match thread):\s*(.+?)\s+(?:vs\.?|v\.?|vs|v|-)\s+(.+?)(?:\s+\|.*)?$",
     ]
 
     for pattern in title_patterns:
         title_match = re.match(pattern, title_lower)
         if title_match:
-            groups = title_match.groups()
-            reddit_home = clean_team_name(groups[0].strip())
-            reddit_away = clean_team_name(groups[1].strip())
-            reddit_competition = (
-                groups[2].strip() if len(groups) > 2 and groups[2] else ""
-            )
+            reddit_home = clean_team_name(title_match.group(1).strip())
+            reddit_away = clean_team_name(title_match.group(2).strip())
 
-            home_score = fuzz.token_set_ratio(home_team, reddit_home)
-            away_score = fuzz.token_set_ratio(away_team, reddit_away)
+            combinations = [
+                (home_team, away_team, reddit_home, reddit_away),
+                (home_team, away_team, reddit_away, reddit_home),
+            ]
 
-            competition_score = (
-                max(
-                    fuzz.token_set_ratio(reddit_competition.lower(), comp)
-                    for comp in competition_variations_lower
-                )
-                if reddit_competition
-                else 0
-            )
+            for ht, at, rht, rat in combinations:
+                home_score = fuzz.token_set_ratio(ht, rht)
+                away_score = fuzz.token_set_ratio(at, rat)
 
-            logging.debug(f"Thread Title: {thread.title}")
-            logging.debug(f"Home Team Score: {home_score}")
-            logging.debug(f"Away Team Score: {away_score}")
-            logging.debug(f"Competition Score: {competition_score}")
+                team_threshold = 70
 
-            team_threshold = 70
-            competition_threshold = 60
+                if home_score >= team_threshold and away_score >= team_threshold:
+                    total_score = home_score + away_score
 
-            if home_score >= team_threshold and away_score >= team_threshold:
-                total_score = home_score + away_score
+                    if (
+                        "match thread" in title_lower
+                        or "post match thread" in title_lower
+                    ):
+                        total_score += 20
 
-                if competition_score >= competition_threshold:
-                    total_score += competition_score
-
-                if "match thread" in title_lower or "post match thread" in title_lower:
-                    total_score += 20
-
-                logging.info(f"Match found - Total score: {total_score}")
-                return total_score
+                    logging.info(
+                        f"Match found: {ht} vs {at} in thread '{thread.title}' with score {total_score}"
+                    )
+                    return total_score
 
     return None
 
