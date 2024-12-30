@@ -5,11 +5,11 @@ import praw
 import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
-from rapidfuzz import fuzz, process
+from rapidfuzz import fuzz
 import time
 import unicodedata
 from datetime import datetime, timezone
-from prawcore.exceptions import RequestException, ResponseException
+
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -75,8 +75,7 @@ def clean_team_name(team_name: str) -> str:
         team_name,
     )
     team_name = re.sub(r"\s+", " ", team_name)
-    team_name = team_name.strip()
-    return team_name
+    return team_name.strip()
 
 
 def initialize_reddit():
@@ -155,36 +154,38 @@ def get_processed_matches() -> List[Dict]:
 
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Find the Reddit match thread for a given match."""
-    logging.info(
-        f"Searching for match: {match['home_team']} vs {match['away_team']} "
-        f"({match['home_score']}-{match['away_score']})"
-    )
+    """Find the Reddit match thread for a given match with improved matching logic."""
+    logging.info(f"Searching for match: {match['home_team']} vs {match['away_team']}")
 
     subreddit = reddit.subreddit("soccer")
-    competition = match["competition"]
-    competition_variations = get_competition_variations(competition)
     match_date = match["utcDate"].date()
 
-    search_query = 'flair:"Match Thread"'
+    home_team_clean = clean_team_name(match["home_team"])
+    away_team_clean = clean_team_name(match["away_team"])
 
-    max_retries = 3
-    matching_threads = []
+    competition_variations = get_competition_variations(match["competition"])
 
-    for attempt in range(max_retries):
+    best_thread = None
+    highest_score = 0
+
+    search_queries = [
+        f'flair:"Match Thread" {match["home_team"]}',
+        f'flair:"Match Thread" {home_team_clean}',
+        f'flair:"Match Thread" {match["away_team"]}',
+        f'flair:"Match Thread" {away_team_clean}',
+    ]
+
+    for search_query in search_queries:
         try:
-            logging.info(f"Searching subreddit with query: {search_query}")
             search_results = list(
                 subreddit.search(
                     search_query,
                     sort="new",
-                    time_filter="all",
+                    time_filter="day",
                     syntax="lucene",
-                    limit=1000,
+                    limit=100,
                 )
             )
-
-            logging.info(f"Found {len(search_results)} results for query")
 
             for thread in search_results:
                 thread_date = datetime.fromtimestamp(
@@ -194,67 +195,54 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 if thread_date != match_date:
                     continue
 
-                match_score = is_matching_thread(thread, match, competition_variations)
-                if match_score is not None:
-                    matching_threads.append((match_score, thread))
+                title_lower = thread.title.lower()
+
+                competition_match = False
+                for comp in competition_variations:
+                    if comp.lower() in title_lower:
+                        competition_match = True
+                        break
+
+                if not competition_match:
+                    continue
+
+                title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
+                if len(title_parts) < 2:
+                    continue
+
+                title_teams = [clean_team_name(part.strip()) for part in title_parts]
+
+                home_score = max(
+                    [
+                        fuzz.ratio(home_team_clean, title_team)
+                        for title_team in title_teams
+                    ]
+                )
+                away_score = max(
+                    [
+                        fuzz.ratio(away_team_clean, title_team)
+                        for title_team in title_teams
+                    ]
+                )
+
+                total_score = (home_score + away_score) / 2
+
+                if total_score > highest_score and total_score > 50:
+                    highest_score = total_score
+                    best_thread = thread
                     logging.info(
-                        f"Thread '{thread.title}' matched with score {match_score}"
+                        f"New best match found: {thread.title} (Score: {total_score})"
                     )
 
-            break
+        except Exception as e:
+            logging.error(f"Error searching with query '{search_query}': {str(e)}")
+            continue
 
-        except (RequestException, ResponseException) as e:
-            if attempt == max_retries - 1:
-                logging.error(f"Search failed for query '{search_query}': {str(e)}")
-            time.sleep(2 * (attempt + 1))
-
-    if matching_threads:
-        best_match = max(matching_threads, key=lambda x: x[0])[1]
-        logging.info(f"Best matching thread found: {best_match.title}")
-        return extract_thread_data(best_match)
+    if best_thread:
+        return extract_thread_data(best_thread)
 
     logging.info("No matching thread found")
     return None
-
-
-def is_matching_thread(
-    thread, match: Dict, competition_variations: List[str]
-) -> Optional[int]:
-    """Check if a Reddit thread matches the given match."""
-    title_lower = thread.title.lower()
-    home_team = clean_team_name(match["home_team"])
-    away_team = clean_team_name(match["away_team"])
-    thread_competition = ""
-
-    for comp_variation in competition_variations:
-        if comp_variation.lower() in title_lower:
-            thread_competition = comp_variation.lower()
-            break
-
-    if not thread_competition:
-        return None
-
-    title_team_names = re.split(r"vs\.?|v\.?|\||\-", title_lower)
-    if len(title_team_names) < 2:
-        return None
-
-    title_teams = [clean_team_name(name.strip()) for name in title_team_names[:2]]
-
-    team_scores = []
-    for team_name in [home_team, away_team]:
-        matches = process.extractOne(
-            team_name,
-            title_teams,
-            scorer=fuzz.partial_ratio,
-            score_cutoff=70,
-        )
-        if matches:
-            team_scores.append(matches[1])
-        else:
-            return None
-
-    total_score = sum(team_scores)
-    return total_score
 
 
 def extract_thread_data(thread) -> Dict:
