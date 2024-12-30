@@ -5,7 +5,7 @@ import praw
 import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
-from rapidfuzz import fuzz
+from rapidfuzz import fuzz, process
 import time
 import unicodedata
 from datetime import datetime, timezone
@@ -30,11 +30,36 @@ def get_competition_variations(competition: str) -> List[str]:
             "Primera División",
             "La Liga Santander",
             "Spanish La Liga",
+            "Spanish League",
+            "Spain",
         ],
-        "Serie A": ["Italian Serie A", "Serie A TIM", "Calcio", "Italian League"],
-        "Ligue 1": ["French Ligue 1", "Ligue 1 Uber Eats", "French League"],
-        "Premier League": ["EPL", "English Premier League", "BPL", "PL"],
-        "Bundesliga": ["German Bundesliga", "BL", "German League"],
+        "Serie A": [
+            "Italian Serie A",
+            "Serie A TIM",
+            "Calcio",
+            "Italian League",
+            "Italy",
+        ],
+        "Ligue 1": [
+            "French Ligue 1",
+            "Ligue 1 Uber Eats",
+            "French League",
+            "France",
+        ],
+        "Premier League": [
+            "EPL",
+            "English Premier League",
+            "BPL",
+            "PL",
+            "English League",
+            "England",
+        ],
+        "Bundesliga": [
+            "German Bundesliga",
+            "BL",
+            "German League",
+            "Germany",
+        ],
     }
     return variations.get(competition, [competition])
 
@@ -45,7 +70,7 @@ def clean_team_name(team_name: str) -> str:
     team_name = unicodedata.normalize("NFKD", team_name)
     team_name = re.sub(r"[^a-z\s]", "", team_name)
     team_name = re.sub(
-        r"\b(fc|cf|sc|ac|united|city|club|cp|deportivo|real|cd|athletic|ssd|calcio|aas|ssc|as|udinese|torino|napoli|venezia|inter|internazionale)\b",
+        r"\b(fc|cf|sc|ac|united|city|club|cp|deportivo|real|cd|athletic|ssd|calcio|aas|ssc|as|udinese|torino|napoli|venezia|inter|internazionale|us|usl|sv|ss|kv|kvk|krc|afc|cfc|sporting|sport)\b",
         "",
         team_name,
     )
@@ -130,56 +155,58 @@ def get_processed_matches() -> List[Dict]:
 
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Enhanced match thread finding with flair filtering."""
+    """Find the Reddit match thread for a given match."""
     logging.info(
         f"Searching for match: {match['home_team']} vs {match['away_team']} "
         f"({match['home_score']}-{match['away_score']})"
     )
 
     subreddit = reddit.subreddit("soccer")
-    home_team = clean_team_name(match["home_team"])
-    away_team = clean_team_name(match["away_team"])
+    competition = match["competition"]
+    competition_variations = get_competition_variations(competition)
+    match_date = match["utcDate"].date()
 
-    search_queries = [
-        f'title:"{home_team} vs {away_team}" flair:"Match Thread"',
-        f'title:"{home_team} v {away_team}" flair:"Match Thread"',
-        f'title:"{away_team} vs {home_team}" flair:"Match Thread"',
-        f'title:"{away_team} v {home_team}" flair:"Match Thread"',
-    ]
+    search_query = 'flair:"Match Thread"'
 
     max_retries = 3
     matching_threads = []
 
-    for query in search_queries:
-        for attempt in range(max_retries):
-            try:
-                logging.info(f"Trying search query: {query}")
-                search_results = list(
-                    subreddit.search(
-                        query,
-                        sort="new",
-                        time_filter="day",
-                        syntax="lucene",
-                        limit=20,
-                    )
+    for attempt in range(max_retries):
+        try:
+            logging.info(f"Searching subreddit with query: {search_query}")
+            search_results = list(
+                subreddit.search(
+                    search_query,
+                    sort="new",
+                    time_filter="all",
+                    syntax="lucene",
+                    limit=1000,
                 )
+            )
 
-                logging.info(f"Found {len(search_results)} results for query")
+            logging.info(f"Found {len(search_results)} results for query")
 
-                for thread in search_results:
-                    match_score = is_matching_thread(thread, match)
-                    if match_score is not None:
-                        matching_threads.append((match_score, thread))
-                        logging.info(
-                            f"Thread '{thread.title}' matched with score {match_score}"
-                        )
+            for thread in search_results:
+                thread_date = datetime.fromtimestamp(
+                    thread.created_utc, tz=timezone.utc
+                ).date()
 
-                break
+                if thread_date != match_date:
+                    continue
 
-            except (RequestException, ResponseException) as e:
-                if attempt == max_retries - 1:
-                    logging.error(f"Search failed for query '{query}': {str(e)}")
-                time.sleep(2 * (attempt + 1))
+                match_score = is_matching_thread(thread, match, competition_variations)
+                if match_score is not None:
+                    matching_threads.append((match_score, thread))
+                    logging.info(
+                        f"Thread '{thread.title}' matched with score {match_score}"
+                    )
+
+            break
+
+        except (RequestException, ResponseException) as e:
+            if attempt == max_retries - 1:
+                logging.error(f"Search failed for query '{search_query}': {str(e)}")
+            time.sleep(2 * (attempt + 1))
 
     if matching_threads:
         best_match = max(matching_threads, key=lambda x: x[0])[1]
@@ -190,55 +217,44 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     return None
 
 
-def is_matching_thread(thread, match: Dict) -> Optional[int]:
-    """Improved matching logic with consideration for team order swapping."""
-    thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
-    match_date = match["utcDate"].replace(tzinfo=timezone.utc)
-
-    if abs((thread_date - match_date).total_seconds()) > 2 * 86400:
-        return None
-
+def is_matching_thread(
+    thread, match: Dict, competition_variations: List[str]
+) -> Optional[int]:
+    """Check if a Reddit thread matches the given match."""
     title_lower = thread.title.lower()
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
+    thread_competition = ""
 
-    title_patterns = [
-        r"^(?:match thread):\s*(.+?)\s+(?:vs\.?|v\.?|vs|v|-)\s+(.+?)(?:\s+\|.*)?$",
-        r"^(?:post match thread):\s*(.+?)\s+(?:vs\.?|v\.?|vs|v|-)\s+(.+?)(?:\s+\|.*)?$",
-    ]
+    for comp_variation in competition_variations:
+        if comp_variation.lower() in title_lower:
+            thread_competition = comp_variation.lower()
+            break
 
-    for pattern in title_patterns:
-        title_match = re.match(pattern, title_lower)
-        if title_match:
-            reddit_home = clean_team_name(title_match.group(1).strip())
-            reddit_away = clean_team_name(title_match.group(2).strip())
+    if not thread_competition:
+        return None
 
-            combinations = [
-                (home_team, away_team, reddit_home, reddit_away),
-                (home_team, away_team, reddit_away, reddit_home),
-            ]
+    title_team_names = re.split(r"vs\.?|v\.?|\||\-", title_lower)
+    if len(title_team_names) < 2:
+        return None
 
-            for ht, at, rht, rat in combinations:
-                home_score = fuzz.token_set_ratio(ht, rht)
-                away_score = fuzz.token_set_ratio(at, rat)
+    title_teams = [clean_team_name(name.strip()) for name in title_team_names[:2]]
 
-                team_threshold = 70
+    team_scores = []
+    for team_name in [home_team, away_team]:
+        matches = process.extractOne(
+            team_name,
+            title_teams,
+            scorer=fuzz.partial_ratio,
+            score_cutoff=70,
+        )
+        if matches:
+            team_scores.append(matches[1])
+        else:
+            return None
 
-                if home_score >= team_threshold and away_score >= team_threshold:
-                    total_score = home_score + away_score
-
-                    if (
-                        "match thread" in title_lower
-                        or "post match thread" in title_lower
-                    ):
-                        total_score += 20
-
-                    logging.info(
-                        f"Match found: {ht} vs {at} in thread '{thread.title}' with score {total_score}"
-                    )
-                    return total_score
-
-    return None
+    total_score = sum(team_scores)
+    return total_score
 
 
 def extract_thread_data(thread) -> Dict:
@@ -249,9 +265,7 @@ def extract_thread_data(thread) -> Dict:
         thread.comments.replace_more(limit=0)
         top_comments = []
 
-        for comment in sorted(thread.comments, key=lambda x: x.score, reverse=True)[
-            :10
-        ]:
+        for comment in sorted(thread.comments, key=lambda x: x.score, reverse=True)[:5]:
             if len(comment.body.strip()) > 10:
                 top_comments.append(
                     {
