@@ -35,8 +35,6 @@ def get_competition_variations(competition: str) -> List[str]:
         "Ligue 1": ["French Ligue 1", "Ligue 1 Uber Eats", "French League"],
         "Premier League": ["EPL", "English Premier League", "BPL", "PL"],
         "Bundesliga": ["German Bundesliga", "BL", "German League"],
-        "Champions League": ["UCL", "CL", "UEFA Champions League"],
-        "Europa League": ["UEL", "EL", "UEFA Europa League"],
     }
     return variations.get(competition, [competition])
 
@@ -327,6 +325,18 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
             reddit_home = clean_team_name(title_match.group(1).strip())
             reddit_away = clean_team_name(title_match.group(2).strip())
 
+            home_words = set(word for word in home_team.split() if len(word) > 3)
+            away_words = set(word for word in away_team.split() if len(word) > 3)
+            reddit_home_words = set(
+                word for word in reddit_home.split() if len(word) > 3
+            )
+            reddit_away_words = set(
+                word for word in reddit_away.split() if len(word) > 3
+            )
+
+            home_matches = bool(home_words & reddit_home_words)
+            away_matches = bool(away_words & reddit_away_words)
+
             home_score = fuzz.token_set_ratio(home_team, reddit_home)
             away_score = fuzz.token_set_ratio(away_team, reddit_away)
 
@@ -345,12 +355,18 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
                     if score_matches:
                         break
 
-            if (home_score > 40 and away_score > 40) or score_matches:
+            if (
+                (home_matches and away_matches)
+                or (home_score > 45 and away_score > 45)
+                or score_matches
+            ):
                 total_score = home_score + away_score
                 if score_matches:
                     total_score += 100
                 if "match thread" in title_lower:
                     total_score += 50
+                if home_matches and away_matches:
+                    total_score += 75
 
                 logging.info(f"Match found - Total score: {total_score}")
                 return total_score
