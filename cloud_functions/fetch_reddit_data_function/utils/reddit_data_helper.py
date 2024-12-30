@@ -19,22 +19,124 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def clean_team_name(team_name: str) -> str:
-    """Enhanced team name cleaning with international naming patterns"""
-    name_parts = team_name.split()
-    if len(name_parts) > 2:
-        distinctive_parts = [
-            part
-            for part in name_parts
-            if len(part) > 2
-            and part.lower()
-            not in {"fc", "cf", "ac", "rc", "sc", "cd", "ud", "rcd", "hsc", "bc"}
-        ]
-        if distinctive_parts:
+    """Enhanced team name cleaning with more variations"""
+    prefixes = {
+        "fc",
+        "cf",
+        "fk",
+        "ff",
+        "sf",
+        "fs",
+        "fv",
+        "vf",
+        "ac",
+        "ca",
+        "aa",
+        "af",
+        "fa",
+        "as",
+        "sa",
+        "ad",
+        "da",
+        "sc",
+        "cs",
+        "sv",
+        "vs",
+        "sp",
+        "ps",
+        "ss",
+        "sk",
+        "rc",
+        "cr",
+        "rcd",
+        "rcf",
+        "rca",
+        "rsc",
+        "rsb",
+        "cd",
+        "dc",
+        "cp",
+        "pc",
+        "ce",
+        "ec",
+        "cv",
+        "vc",
+        "spvgg",
+        "sgd",
+        "sge",
+        "sgf",
+        "sgl",
+        "bsc",
+        "bsv",
+        "bv",
+        "vfb",
+        "vfl",
+        "vfr",
+        "fsv",
+        "tsv",
+        "tsg",
+        "psv",
+        "cska",
+        "zska",
+        "csk",
+        "fcs",
+        "csm",
+        "ogc",
+        "ol",
+        "psg",
+        "rsca",
+        "rkc",
+        "aek",
+        "paok",
+        "pao",
+        "asd",
+        "usd",
+        "asc",
+        "usc",
+        "acr",
+        "acf",
+        "acn",
+        "pfc",
+        "cfc",
+        "spl",
+        "spf",
+        "scf",
+        "ud",
+        "us",
+        "su",
+        "un",
+        "afc",
+        "afa",
+        "afb",
+        "afs",
+        "bk",
+        "ks",
+        "lks",
+        "mks",
+        "gks",
+        "nk",
+        "hk",
+        "tk",
+        "rb",
+        "rk",
+        "rv",
+        "rw",
+    }
+
+    name_parts = team_name.lower().split()
+
+    distinctive_parts = [part for part in name_parts if part not in prefixes]
+
+    if distinctive_parts:
+        if len(distinctive_parts) > 1 and len(distinctive_parts[-1]) > 3:
+            team_name = " ".join(distinctive_parts[-2:])
+        else:
             team_name = distinctive_parts[-1]
 
     team_name = unicodedata.normalize("NFKD", team_name)
     team_name = re.sub(r"[^a-zA-Z\s]", "", team_name)
-    return team_name.lower().strip()
+
+    return team_name.strip()
 
 
 def initialize_reddit():
@@ -104,21 +206,18 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     subreddit = reddit.subreddit("soccer")
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
-    home_team_simple = match["home_team"].split()[-1]
-    away_team_simple = match["away_team"].split()[-1]
 
     search_queries = [
-        f'title:"{home_team} vs {away_team}" flair:"Match Thread"',
-        f'title:"{home_team} v {away_team}" flair:"Match Thread"',
-        f'title:"{home_team}-{away_team}" flair:"Match Thread"',
-        f'title:"Match Thread: {home_team}" flair:"Match Thread"',
-        f'title:"Match Thread: {home_team} vs {away_team}"',
-        f'title:"Match Thread: {home_team} v {away_team}"',
-        f'title:"{home_team}" AND title:"{away_team}" AND flair:"Match Thread"',
+        f'title:"{home_team}" AND title:"{away_team}"',
         f'title:"Match Thread" AND title:"{home_team}"',
-        f'title:"Post Match Thread" AND title:"{home_team}" AND title:"{away_team}"',
-        f'title:"{home_team_simple} vs {away_team_simple}"',
-        f'selftext:"{home_team}" AND selftext:"{away_team}" AND flair:"Match Thread"',
+        f'title:"Post Match Thread" AND title:"{home_team}"',
+        f'title:"{match["home_score"]}-{match["away_score"]}" AND title:"{home_team}"',
+        f'title:"{home_team}" AND title:"{away_team}" AND title:"{match["competition"]}"',
+        f'title:"{home_team} vs {away_team}"',
+        f'title:"{home_team} v {away_team}"',
+        f'title:"{home_team}-{away_team}"',
+        f'title:"Match Thread: {home_team}"',
+        f'selftext:"{home_team}" AND selftext:"{away_team}"',
     ]
 
     max_retries = 5
@@ -157,7 +256,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
 
 def is_matching_thread(thread, match: Dict) -> Optional[int]:
-    """Enhanced matching logic for Reddit match threads"""
+    """Enhanced matching logic with more flexible scoring"""
     thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
     match_date = match["utcDate"].replace(tzinfo=timezone.utc)
 
@@ -171,15 +270,21 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
     competition = clean_team_name(match["competition"])
 
     title_patterns = [
-        r"match thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+))?$",
-        r"match thread:?\s*(.+?)\s*(?:\d+\s*[-–]\s*\d+)\s*(.+?)(?:\s*\|\s*(.+))?$",
+        r"(?:match|post match) thread:?\s*(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+))?$",
+        r"(?:match|post match) thread:?\s*(.+?)\s*(?:\d+\s*[-–]\s*\d+)\s*(.+?)(?:\s*\|\s*(.+))?$",
         r"(.+?)\s*(?:vs\.?|v\.?|\-)\s*(.+?)(?:\s*\|\s*(.+?))?$",
-        r"(.+?)\s+(?:vs\.?|v\.?|\-)\s+(.+)$",
-        r"match thread:?\s*(.+?)\s+v\s+(.+?)(?:\s*\((.+?)\))?$",
+        r"(.+?)\s+(?:\d+\s*[-–]\s*\d+)\s+(.+)$",
+    ]
+
+    score_patterns = [
+        r"(?:ft|full.?time|ht|half.?time).*?(\d+)[-–](\d+)",
+        r"(\d+)[-–](\d+)\s*(?:ft|full.?time)",
+        r"score:?\s*(\d+)[-–](\d+)",
+        r"^\s*(\d+)[-–](\d+)\s*$",
     ]
 
     for pattern in title_patterns:
-        title_match = re.match(pattern, title_lower)
+        title_match = re.search(pattern, title_lower)
         if title_match:
             reddit_home_team = clean_team_name(title_match.group(1).strip())
             reddit_away_team = clean_team_name(title_match.group(2).strip())
@@ -197,15 +302,11 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
                 else 100
             )
 
-            score_patterns = [
-                r"(?:ft|full.?time|ht|half.?time).*?(\d+)[-–](\d+)",
-                r"(\d+)[-–](\d+)\s*(?:ft|full.?time)",
-                r"score:?\s*(\d+)[-–](\d+)",
-            ]
-
             score_matches = False
             for score_pattern in score_patterns:
-                score_match = re.search(score_pattern, body, re.IGNORECASE)
+                score_match = re.search(
+                    score_pattern, body + title_lower, re.IGNORECASE
+                )
                 if score_match:
                     reddit_home_score = int(score_match.group(1))
                     reddit_away_score = int(score_match.group(2))
@@ -216,12 +317,18 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
                     if score_matches:
                         break
 
-            total_score = home_score + away_score + competition_score
-
-            if (home_score > 25 and away_score > 25) or score_matches:
-                logging.info(
-                    f"Match found with confidence - Home: {home_score}%, Away: {away_score}%, Competition: {competition_score}%"
+            if (home_score > 15 and away_score > 15) or score_matches:
+                score_bonus = 50 if score_matches else 0
+                competition_bonus = 30 if competition_score > 50 else 0
+                total_score = (
+                    home_score
+                    + away_score
+                    + competition_score
+                    + score_bonus
+                    + competition_bonus
                 )
+
+                logging.info(f"Match found - Total score: {total_score}")
                 return total_score
 
     return None
