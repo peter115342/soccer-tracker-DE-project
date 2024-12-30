@@ -8,7 +8,7 @@ from google.cloud import storage, bigquery
 from rapidfuzz import fuzz
 import time
 import unicodedata
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from prawcore.exceptions import RequestException, ResponseException
 
 logging.basicConfig(
@@ -345,7 +345,7 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
                     if score_matches:
                         break
 
-            if (home_score > 80 and away_score > 80) or score_matches:
+            if (home_score > 40 and away_score > 40) or score_matches:
                 total_score = home_score + away_score
                 if score_matches:
                     total_score += 100
