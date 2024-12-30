@@ -396,7 +396,10 @@ def extract_thread_data(thread) -> Dict:
 
     except Exception as e:
         logging.error(f"Error extracting thread data: {str(e)}")
-        return None
+        return {
+            "error": str(e),
+            "thread_id": thread.id,
+        }
 
 
 def save_to_gcs(thread_data: Dict, match_id: int) -> None:
