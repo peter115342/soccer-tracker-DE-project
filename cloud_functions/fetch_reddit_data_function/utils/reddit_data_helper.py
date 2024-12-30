@@ -317,7 +317,7 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
                     if score_matches:
                         break
 
-            if (home_score > 15 and away_score > 15) or score_matches:
+            if (home_score > 10 and away_score > 10) or score_matches:
                 score_bonus = 50 if score_matches else 0
                 competition_bonus = 30 if competition_score > 50 else 0
                 total_score = (
