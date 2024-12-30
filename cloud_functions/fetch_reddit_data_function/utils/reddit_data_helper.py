@@ -301,7 +301,6 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
         return None
 
     title_lower = thread.title.lower()
-    body = thread.selftext.lower()
     home_team = clean_team_name(match["home_team"])
     away_team = clean_team_name(match["away_team"])
 
@@ -312,26 +311,19 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
         r"(.+?)\s+(?:\d+\s*[-–]\s*\d+)\s+(.+)$",
     ]
 
-    score_patterns = [
-        r"(?:ft|full.?time|ht|half.?time).*?(\d+)[-–](\d+)",
-        r"(\d+)[-–](\d+)\s*(?:ft|full.?time)",
-        r"score:?\s*(\d+)[-–](\d+)",
-        r"^\s*(\d+)[-–](\d+)\s*$",
-    ]
-
     for pattern in title_patterns:
         title_match = re.search(pattern, title_lower)
         if title_match:
             reddit_home = clean_team_name(title_match.group(1).strip())
             reddit_away = clean_team_name(title_match.group(2).strip())
 
-            home_words = set(word for word in home_team.split() if len(word) > 3)
-            away_words = set(word for word in away_team.split() if len(word) > 3)
+            home_words = set(word for word in home_team.split() if len(word) >= 3)
+            away_words = set(word for word in away_team.split() if len(word) >= 3)
             reddit_home_words = set(
-                word for word in reddit_home.split() if len(word) > 3
+                word for word in reddit_home.split() if len(word) >= 3
             )
             reddit_away_words = set(
-                word for word in reddit_away.split() if len(word) > 3
+                word for word in reddit_away.split() if len(word) >= 3
             )
 
             home_matches = bool(home_words & reddit_home_words)
@@ -340,34 +332,12 @@ def is_matching_thread(thread, match: Dict) -> Optional[int]:
             home_score = fuzz.token_set_ratio(home_team, reddit_home)
             away_score = fuzz.token_set_ratio(away_team, reddit_away)
 
-            score_matches = False
-            for score_pattern in score_patterns:
-                score_match = re.search(
-                    score_pattern, body + title_lower, re.IGNORECASE
-                )
-                if score_match:
-                    reddit_home_score = int(score_match.group(1))
-                    reddit_away_score = int(score_match.group(2))
-                    score_matches = (
-                        reddit_home_score == match["home_score"]
-                        and reddit_away_score == match["away_score"]
-                    )
-                    if score_matches:
-                        break
-
-            if (
-                (home_matches and away_matches)
-                or (home_score > 45 and away_score > 45)
-                or score_matches
-            ):
+            if (home_matches and away_matches) or (home_score > 45 and away_score > 45):
                 total_score = home_score + away_score
-                if score_matches:
-                    total_score += 100
                 if "match thread" in title_lower:
                     total_score += 50
                 if home_matches and away_matches:
                     total_score += 75
-
                 logging.info(f"Match found - Total score: {total_score}")
                 return total_score
 
