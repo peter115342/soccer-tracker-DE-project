@@ -37,8 +37,8 @@ def fetch_reddit_data(event, context):
         logging.info(f"Filter recent failures: {filter_recent_failures}")
 
         today = datetime.utcnow().date()
-        yesterday = today - timedelta(days=1)
-        valid_dates = {today, yesterday}
+        past_days = today - timedelta(days=2)
+        valid_dates = {today, past_days}
 
         processed_count = 0
         not_found_matches = []
