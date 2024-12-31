@@ -1,82 +1,73 @@
-import logging
+import requests
 import json
-import base64
 import os
+import logging
 from datetime import datetime
 from google.cloud import pubsub_v1
-import requests
-from .utils.standings_data_helper import (
-    get_unique_dates,
-    fetch_standings_for_date,
-    save_standings_to_gcs,
-    get_processed_standings_dates,
-)
+from .utils.standings_helper import fetch_standings_for_competitions, save_to_gcs
 
 
 def fetch_standings_data(event, context):
+    """
+    Cloud Function to fetch standings data from top 5 leagues and save to bucket,
+    with Discord notifications for success or failure and conditional Pub/Sub trigger.
+    """
     try:
-        pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
-        message_data = json.loads(pubsub_message)
+        logging.info("Starting standings data fetch")
+        standings = fetch_standings_for_competitions()
 
-        if message_data.get("action") != "fetch_standings":
-            raise ValueError("Invalid message format or action")
+        new_standings = 0
+        error_count = 0
+        processed_standings = []
 
-        unique_dates = get_unique_dates()
-        processed_dates = get_processed_standings_dates()
-
-        dates_to_process = [
-            date for date in unique_dates if date not in processed_dates
-        ]
-
-        if not dates_to_process:
-            message = "No new dates to process"
+        if not standings:
+            message = "No new standings data to fetch. No changes in matches_processed."
             logging.info(message)
             send_discord_notification(
-                "ℹ️ Fetch Standings Data: No New Dates", message, 16776960
+                "ℹ️ Fetch Standings Data: No Updates", message, 16776960
             )
-        else:
-            processed_count = 0
-            error_count = 0
+            return "No new standings to process.", 200
 
-            for date in dates_to_process:
-                try:
-                    standings_list = fetch_standings_for_date(date)
+        for standing in standings:
+            try:
+                competition_id = standing["competition"]["id"]
+                save_to_gcs(standing, competition_id)
+                processed_standings.append(standing)
+                new_standings += 1
+            except Exception as e:
+                error_count += 1
+                logging.error(
+                    f"Error processing standings for competition ID {competition_id}: {e}"
+                )
 
-                    for standings in standings_list:
-                        competition_id = standings["competitionId"]
-                        save_standings_to_gcs(standings, date, competition_id)
-                        processed_count += 1
-
-                except Exception as e:
-                    error_count += 1
-                    logging.error(f"Error processing date {date}: {str(e)}")
-
-            success_message = (
-                f"Processed {len(dates_to_process)} new dates\n"
-                f"Total standings entries: {processed_count}\n"
-                f"Errors: {error_count}"
-            )
-
-            logging.info(success_message)
-            send_discord_notification(
-                "✅ Fetch Standings Data: Complete", success_message, 65280
-            )
-
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(
-            os.environ["GCP_PROJECT_ID"], "convert_standings_to_parquet_topic"
+        success_message = (
+            f"Fetched {new_standings} standings updates. Errors: {error_count}."
+        )
+        logging.info(success_message)
+        send_discord_notification(
+            "✅ Fetch Standings Data: Success", success_message, 65280
         )
 
-        publish_data = {"action": "convert_standings"}
-        future = publisher.publish(
-            topic_path,
-            data=json.dumps(publish_data).encode("utf-8"),
-            timestamp=datetime.now().isoformat(),
-        )
+        if new_standings > 0:
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(
+                os.environ["GCP_PROJECT_ID"], "convert_standings_to_parquet_topic"
+            )
 
-        future.result()
+            publish_data = {"action": "convert_standings"}
 
-        return "Process completed successfully.", 200
+            future = publisher.publish(
+                topic_path,
+                data=json.dumps(publish_data).encode("utf-8"),
+                timestamp=datetime.now().isoformat(),
+            )
+
+            publish_result = future.result()
+            logging.info(
+                f"Published trigger message to convert_standings_to_parquet_topic with ID: {publish_result}"
+            )
+
+        return "Process completed.", 200
 
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"
