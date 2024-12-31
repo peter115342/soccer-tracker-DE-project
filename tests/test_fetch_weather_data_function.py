@@ -36,7 +36,7 @@ def test_fetch_weather_data_no_action(mock_env_vars):
 
 @patch("cloud_functions.weather_data.fetch_weather_data_function.main.get_match_data")
 @patch(
-    "cloud_functions.weather_data.weather_data.fetch_weather_data_function.main.pubsub_v1.PublisherClient"
+    "cloud_functions.weather_data.fetch_weather_data_function.main.pubsub_v1.PublisherClient"
 )
 @patch("cloud_functions.weather_data.fetch_weather_data_function.main.storage.Client")
 def test_fetch_weather_data_no_matches(
@@ -109,7 +109,7 @@ def test_fetch_weather_data_with_matches(
     mock_publisher_instance.publish.assert_called_once()
 
 
-@patch("cloud_functions.fetch_weather_data_function.main.bigquery.Client")
+@patch("cloud_functions.weather_data.fetch_weather_data_function.main.bigquery.Client")
 def test_get_match_data(mock_bq_client, mock_env_vars):
     mock_query_job = MagicMock()
     mock_row = MagicMock()

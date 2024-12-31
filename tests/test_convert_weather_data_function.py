@@ -131,7 +131,7 @@ def test_transform_to_parquet_existing_parquet(sample_event, sample_context):
             },
         ),
         patch(
-            "cloud_functions.weather_data.weather_data.convert_weather_data_function.main.storage.Client"
+            "cloud_functions.weather_data.convert_weather_data_function.main.storage.Client"
         ) as mock_storage_client,
         patch(
             "cloud_functions.weather_data.convert_weather_data_function.main.pubsub_v1.PublisherClient"

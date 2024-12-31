@@ -116,7 +116,7 @@ def test_fetch_reddit_data_exception():
 
     with (
         patch(
-            "cloud_functions.fetch_reddit_data_function.main.initialize_reddit"
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.initialize_reddit"
         ) as mock_init_reddit,
     ):
         mock_init_reddit.side_effect = Exception("Test exception")
