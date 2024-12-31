@@ -29,10 +29,10 @@ def test_transform_to_parquet_success(sample_event, sample_context):
             },
         ),
         patch(
-            "cloud_functions.convert_standings_data_function.main.storage.Client"
+            "cloud_functions.standings_data.convert_standings_data_function.main.storage.Client"
         ) as mock_storage_client,
         patch(
-            "cloud_functions.convert_standings_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.standings_data.convert_standings_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
         patch("polars.DataFrame.write_parquet") as mock_write_parquet,
     ):
@@ -105,10 +105,10 @@ def test_transform_to_parquet_no_json_files(sample_event, sample_context):
             },
         ),
         patch(
-            "cloud_functions.convert_standings_data_function.main.storage.Client"
+            "cloud_functions.standings_data.convert_standings_data_function.main.storage.Client"
         ) as mock_storage_client,
         patch(
-            "cloud_functions.convert_standings_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.standings_data.convert_standings_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_bucket = MagicMock()

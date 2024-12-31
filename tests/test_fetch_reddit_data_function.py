@@ -49,19 +49,19 @@ def test_fetch_reddit_data_success(sample_matches, sample_thread_data):
 
     with (
         patch(
-            "cloud_functions.fetch_reddit_data_function.main.initialize_reddit"
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.initialize_reddit"
         ) as mock_init_reddit,
         patch(
-            "cloud_functions.fetch_reddit_data_function.main.get_processed_matches"
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.get_processed_matches"
         ) as mock_get_matches,
         patch(
-            "cloud_functions.fetch_reddit_data_function.main.find_match_thread"
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.find_match_thread"
         ) as mock_find_thread,
         patch(
-            "cloud_functions.fetch_reddit_data_function.main.save_to_gcs"
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.save_to_gcs"
         ) as mock_save_to_gcs,
         patch(
-            "cloud_functions.fetch_reddit_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_init_reddit.return_value = MagicMock()
@@ -93,10 +93,10 @@ def test_fetch_reddit_data_no_matches():
 
     with (
         patch(
-            "cloud_functions.fetch_reddit_data_function.main.initialize_reddit"
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.initialize_reddit"
         ) as mock_init_reddit,
         patch(
-            "cloud_functions.fetch_reddit_data_function.main.get_processed_matches"
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.get_processed_matches"
         ) as mock_get_matches,
     ):
         mock_init_reddit.return_value = MagicMock()

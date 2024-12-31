@@ -34,9 +34,11 @@ def test_fetch_weather_data_no_action(mock_env_vars):
     assert result == ("Invalid message format or incorrect action", 500)
 
 
-@patch("cloud_functions.fetch_weather_data_function.main.get_match_data")
-@patch("cloud_functions.fetch_weather_data_function.main.pubsub_v1.PublisherClient")
-@patch("cloud_functions.fetch_weather_data_function.main.storage.Client")
+@patch("cloud_functions.weather_data.fetch_weather_data_function.main.get_match_data")
+@patch(
+    "cloud_functions.weather_data.weather_data.fetch_weather_data_function.main.pubsub_v1.PublisherClient"
+)
+@patch("cloud_functions.weather_data.fetch_weather_data_function.main.storage.Client")
 def test_fetch_weather_data_no_matches(
     mock_storage_client,
     mock_publisher_client,
@@ -55,11 +57,17 @@ def test_fetch_weather_data_no_matches(
     mock_publisher_instance.publish.assert_called_once()
 
 
-@patch("cloud_functions.fetch_weather_data_function.main.fetch_weather_by_coordinates")
-@patch("cloud_functions.fetch_weather_data_function.main.save_weather_to_gcs")
-@patch("cloud_functions.fetch_weather_data_function.main.get_match_data")
-@patch("cloud_functions.fetch_weather_data_function.main.pubsub_v1.PublisherClient")
-@patch("cloud_functions.fetch_weather_data_function.main.storage.Client")
+@patch(
+    "cloud_functions.weather_data.fetch_weather_data_function.main.fetch_weather_by_coordinates"
+)
+@patch(
+    "cloud_functions.weather_data.fetch_weather_data_function.main.save_weather_to_gcs"
+)
+@patch("cloud_functions.weather_data.fetch_weather_data_function.main.get_match_data")
+@patch(
+    "cloud_functions.weather_data.fetch_weather_data_function.main.pubsub_v1.PublisherClient"
+)
+@patch("cloud_functions.weather_data.fetch_weather_data_function.main.storage.Client")
 def test_fetch_weather_data_with_matches(
     mock_storage_client,
     mock_publisher_client,

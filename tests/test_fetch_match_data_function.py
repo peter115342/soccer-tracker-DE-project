@@ -22,13 +22,13 @@ def test_fetch_football_data_success(sample_matches):
     context = None
     with (
         patch(
-            "cloud_functions.fetch_match_data_function.main.fetch_matches_for_competitions"
+            "cloud_functions.match_data.fetch_match_data_function.main.fetch_matches_for_competitions"
         ) as mock_fetch_matches,
         patch(
-            "cloud_functions.fetch_match_data_function.main.save_to_gcs"
+            "cloud_functions.match_data.fetch_match_data_function.main.save_to_gcs"
         ) as mock_save_to_gcs,
         patch(
-            "cloud_functions.fetch_match_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.match_data.fetch_match_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_fetch_matches.return_value = sample_matches
@@ -53,10 +53,10 @@ def test_fetch_football_data_no_new_matches():
     context = None
     with (
         patch(
-            "cloud_functions.fetch_match_data_function.main.fetch_matches_for_competitions"
+            "cloud_functions.match_data.fetch_match_data_function.main.fetch_matches_for_competitions"
         ) as mock_fetch_matches,
         patch(
-            "cloud_functions.fetch_match_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.match_data.fetch_match_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_fetch_matches.return_value = []
@@ -79,7 +79,7 @@ def test_fetch_football_data_exception():
     context = None
     with (
         patch(
-            "cloud_functions.fetch_match_data_function.main.fetch_matches_for_competitions"
+            "cloud_functions.match_data.fetch_match_data_function.main.fetch_matches_for_competitions"
         ) as mock_fetch_matches,
     ):
         mock_fetch_matches.side_effect = Exception("Test exception")

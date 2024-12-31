@@ -20,19 +20,19 @@ def test_fetch_standings_data_success(sample_event):
     event, context = sample_event
     with (
         patch(
-            "cloud_functions.fetch_standings_data_function.main.get_unique_dates"
+            "cloud_functions.standings_data.fetch_standings_data_function.main.get_unique_dates"
         ) as mock_get_unique_dates,
         patch(
-            "cloud_functions.fetch_standings_data_function.main.get_processed_standings_dates"
+            "cloud_functions.standings_data.fetch_standings_data_function.main.get_processed_standings_dates"
         ) as mock_get_processed_dates,
         patch(
-            "cloud_functions.fetch_standings_data_function.main.fetch_standings_for_date"
+            "cloud_functions.standings_data.fetch_standings_data_function.main.fetch_standings_for_date"
         ) as mock_fetch_standings_for_date,
         patch(
-            "cloud_functions.fetch_standings_data_function.main.save_standings_to_gcs"
+            "cloud_functions.standings_data.fetch_standings_data_function.main.save_standings_to_gcs"
         ) as mock_save_standings_to_gcs,
         patch(
-            "cloud_functions.fetch_standings_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.standings_data.fetch_standings_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_get_unique_dates.return_value = ["2023-01-01", "2023-01-02"]
@@ -63,13 +63,13 @@ def test_fetch_standings_data_no_new_dates(sample_event):
     event, context = sample_event
     with (
         patch(
-            "cloud_functions.fetch_standings_data_function.main.get_unique_dates"
+            "cloud_functions.standings_data.fetch_standings_data_function.main.get_unique_dates"
         ) as mock_get_unique_dates,
         patch(
-            "cloud_functions.fetch_standings_data_function.main.get_processed_standings_dates"
+            "cloud_functions.standings_data.fetch_standings_data_function.main.get_processed_standings_dates"
         ) as mock_get_processed_dates,
         patch(
-            "cloud_functions.fetch_standings_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.standings_data.fetch_standings_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_get_unique_dates.return_value = ["2023-01-01"]
@@ -105,7 +105,7 @@ def test_fetch_standings_data_invalid_action():
 def test_fetch_standings_data_exception(sample_event):
     event, context = sample_event
     with patch(
-        "cloud_functions.fetch_standings_data_function.main.get_unique_dates"
+        "cloud_functions.standings_data.fetch_standings_data_function.main.get_unique_dates"
     ) as mock_get_unique_dates:
         mock_get_unique_dates.side_effect = Exception("Test exception")
 

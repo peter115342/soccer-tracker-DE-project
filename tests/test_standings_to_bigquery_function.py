@@ -26,10 +26,10 @@ def test_load_standings_to_bigquery_success(sample_event, sample_context):
             {"BUCKET_NAME": "test-bucket", "GCP_PROJECT_ID": "test-project"},
         ),
         patch(
-            "cloud_functions.standings_to_bigquery_function.main.bigquery.Client"
+            "cloud_functions.standings_data.standings_to_bigquery_function.main.bigquery.Client"
         ) as mock_bigquery_client,
         patch(
-            "cloud_functions.standings_to_bigquery_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.standings_data.standings_to_bigquery_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher_client,
     ):
         mock_client_instance = MagicMock()
@@ -73,10 +73,10 @@ def test_load_standings_to_bigquery_existing_table(sample_event, sample_context)
             {"BUCKET_NAME": "test-bucket", "GCP_PROJECT_ID": "test-project"},
         ),
         patch(
-            "cloud_functions.standings_to_bigquery_function.main.bigquery.Client"
+            "cloud_functions.standings_data.standings_to_bigquery_function.main.bigquery.Client"
         ) as mock_bigquery_client,
         patch(
-            "cloud_functions.standings_to_bigquery_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.standings_data.standings_to_bigquery_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher_client,
     ):
         mock_client_instance = MagicMock()
@@ -130,10 +130,10 @@ def test_load_standings_to_bigquery_invalid_message():
 def test_load_standings_to_bigquery_bigquery_exception(sample_event, sample_context):
     with (
         patch(
-            "cloud_functions.standings_to_bigquery_function.main.bigquery.Client"
+            "cloud_functions.standings_data.standings_to_bigquery_function.main.bigquery.Client"
         ) as mock_bigquery_client,
         patch(
-            "cloud_functions.standings_to_bigquery_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.standings_data.standings_to_bigquery_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher_client,
     ):
         mock_client_instance = MagicMock()
