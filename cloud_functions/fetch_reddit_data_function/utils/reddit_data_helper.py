@@ -127,7 +127,7 @@ def get_processed_matches() -> List[Dict]:
     logging.info("Fetching matches from BigQuery")
 
     query = """
-        SELECT 
+        SELECT
             homeTeam.name as home_team,
             awayTeam.name as away_team,
             competition.name as competition,
@@ -180,8 +180,48 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     search_queries = [
         f'flair:"Match Thread" {home_team_clean}',
         f'flair:"Match Thread" {away_team_clean}',
-        *[f'flair:"Match Thread" {part}' for part in home_team_clean.split()],
-        *[f'flair:"Match Thread" {part}' for part in away_team_clean.split()],
+        f'flair:"Post Match Thread" {home_team_clean}',
+        f'flair:"Post Match Thread" {away_team_clean}',
+        f'flair:"Post-Match Thread" {home_team_clean}',
+        f'flair:"Post-Match Thread" {away_team_clean}',
+        'flair:"Match Thread"',
+        'flair:"Post Match Thread"',
+        'flair:"Post-Match Thread"',
+        f"{home_team_clean} vs {away_team_clean}",
+        f"{away_team_clean} vs {home_team_clean}",
+        f'"{match["competition"].lower()}"',
+        home_team_clean,
+        away_team_clean,
+        *[
+            f'flair:"Match Thread" {part}'
+            for part in home_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Match Thread" {part}'
+            for part in away_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post Match Thread" {part}'
+            for part in home_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post Match Thread" {part}'
+            for part in away_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post-Match Thread" {part}'
+            for part in home_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post-Match Thread" {part}'
+            for part in away_team_clean.split()
+            if len(part) > 3
+        ],
     ]
 
     for search_query in search_queries:
@@ -192,7 +232,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                     sort="new",
                     time_filter="month",
                     syntax="lucene",
-                    limit=100,
+                    limit=200,
                 )
             )
 
@@ -214,8 +254,13 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                     continue
 
                 title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
-                if len(title_parts) < 2:
-                    continue
+
+                title_digits = re.findall(r"\b\d{1,2}\b", title_lower)
+
+                date_match = (
+                    str(match_date.day) in title_digits
+                    or str(match_date.month) in title_digits
+                )
 
                 home_scores = [
                     fuzz.partial_ratio(home_team_full, part.strip())
@@ -234,6 +279,9 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 ]
 
                 total_score = (max(home_scores) + max(away_scores)) / 2
+
+                if date_match:
+                    total_score += 10
 
                 if total_score > highest_score and total_score > 25:
                     highest_score = total_score
