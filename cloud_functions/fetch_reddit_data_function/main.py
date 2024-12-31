@@ -37,8 +37,8 @@ def fetch_reddit_data(event, context):
         logging.info(f"Filter recent failures: {filter_recent_failures}")
 
         today = datetime.utcnow().date()
-        past_days = today - timedelta(days=2)
-        valid_dates = {today, past_days}
+        yesterday = today - timedelta(days=1)
+        valid_dates = {today, yesterday}
 
         processed_count = 0
         not_found_matches = []
@@ -76,18 +76,31 @@ def fetch_reddit_data(event, context):
                 info for info, date in not_found_matches if date in valid_dates
             ]
             total_matches = len(matches_for_rate)
-            success_rate = (
-                (processed_for_rate / total_matches) * 100 if total_matches else 0
-            )
+            success_count = processed_for_rate
+            failure_count = total_matches - success_count
+            success_rate = (success_count / total_matches) * 100 if total_matches else 0
         else:
             not_found_matches = [info for info, _ in not_found_matches]
             total_matches = len(matches)
-            success_rate = (
-                (processed_count / total_matches) * 100 if total_matches else 0
+            success_count = processed_count
+            failure_count = total_matches - success_count
+            success_rate = (success_count / total_matches) * 100 if total_matches else 0
+
+        if total_matches == 0:
+            final_message = "No new matches found to process."
+            logging.info(final_message)
+            color = 16776960  # Yellow
+            send_discord_notification(
+                title="Reddit Data Fetch Status",
+                message=final_message,
+                color=color,
             )
+            return final_message, 200
 
         status_message = [
-            f"Processed {processed_for_rate} threads out of {total_matches} matches.",
+            f"Processed {total_matches} matches.",
+            f"Successfully processed {success_count} threads.",
+            f"Failed to process {failure_count} matches.",
             f"Success rate: {success_rate:.1f}%\n",
         ]
 
@@ -104,9 +117,9 @@ def fetch_reddit_data(event, context):
         final_message = "\n".join(status_message)
         logging.info(final_message)
 
-        if processed_for_rate == total_matches:
+        if success_count == total_matches:
             color = 65280  # Green
-        elif processed_for_rate > 0:
+        elif success_count > 0:
             color = 16776960  # Yellow
         else:
             color = 15158332  # Red
@@ -123,7 +136,7 @@ def fetch_reddit_data(event, context):
         publish_data = {
             "action": "convert_reddit",
             "timestamp": datetime.now().isoformat(),
-            "processed_matches": processed_for_rate,
+            "processed_matches": success_count,
             "total_matches": total_matches,
         }
 
