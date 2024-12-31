@@ -84,10 +84,10 @@ def test_fetch_standings_data_no_new_dates(sample_event):
         result, status_code = fetch_standings_data(event, context)
 
         assert status_code == 200
-        assert result == "Process completed successfully."
+        assert result == "No new data to process"
         mock_get_unique_dates.assert_called_once()
         mock_get_processed_dates.assert_called_once()
-        mock_publisher_instance.publish.assert_called()
+        mock_publisher_instance.publish.assert_not_called()
 
 
 def test_fetch_standings_data_invalid_action():
