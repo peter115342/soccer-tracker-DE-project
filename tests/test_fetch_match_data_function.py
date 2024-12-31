@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from cloud_functions.fetch_match_data_function.main import fetch_football_data
+from cloud_functions.match_data.fetch_match_data_function.main import (
+    fetch_football_data,
+)
 
 
 @pytest.fixture

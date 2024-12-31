@@ -2,7 +2,7 @@ import logging
 from google.cloud import pubsub_v1
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 from .utils.reddit_data_helper import (
     initialize_reddit,
@@ -36,7 +36,7 @@ def fetch_reddit_data(event, context):
         filter_recent_failures = True
         logging.info(f"Filter recent failures: {filter_recent_failures}")
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         yesterday = today - timedelta(days=1)
         valid_dates = {today, yesterday}
 
@@ -161,6 +161,18 @@ def fetch_reddit_data(event, context):
         )
 
         return error_message, 500
+
+
+"""
+Sends a notification to Discord with the specified title, message, and color.
+
+This function is responsible for sending a notification to a Discord webhook with the provided title, message, and color. If the message is longer than 1900 characters, it will be split into multiple parts and sent as separate embeds. The function will log any errors that occur during the notification process.
+
+Args:
+    title (str): The title of the Discord notification.
+    message (str): The message content of the Discord notification.
+    color (int): The color of the Discord notification, represented as an integer value.
+"""
 
 
 def send_discord_notification(title: str, message: str, color: int):

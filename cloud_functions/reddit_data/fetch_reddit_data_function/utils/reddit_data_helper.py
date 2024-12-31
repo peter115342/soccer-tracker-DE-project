@@ -175,7 +175,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     competition_variations = get_competition_variations(match["competition"])
 
     best_thread = None
-    highest_score = 0
+    highest_score: float = 0
 
     search_queries = [
         f'flair:"Match Thread" {home_team_clean}',

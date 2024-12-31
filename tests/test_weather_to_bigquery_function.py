@@ -2,7 +2,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 import base64
 import json
-from cloud_functions.weather_to_bigquery_function.main import load_weather_to_bigquery
+from cloud_functions.weather_data.weather_to_bigquery_function.main import (
+    load_weather_to_bigquery,
+)
 
 
 @pytest.fixture

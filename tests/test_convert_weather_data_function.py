@@ -2,7 +2,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 import base64
 import json
-from cloud_functions.convert_weather_data_function.main import transform_to_parquet
+from cloud_functions.weather_data.convert_weather_data_function.main import (
+    transform_to_parquet,
+)
 
 
 @pytest.fixture

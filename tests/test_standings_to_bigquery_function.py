@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import base64
 import json
-from cloud_functions.standings_to_bigquery_function.main import (
+from cloud_functions.standings_data.standings_to_bigquery_function.main import (
     load_standings_to_bigquery,
 )
 

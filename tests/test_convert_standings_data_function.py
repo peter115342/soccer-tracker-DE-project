@@ -2,7 +2,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 import base64
 import json
-from cloud_functions.convert_standings_data_function.main import transform_to_parquet
+from cloud_functions.standings_data.convert_standings_data_function.main import (
+    transform_to_parquet,
+)
 
 
 @pytest.fixture
@@ -24,7 +26,6 @@ def test_transform_to_parquet_success(sample_event, sample_context):
             {
                 "BUCKET_NAME": "test-bucket",
                 "GCP_PROJECT_ID": "test-project",
-                # Include any other environment variables if needed
             },
         ),
         patch(
@@ -101,7 +102,6 @@ def test_transform_to_parquet_no_json_files(sample_event, sample_context):
             {
                 "BUCKET_NAME": "test-bucket",
                 "GCP_PROJECT_ID": "test-project",
-                # Include any other environment variables if needed
             },
         ),
         patch(

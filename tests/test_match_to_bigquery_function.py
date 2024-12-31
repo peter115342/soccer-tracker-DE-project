@@ -2,7 +2,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 import base64
 import json
-from cloud_functions.match_to_bigquery_function.main import load_matches_to_bigquery
+from cloud_functions.match_data.match_to_bigquery_function.main import (
+    load_matches_to_bigquery,
+)
 
 
 @pytest.fixture

@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from cloud_functions.fetch_standings_data_function.main import fetch_standings_data
+from cloud_functions.standings_data.fetch_standings_data_function.main import (
+    fetch_standings_data,
+)
 import base64
 import json
 

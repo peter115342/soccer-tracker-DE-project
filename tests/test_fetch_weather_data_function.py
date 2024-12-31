@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 import base64
 
-from cloud_functions.fetch_weather_data_function.main import (
+from cloud_functions.weather_data.fetch_weather_data_function.main import (
     fetch_weather_data,
     get_match_data,
 )

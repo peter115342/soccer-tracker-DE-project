@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from cloud_functions.fetch_league_data_function.main import (
+from cloud_functions.league_data.fetch_league_data_function.main import (
     fetch_league_data,
     load_data_into_bigquery,
 )

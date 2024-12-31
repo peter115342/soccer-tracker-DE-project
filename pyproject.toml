@@ -14,6 +14,7 @@ dependencies = [
     "google-cloud-storage>=2.19.0",
     "google-cloud-bigquery>=3.27.0",
     "google-cloud-pubsub>=2.27.1",
+    "rapidfuzz>=3.11.0",
 ]
 
 [build-system]
