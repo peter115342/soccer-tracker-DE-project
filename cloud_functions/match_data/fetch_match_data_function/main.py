@@ -29,7 +29,7 @@ def fetch_football_data(event, context):
             )
             logging.info(message)
             send_discord_notification(
-                "ℹ️ Fetch Match Data: No New Matches", message, 16776960
+                "📝 Fetch Match Data: No New Matches", message, 16776960
             )
             return "No new matches to process.", 200
 

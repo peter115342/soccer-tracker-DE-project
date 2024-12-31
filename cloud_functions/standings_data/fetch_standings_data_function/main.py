@@ -4,7 +4,7 @@ import os
 import logging
 from datetime import datetime
 from google.cloud import pubsub_v1
-from .utils.standings_helper import fetch_standings_for_competitions, save_to_gcs
+from .utils.standings_data_helper import fetch_standings_for_competitions, save_to_gcs
 
 
 def fetch_standings_data(event, context):
@@ -24,7 +24,7 @@ def fetch_standings_data(event, context):
             message = "No new standings data to fetch. No changes in matches_processed."
             logging.info(message)
             send_discord_notification(
-                "ℹ️ Fetch Standings Data: No Updates", message, 16776960
+                "📝Fetch Standings Data: No Updates", message, 16776960
             )
             return "No new standings to process.", 200
 

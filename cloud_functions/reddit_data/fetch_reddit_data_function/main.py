@@ -25,7 +25,7 @@ def fetch_reddit_data(event, context):
         logging.info(f"Retrieved {len(matches)} matches to process")
 
         if not matches:
-            message = "No matches found to process"
+            message = "📝 No matches found to process"
             send_discord_notification(
                 title="Reddit Data Fetch Status",
                 message=message,
