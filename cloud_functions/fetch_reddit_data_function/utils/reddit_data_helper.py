@@ -169,9 +169,9 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     away_team_full = match["away_team"].lower()
     home_team_clean = clean_team_name(match["home_team"])
     away_team_clean = clean_team_name(match["away_team"])
-    next_day = match_date + timedelta(days=1)
-    prev_day = match_date - timedelta(days=1)
-    valid_dates = {prev_day, match_date, next_day}
+    next_days = match_date + timedelta(days=2)
+    prev_days = match_date - timedelta(days=2)
+    valid_dates = {prev_days, match_date, next_days}
     competition_variations = get_competition_variations(match["competition"])
 
     best_thread = None
@@ -190,7 +190,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 subreddit.search(
                     search_query,
                     sort="new",
-                    time_filter="week",
+                    time_filter="month",
                     syntax="lucene",
                     limit=100,
                 )
@@ -235,7 +235,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
                 total_score = (max(home_scores) + max(away_scores)) / 2
 
-                if total_score > highest_score and total_score > 30:
+                if total_score > highest_score and total_score > 25:
                     highest_score = total_score
                     best_thread = thread
                     logging.info(
