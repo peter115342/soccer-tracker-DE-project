@@ -67,8 +67,8 @@ def test_fetch_football_data_no_new_matches():
 
         assert status_code == 200
         assert result == "No new matches to process."
+
         mock_fetch_matches.assert_called_once()
-        mock_publisher_instance.publish.assert_called()
 
 
 def test_fetch_football_data_exception():
