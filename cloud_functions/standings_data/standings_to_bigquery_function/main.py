@@ -26,7 +26,6 @@ def load_standings_to_bigquery(event, context):
 
         dataset_ref = bigquery_client.dataset("sports_data_raw_parquet")
 
-        # Ensure the dataset exists
         try:
             bigquery_client.get_dataset(dataset_ref)
             logging.info("Dataset 'sports_data_raw_parquet' exists.")
