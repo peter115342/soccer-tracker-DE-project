@@ -56,54 +56,54 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
 
-      - name: Create Pub/Sub Topics
-        run: |
-          uv run gcloud pubsub topics create fetch_league_data_topic || true
-          uv run gcloud pubsub topics create fetch_football_data_topic || true
-          uv run gcloud pubsub topics create fetch_weather_data_topic || true
-          uv run gcloud pubsub topics create convert_to_parquet_topic || true
-          uv run gcloud pubsub topics create convert_weather_to_parquet_topic || true
-          uv run gcloud pubsub topics create match_to_bigquery_topic || true
-          uv run gcloud pubsub topics create weather_to_bigquery_topic || true
-          uv run gcloud pubsub topics create transform_matches_topic || true
-          uv run gcloud pubsub topics create transform_weather_topic || true
-          uv run gcloud pubsub topics create fetch_standings_data_topic || true
-          uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
-          uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
-          uv run gcloud pubsub topics create standings_to_bigquery_topic || true
-          uv run gcloud pubsub topics create transform_standings_topic || true
-          uv run gcloud pubsub topics create fetch_reddit_data_topic || true
-          uv run gcloud pubsub topics create reddit_to_parquet_topic || true
+      # - name: Create Pub/Sub Topics
+      #   run: |
+      #     uv run gcloud pubsub topics create fetch_league_data_topic || true
+      #     uv run gcloud pubsub topics create fetch_football_data_topic || true
+      #     uv run gcloud pubsub topics create fetch_weather_data_topic || true
+      #     uv run gcloud pubsub topics create convert_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create convert_weather_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create match_to_bigquery_topic || true
+      #     uv run gcloud pubsub topics create weather_to_bigquery_topic || true
+      #     uv run gcloud pubsub topics create transform_matches_topic || true
+      #     uv run gcloud pubsub topics create transform_weather_topic || true
+      #     uv run gcloud pubsub topics create fetch_standings_data_topic || true
+      #     uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create standings_to_bigquery_topic || true
+      #     uv run gcloud pubsub topics create transform_standings_topic || true
+      #     uv run gcloud pubsub topics create fetch_reddit_data_topic || true
+      #     uv run gcloud pubsub topics create reddit_to_parquet_topic || true
 
-      - name: Deploy fetch_league_data Function
-        run: |
-          cd cloud_functions/league_data/fetch_league_data_function
-          uv run gcloud functions deploy fetch_league_data \
-            --runtime python312 \
-            --trigger-topic fetch_league_data_topic \
-            --entry-point fetch_league_data \
-            --timeout 540s \
-            --memory 1GiB \
-            --region europe-central2 \
-            --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-          cd ../..
+      # - name: Deploy fetch_league_data Function
+      #   run: |
+      #     cd cloud_functions/league_data/fetch_league_data_function
+      #     uv run gcloud functions deploy fetch_league_data \
+      #       --runtime python312 \
+      #       --trigger-topic fetch_league_data_topic \
+      #       --entry-point fetch_league_data \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
 
-      - name: Deploy fetch_football_data Function
-        run: |
-          cd cloud_functions/match_data/fetch_match_data_function
-          uv run gcloud functions deploy fetch_football_data \
-            --runtime python312 \
-            --trigger-topic fetch_football_data_topic \
-            --entry-point fetch_football_data \
-            --timeout 540s \
-            --memory 1GiB \
-            --region europe-central2 \
-            --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},BUCKET_NAME=${{secrets.BUCKET_NAME}}"
-          cd ../..
+      # - name: Deploy fetch_football_data Function
+      #   run: |
+      #     cd cloud_functions/match_data/fetch_match_data_function
+      #     uv run gcloud functions deploy fetch_football_data \
+      #       --runtime python312 \
+      #       --trigger-topic fetch_football_data_topic \
+      #       --entry-point fetch_football_data \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},BUCKET_NAME=${{secrets.BUCKET_NAME}}"
+      #     cd ../..
 
       - name: Deploy fetch_weather_data Function
         run: |
-          cd cloud_functions/match_data/fetch_weather_data_function
+          cd cloud_functions/weather_data/fetch_weather_data_function
           uv run gcloud functions deploy fetch_weather_data \
             --runtime python312 \
             --trigger-topic fetch_weather_data_topic \
@@ -129,7 +129,7 @@ jobs:
 
       - name: Deploy convert_weather_data Function
         run: |
-          cd cloud_functions/match_data/convert_weather_data_function
+          cd cloud_functions/weather_data/convert_weather_data_function
           uv run gcloud functions deploy transform_weather_to_parquet \
             --runtime python312 \
             --trigger-topic convert_weather_to_parquet_topic \
@@ -168,7 +168,7 @@ jobs:
 
       - name: Deploy match_transform Function
         run: |
-          cd cloud_functions/weather_data/match_transform_function
+          cd cloud_functions/match_data/match_transform_function
           uv run gcloud functions deploy transform_matches \
             --runtime python312 \
             --trigger-topic transform_matches_topic \
