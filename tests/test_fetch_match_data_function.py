@@ -62,9 +62,6 @@ def test_fetch_football_data_no_new_matches():
         mock_fetch_matches.return_value = []
         mock_publisher_instance = MagicMock()
         mock_publisher.return_value = mock_publisher_instance
-        mock_future = MagicMock()
-        mock_future.result.return_value = "test-publish-id"
-        mock_publisher_instance.publish.return_value = mock_future
 
         result, status_code = fetch_football_data(event, context)
 
