@@ -10,7 +10,6 @@ import time
 import unicodedata
 from datetime import datetime, timezone
 
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -39,12 +38,14 @@ def get_competition_variations(competition: str) -> List[str]:
             "Calcio",
             "Italian League",
             "Italy",
+            "Italian",
         ],
         "Ligue 1": [
             "French Ligue 1",
             "Ligue 1 Uber Eats",
             "French League",
             "France",
+            "French",
         ],
         "Premier League": [
             "EPL",
@@ -59,21 +60,25 @@ def get_competition_variations(competition: str) -> List[str]:
             "BL",
             "German League",
             "Germany",
+            "German",
         ],
     }
     return variations.get(competition, [competition])
 
 
 def clean_team_name(team_name: str) -> str:
-    """Simplify team names for better matching."""
+    """Simplify team names for better matching while preserving key identifiers."""
     team_name = team_name.lower()
     team_name = unicodedata.normalize("NFKD", team_name)
     team_name = re.sub(r"[^a-z\s]", "", team_name)
-    team_name = re.sub(
-        r"\b(fc|cf|sc|ac|united|city|club|cp|deportivo|real|cd|athletic|ssd|calcio|aas|ssc|as|udinese|torino|napoli|venezia|inter|internazionale|us|usl|sv|ss|kv|kvk|krc|afc|cfc|sporting|sport)\b",
-        "",
-        team_name,
-    )
+
+    remove_terms = [
+        r"\b(fc|cf|sc|ac|united|city|club|cp|cd|athletic|ssd|aas|ssc|as|us|usl|sv|ss|kv|kvk|krc|afc|cfc)\b"
+    ]
+
+    for term in remove_terms:
+        team_name = re.sub(term, "", team_name)
+
     team_name = re.sub(r"\s+", " ", team_name)
     return team_name.strip()
 
@@ -154,12 +159,15 @@ def get_processed_matches() -> List[Dict]:
 
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Find the Reddit match thread for a given match with improved matching logic."""
+    """Enhanced match thread search with improved matching logic."""
     logging.info(f"Searching for match: {match['home_team']} vs {match['away_team']}")
 
     subreddit = reddit.subreddit("soccer")
     match_date = match["utcDate"].date()
 
+    # Get both full and cleaned versions of team names
+    home_team_full = match["home_team"].lower()
+    away_team_full = match["away_team"].lower()
     home_team_clean = clean_team_name(match["home_team"])
     away_team_clean = clean_team_name(match["away_team"])
 
@@ -169,10 +177,10 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     highest_score = 0
 
     search_queries = [
-        f'flair:"Match Thread" {match["home_team"]}',
         f'flair:"Match Thread" {home_team_clean}',
-        f'flair:"Match Thread" {match["away_team"]}',
         f'flair:"Match Thread" {away_team_clean}',
+        *[f'flair:"Match Thread" {part}' for part in home_team_clean.split()],
+        *[f'flair:"Match Thread" {part}' for part in away_team_clean.split()],
     ]
 
     for search_query in search_queries:
@@ -197,11 +205,9 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
                 title_lower = thread.title.lower()
 
-                competition_match = False
-                for comp in competition_variations:
-                    if comp.lower() in title_lower:
-                        competition_match = True
-                        break
+                competition_match = any(
+                    comp.lower() in title_lower for comp in competition_variations
+                )
 
                 if not competition_match:
                     continue
@@ -210,24 +216,25 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 if len(title_parts) < 2:
                     continue
 
-                title_teams = [clean_team_name(part.strip()) for part in title_parts]
+                home_scores = [
+                    fuzz.partial_ratio(home_team_full, part.strip())
+                    for part in title_parts
+                ] + [
+                    fuzz.partial_ratio(home_team_clean, part.strip())
+                    for part in title_parts
+                ]
 
-                home_score = max(
-                    [
-                        fuzz.ratio(home_team_clean, title_team)
-                        for title_team in title_teams
-                    ]
-                )
-                away_score = max(
-                    [
-                        fuzz.ratio(away_team_clean, title_team)
-                        for title_team in title_teams
-                    ]
-                )
+                away_scores = [
+                    fuzz.partial_ratio(away_team_full, part.strip())
+                    for part in title_parts
+                ] + [
+                    fuzz.partial_ratio(away_team_clean, part.strip())
+                    for part in title_parts
+                ]
 
-                total_score = (home_score + away_score) / 2
+                total_score = (max(home_scores) + max(away_scores)) / 2
 
-                if total_score > highest_score and total_score > 50:
+                if total_score > highest_score and total_score > 40:
                     highest_score = total_score
                     best_thread = thread
                     logging.info(
