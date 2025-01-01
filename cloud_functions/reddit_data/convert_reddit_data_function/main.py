@@ -78,7 +78,6 @@ def transform_reddit_to_parquet(event, context):
             blob = bucket.blob(json_file)
             json_content = json.loads(blob.download_as_string())
 
-            # Ensure json_content is a list
             if isinstance(json_content, dict):
                 json_content = [json_content]
             elif not isinstance(json_content, list):
@@ -99,7 +98,6 @@ def transform_reddit_to_parquet(event, context):
             df = pl.DataFrame(json_content)
             df = df.explode("top_comments")
 
-            # Flatten the nested 'top_comments' dictionary
             if "top_comments" in df.columns:
                 df = df.with_columns(
                     [
@@ -134,7 +132,6 @@ def transform_reddit_to_parquet(event, context):
             "✅ Convert Reddit to Parquet: Complete", status_message, 65280
         )
 
-        # Publish message to the next Pub/Sub topic
         publisher = pubsub_v1.PublisherClient()
         next_topic_path = publisher.topic_path(
             os.environ["GCP_PROJECT_ID"], "reddit_to_bigquery_topic"
