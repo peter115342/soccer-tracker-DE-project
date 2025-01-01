@@ -98,9 +98,22 @@ def test_fetch_reddit_data_no_matches():
         patch(
             "cloud_functions.reddit_data.fetch_reddit_data_function.main.get_processed_matches"
         ) as mock_get_matches,
+        patch(
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.pubsub_v1.PublisherClient"
+        ) as mock_publisher,
+        patch(
+            "cloud_functions.reddit_data.fetch_reddit_data_function.main.send_discord_notification"
+        ) as mock_send_discord_notification,
+        patch.dict("os.environ", {"GCP_PROJECT_ID": "test-project"}),
     ):
         mock_init_reddit.return_value = MagicMock()
         mock_get_matches.return_value = []
+
+        mock_publisher_instance = MagicMock()
+        mock_publisher.return_value = mock_publisher_instance
+        mock_future = MagicMock()
+        mock_future.result.return_value = "test-publish-id"
+        mock_publisher_instance.publish.return_value = mock_future
 
         result, status_code = fetch_reddit_data(event, context)
 
@@ -108,6 +121,8 @@ def test_fetch_reddit_data_no_matches():
         assert "No matches found to process" in result
         mock_init_reddit.assert_called_once()
         mock_get_matches.assert_called_once()
+        mock_publisher_instance.publish.assert_called_once()
+        mock_send_discord_notification.assert_called_once()
 
 
 def test_fetch_reddit_data_exception():
