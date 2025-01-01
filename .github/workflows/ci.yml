@@ -244,18 +244,18 @@ jobs:
       #     --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
-      # - name: Deploy fetch_reddit_data Function
-      #   run: |
-      #     cd cloud_functions/reddit_data/fetch_reddit_data_function
-      #     uv run gcloud functions deploy fetch_reddit_data \
-      #     --runtime python312 \
-      #     --trigger-topic fetch_reddit_data_topic \
-      #     --entry-point fetch_reddit_data \
-      #     --timeout 540s \
-      #     --memory 1GiB \
-      #     --region europe-central2 \
-      #     --set-env-vars "REDDIT_CLIENT_ID=${{secrets.REDDIT_CLIENT_ID}},REDDIT_CLIENT_SECRET=${{secrets.REDDIT_CLIENT_SECRET}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-      #     cd ../..
+      - name: Deploy fetch_reddit_data Function
+        run: |
+          cd cloud_functions/reddit_data/fetch_reddit_data_function
+          uv run gcloud functions deploy fetch_reddit_data \
+          --runtime python312 \
+          --trigger-topic fetch_reddit_data_topic \
+          --entry-point fetch_reddit_data \
+          --timeout 540s \
+          --memory 1GiB \
+          --region europe-central2 \
+          --set-env-vars "REDDIT_CLIENT_ID=${{secrets.REDDIT_CLIENT_ID}},REDDIT_CLIENT_SECRET=${{secrets.REDDIT_CLIENT_SECRET}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+          cd ../..
 
       # - name: Deploy convert_reddit_data Function
       #   run: |

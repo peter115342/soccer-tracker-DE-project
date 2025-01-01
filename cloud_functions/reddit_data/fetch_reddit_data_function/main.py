@@ -16,6 +16,12 @@ def fetch_reddit_data(event, context):
     """Cloud Function to fetch Reddit match thread data with enhanced tracking"""
     try:
         logging.info("Starting Reddit data fetch process")
+
+        publisher = pubsub_v1.PublisherClient()
+        next_topic_path = publisher.topic_path(
+            os.environ["GCP_PROJECT_ID"], "reddit_to_parquet_topic"
+        )
+
         reddit = initialize_reddit()
         if not reddit:
             raise Exception("Failed to initialize Reddit client")
@@ -32,11 +38,6 @@ def fetch_reddit_data(event, context):
                 color=16776960,  # Yellow
             )
 
-            publisher = pubsub_v1.PublisherClient()
-            next_topic_path = publisher.topic_path(
-                os.environ["GCP_PROJECT_ID"], "reddit_to_parquet_topic"
-            )
-
             next_message = {
                 "action": "convert_reddit",
                 "timestamp": datetime.now().isoformat(),
@@ -47,12 +48,10 @@ def fetch_reddit_data(event, context):
             future = publisher.publish(
                 next_topic_path, data=json.dumps(next_message).encode("utf-8")
             )
-
             publish_result = future.result()
             logging.info(
                 f"Published message to reddit_to_parquet_topic with ID: {publish_result}"
             )
-
             return message, 200
 
         filter_recent_failures = True
@@ -108,17 +107,6 @@ def fetch_reddit_data(event, context):
             failure_count = total_matches - success_count
             success_rate = (success_count / total_matches) * 100 if total_matches else 0
 
-        if total_matches == 0:
-            final_message = "No new matches found to process."
-            logging.info(final_message)
-            color = 16776960  # Yellow
-            send_discord_notification(
-                title="Reddit Data Fetch Status",
-                message=final_message,
-                color=color,
-            )
-            return final_message, 200
-
         status_message = [
             f"Processed {total_matches} matches.",
             f"Successfully processed {success_count} threads.",
@@ -150,11 +138,6 @@ def fetch_reddit_data(event, context):
             title="Reddit Data Fetch Results", message=final_message, color=color
         )
 
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(
-            os.environ["GCP_PROJECT_ID"], "reddit_to_parquet_topic"
-        )
-
         publish_data = {
             "action": "convert_reddit",
             "timestamp": datetime.now().isoformat(),
@@ -163,7 +146,7 @@ def fetch_reddit_data(event, context):
         }
 
         future = publisher.publish(
-            topic_path, data=json.dumps(publish_data).encode("utf-8")
+            next_topic_path, data=json.dumps(publish_data).encode("utf-8")
         )
         publish_result = future.result()
         logging.info(
@@ -181,7 +164,6 @@ def fetch_reddit_data(event, context):
             message=error_message,
             color=15158332,  # Red
         )
-
         return error_message, 500
 
 
