@@ -314,21 +314,29 @@ def extract_thread_data(thread) -> Dict:
                 top_comments.append(
                     {
                         "id": comment.id,
-                        "body": comment.body,
+                        "body": comment.body if comment.body is not None else "None",
                         "score": comment.score,
-                        "author": str(comment.author),
-                        "created_utc": comment.created_utc,
+                        "author": str(comment.author)
+                        if comment.author is not None
+                        else "None",
+                        "created_utc": comment.created_utc
+                        if comment.created_utc is not None
+                        else 0,
                     }
                 )
 
         thread_data = {
-            "thread_id": thread.id,
-            "title": thread.title,
-            "body": thread.selftext,
+            "thread_id": thread.id if thread.id is not None else "None",
+            "title": thread.title if thread.title is not None else "None",
+            "body": thread.selftext if thread.selftext is not None else "None",
             "created_utc": thread.created_utc,
             "score": thread.score,
-            "upvote_ratio": thread.upvote_ratio,
-            "num_comments": thread.num_comments,
+            "upvote_ratio": thread.upvote_ratio
+            if thread.upvote_ratio is not None
+            else 0.0,
+            "num_comments": thread.num_comments
+            if thread.num_comments is not None
+            else 0,
             "top_comments": top_comments,
         }
 
@@ -339,7 +347,7 @@ def extract_thread_data(thread) -> Dict:
         logging.error(f"Error extracting thread data: {str(e)}")
         return {
             "error": str(e),
-            "thread_id": thread.id,
+            "thread_id": thread.id if thread.id is not None else "None",
         }
 
 

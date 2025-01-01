@@ -31,6 +31,28 @@ def fetch_reddit_data(event, context):
                 message=message,
                 color=16776960,  # Yellow
             )
+
+            publisher = pubsub_v1.PublisherClient()
+            next_topic_path = publisher.topic_path(
+                os.environ["GCP_PROJECT_ID"], "reddit_to_parquet_topic"
+            )
+
+            next_message = {
+                "action": "convert_reddit",
+                "timestamp": datetime.now().isoformat(),
+                "processed_matches": 0,
+                "total_matches": 0,
+            }
+
+            future = publisher.publish(
+                next_topic_path, data=json.dumps(next_message).encode("utf-8")
+            )
+
+            publish_result = future.result()
+            logging.info(
+                f"Published message to reddit_to_parquet_topic with ID: {publish_result}"
+            )
+
             return message, 200
 
         filter_recent_failures = True
@@ -161,18 +183,6 @@ def fetch_reddit_data(event, context):
         )
 
         return error_message, 500
-
-
-"""
-Sends a notification to Discord with the specified title, message, and color.
-
-This function is responsible for sending a notification to a Discord webhook with the provided title, message, and color. If the message is longer than 1900 characters, it will be split into multiple parts and sent as separate embeds. The function will log any errors that occur during the notification process.
-
-Args:
-    title (str): The title of the Discord notification.
-    message (str): The message content of the Discord notification.
-    color (int): The color of the Discord notification, represented as an integer value.
-"""
 
 
 def send_discord_notification(title: str, message: str, color: int):
