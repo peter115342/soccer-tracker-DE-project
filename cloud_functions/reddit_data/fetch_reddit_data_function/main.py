@@ -37,22 +37,27 @@ def fetch_reddit_data(event, context):
                 os.environ["GCP_PROJECT_ID"], "convert_reddit_to_parquet_topic"
             )
 
+            logging.info(f"Publishing to topic path: {topic_path}")
             publish_data = {
                 "action": "convert_reddit",
                 "processed_matches": 0,
                 "total_matches": 0,
             }
+            logging.info(f"Publishing data: {json.dumps(publish_data)}")
 
-            future = publisher.publish(
-                topic_path,
-                data=json.dumps(publish_data).encode("utf-8"),
-                timestamp=datetime.now().isoformat(),
-            )
-
-            publish_result = future.result()
-            logging.info(
-                f"Published message to reddit_to_parquet_topic with ID: {publish_result}"
-            )
+            try:
+                future = publisher.publish(
+                    topic_path,
+                    data=json.dumps(publish_data).encode("utf-8"),
+                    timestamp=datetime.now().isoformat(),
+                )
+                publish_result = future.result(timeout=30)
+                logging.info(
+                    f"Successfully published message with ID: {publish_result}"
+                )
+            except Exception as pub_error:
+                logging.error(f"Failed to publish message: {str(pub_error)}")
+                raise
 
             return message, 200
 
@@ -156,20 +161,24 @@ def fetch_reddit_data(event, context):
             os.environ["GCP_PROJECT_ID"], "convert_reddit_to_parquet_topic"
         )
 
+        logging.info(f"Publishing to topic path: {topic_path}")
         publish_data = {
             "action": "convert_reddit",
             "timestamp": datetime.now().isoformat(),
             "processed_matches": success_count,
             "total_matches": total_matches,
         }
+        logging.info(f"Publishing data: {json.dumps(publish_data)}")
 
-        future = publisher.publish(
-            topic_path, data=json.dumps(publish_data).encode("utf-8")
-        )
-        publish_result = future.result()
-        logging.info(
-            f"Published message to reddit_to_parquet_topic with ID: {publish_result}"
-        )
+        try:
+            future = publisher.publish(
+                topic_path, data=json.dumps(publish_data).encode("utf-8")
+            )
+            publish_result = future.result(timeout=30)
+            logging.info(f"Successfully published message with ID: {publish_result}")
+        except Exception as pub_error:
+            logging.error(f"Failed to publish message: {str(pub_error)}")
+            raise
 
         return final_message, 200
 
