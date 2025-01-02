@@ -98,43 +98,39 @@ def fetch_reddit_data(event, context):
             if total_matches == 0:
                 final_message = "No new matches found to process."
                 logging.info(final_message)
-                color = 16776960  # Yellow
+            else:
+                status_message = [
+                    f"Processed {total_matches} matches.",
+                    f"Successfully processed {success_count} threads.",
+                    f"Failed to process {failure_count} matches.",
+                    f"Success rate: {success_rate:.1f}%\n",
+                ]
+
+                if not_found_matches:
+                    status_message.extend(
+                        [
+                            "Matches without threads found:",
+                            *[f"• {match}" for match in not_found_matches],
+                        ]
+                    )
+                else:
+                    status_message.append("All matches were successfully processed!")
+
+                final_message = "\n".join(status_message)
+                logging.info(final_message)
+
+                if success_count == total_matches:
+                    color = 65280  # Green
+                elif success_count > 0:
+                    color = 16776960  # Yellow
+                else:
+                    color = 15158332  # Red
+
                 send_discord_notification(
-                    title="Reddit Data Fetch Status",
+                    title="Reddit Data Fetch Results",
                     message=final_message,
                     color=color,
                 )
-
-            status_message = [
-                f"Processed {total_matches} matches.",
-                f"Successfully processed {success_count} threads.",
-                f"Failed to process {failure_count} matches.",
-                f"Success rate: {success_rate:.1f}%\n",
-            ]
-
-            if not_found_matches:
-                status_message.extend(
-                    [
-                        "Matches without threads found:",
-                        *[f"• {match}" for match in not_found_matches],
-                    ]
-                )
-            else:
-                status_message.append("All matches were successfully processed!")
-
-            final_message = "\n".join(status_message)
-            logging.info(final_message)
-
-            if success_count == total_matches:
-                color = 65280  # Green
-            elif success_count > 0:
-                color = 16776960  # Yellow
-            else:
-                color = 15158332  # Red
-
-            send_discord_notification(
-                title="Reddit Data Fetch Results", message=final_message, color=color
-            )
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(
@@ -154,7 +150,7 @@ def fetch_reddit_data(event, context):
             future = publisher.publish(
                 topic_path, data=json.dumps(publish_data).encode("utf-8")
             )
-            publish_result = future.result()
+            publish_result = future.result(timeout=30)
             logging.info(f"Successfully published message with ID: {publish_result}")
         except Exception as pub_error:
             logging.error(f"Failed to publish message: {str(pub_error)}")
@@ -171,6 +167,27 @@ def fetch_reddit_data(event, context):
             message=error_message,
             color=15158332,  # Red
         )
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(
+            os.environ["GCP_PROJECT_ID"], "convert_reddit_to_parquet_topic"
+        )
+
+        error_publish_data = {
+            "action": "convert_reddit",
+            "timestamp": datetime.now().isoformat(),
+            "processed_matches": 0,
+            "total_matches": 0,
+            "error": error_message,
+        }
+
+        try:
+            future = publisher.publish(
+                topic_path, data=json.dumps(error_publish_data).encode("utf-8")
+            )
+            future.result(timeout=30)
+        except Exception as pub_error:
+            logging.error(f"Failed to publish error message: {str(pub_error)}")
 
         return error_message, 500
 
