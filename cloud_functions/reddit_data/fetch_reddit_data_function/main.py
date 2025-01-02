@@ -36,7 +36,7 @@ def fetch_reddit_data(event, context):
             final_message = message
 
         else:
-            filter_recent_failures = True
+            filter_recent_failures = False
             logging.info(f"Filter recent failures: {filter_recent_failures}")
 
             today = datetime.now(timezone.utc).date()
