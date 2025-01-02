@@ -263,7 +263,7 @@ jobs:
           uv run gcloud functions deploy transform_reddit_to_parquet \
             --runtime python312 \
             --trigger-topic reddit_to_parquet_topic \
-            --entry-point transform_reddit_to_parquet \
+            --entry-point transform_to_parquet \
             --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
