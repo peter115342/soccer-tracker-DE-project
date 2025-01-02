@@ -4,6 +4,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from .utils.reddit_data_helper import (
     initialize_reddit,
     get_processed_matches,
@@ -12,8 +13,33 @@ from .utils.reddit_data_helper import (
 )
 
 
+def process_match_batch(batch, reddit):
+    batch_results = []
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        future_to_match = {
+            executor.submit(process_single_match, match, reddit): match
+            for match in batch
+        }
+        for future in as_completed(future_to_match):
+            match = future_to_match[future]
+            try:
+                result = future.result()
+                batch_results.append((match, result))
+            except Exception as e:
+                logging.error(f"Error processing match {match['match_id']}: {str(e)}")
+                batch_results.append((match, None))
+    return batch_results
+
+
+def process_single_match(match, reddit):
+    thread_data = find_match_thread(reddit, match)
+    if thread_data:
+        save_to_gcs(thread_data, match["match_id"])
+        return thread_data
+    return None
+
+
 def fetch_reddit_data(event, context):
-    """Cloud Function to fetch Reddit match thread data with enhanced tracking"""
     try:
         logging.info("Starting Reddit data fetch process")
         reddit = initialize_reddit()
@@ -29,12 +55,11 @@ def fetch_reddit_data(event, context):
             send_discord_notification(
                 title="Reddit Data Fetch Status",
                 message=message,
-                color=16776960,  # Yellow
+                color=16776960,
             )
             processed_count = 0
             total_matches = 0
             final_message = message
-
         else:
             filter_recent_failures = False
             logging.info(f"Filter recent failures: {filter_recent_failures}")
@@ -45,36 +70,40 @@ def fetch_reddit_data(event, context):
 
             processed_count = 0
             not_found_matches = []
-
             matches_for_rate = []
             processed_for_rate = 0
 
-            for match in matches:
-                match_date = match["utcDate"].date()
-                logging.info(
-                    f"Processing match ID: {match['match_id']} on {match_date}"
-                )
+            # Implement batch processing
+            BATCH_SIZE = 5
+            for i in range(0, len(matches), BATCH_SIZE):
+                batch = matches[i : i + BATCH_SIZE]
+                batch_results = process_match_batch(batch, reddit)
 
-                if filter_recent_failures and match_date not in valid_dates:
-                    continue
-
-                matches_for_rate.append(match)
-
-                thread_data = find_match_thread(reddit, match)
-
-                if thread_data:
-                    save_to_gcs(thread_data, match["match_id"])
-                    processed_count += 1
-                    processed_for_rate += 1
-                    logging.info(f"Successfully processed match ID {match['match_id']}")
-                else:
-                    match_info = (
-                        f"{match['home_team']} vs {match['away_team']} "
-                        f"({match['competition']}) on "
-                        f"{match['utcDate'].strftime('%Y-%m-%d %H:%M UTC')}"
+                for match, thread_data in batch_results:
+                    match_date = match["utcDate"].date()
+                    logging.info(
+                        f"Processing match ID: {match['match_id']} on {match_date}"
                     )
-                    not_found_matches.append((match_info, match_date))
-                    logging.info(f"No thread found for: {match_info}")
+
+                    if filter_recent_failures and match_date not in valid_dates:
+                        continue
+
+                    matches_for_rate.append(match)
+
+                    if thread_data:
+                        processed_count += 1
+                        processed_for_rate += 1
+                        logging.info(
+                            f"Successfully processed match ID {match['match_id']}"
+                        )
+                    else:
+                        match_info = (
+                            f"{match['home_team']} vs {match['away_team']} "
+                            f"({match['competition']}) on "
+                            f"{match['utcDate'].strftime('%Y-%m-%d %H:%M UTC')}"
+                        )
+                        not_found_matches.append((match_info, match_date))
+                        logging.info(f"No thread found for: {match_info}")
 
             if filter_recent_failures:
                 not_found_matches = [
@@ -98,7 +127,7 @@ def fetch_reddit_data(event, context):
             if total_matches == 0:
                 final_message = "No new matches found to process."
                 logging.info(final_message)
-                color = 16776960  # Yellow
+                color = 16776960
                 send_discord_notification(
                     title="Reddit Data Fetch Status",
                     message=final_message,
@@ -125,13 +154,13 @@ def fetch_reddit_data(event, context):
                 final_message = "\n".join(status_message)
                 logging.info(final_message)
 
-                if success_count == total_matches:
-                    color = 65280  # Green
-                elif success_count > 0:
-                    color = 16776960  # Yellow
-                else:
-                    color = 15158332  # Red
-
+                color = (
+                    65280
+                    if success_count == total_matches
+                    else 16776960
+                    if success_count > 0
+                    else 15158332
+                )
                 send_discord_notification(
                     title="Reddit Data Fetch Results",
                     message=final_message,
@@ -171,7 +200,7 @@ def fetch_reddit_data(event, context):
         send_discord_notification(
             title="Reddit Data Fetch Failed",
             message=error_message,
-            color=15158332,  # Red
+            color=15158332,
         )
 
         publisher = pubsub_v1.PublisherClient()
