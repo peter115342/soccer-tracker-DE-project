@@ -98,6 +98,12 @@ def fetch_reddit_data(event, context):
             if total_matches == 0:
                 final_message = "No new matches found to process."
                 logging.info(final_message)
+                color = 16776960  # Yellow
+                send_discord_notification(
+                    title="Reddit Data Fetch Status",
+                    message=final_message,
+                    color=color,
+                )
             else:
                 status_message = [
                     f"Processed {total_matches} matches.",
