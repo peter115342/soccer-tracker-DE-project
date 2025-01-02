@@ -37,37 +37,6 @@ def load_reddit_to_bigquery(event, context):
 
         table_ref = dataset_ref.table("reddit_parquet")
 
-        schema = [
-            bigquery.SchemaField("thread_id", "STRING"),
-            bigquery.SchemaField("title", "STRING"),
-            bigquery.SchemaField("body", "STRING"),
-            bigquery.SchemaField("created_utc", "FLOAT64"),
-            bigquery.SchemaField("score", "INT64"),
-            bigquery.SchemaField(
-                "top_comments",
-                "STRUCT",
-                fields=[
-                    bigquery.SchemaField(
-                        "list",
-                        "RECORD",
-                        mode="REPEATED",
-                        fields=[
-                            bigquery.SchemaField(
-                                "element",
-                                "RECORD",
-                                fields=[
-                                    bigquery.SchemaField("id", "STRING"),
-                                    bigquery.SchemaField("body", "STRING"),
-                                    bigquery.SchemaField("score", "INT64"),
-                                    bigquery.SchemaField("author", "STRING"),
-                                ],
-                            )
-                        ],
-                    )
-                ],
-            ),
-        ]
-
         try:
             table = bigquery_client.get_table(table_ref)
             logging.info("Table 'reddit_parquet' exists.")
@@ -76,7 +45,7 @@ def load_reddit_to_bigquery(event, context):
             external_config.source_uris = [
                 f"gs://{bucket_name}/reddit_data_parquet/*.parquet"
             ]
-            external_config.schema = schema
+            external_config.autodetect = True
             table.external_data_configuration = external_config
             bigquery_client.update_table(table, ["external_data_configuration"])
             logging.info("Updated external table 'reddit_parquet' configuration.")
@@ -86,7 +55,7 @@ def load_reddit_to_bigquery(event, context):
             external_config.source_uris = [
                 f"gs://{bucket_name}/reddit_data_parquet/*.parquet"
             ]
-            external_config.schema = schema
+            external_config.autodetect = True
             table = bigquery.Table(table_ref)
             table.external_data_configuration = external_config
             bigquery_client.create_table(table)
@@ -94,17 +63,7 @@ def load_reddit_to_bigquery(event, context):
 
         query = """
             SELECT COUNT(*) as reddit_count 
-            FROM (
-                SELECT 
-                    REGEXP_EXTRACT(_FILE_NAME, r'([^/]+)\.parquet$') as match_id,
-                    thread_id,
-                    title,
-                    body,
-                    created_utc,
-                    score,
-                    top_comments
-                FROM `sports_data_raw_parquet.reddit_parquet`
-            )
+            FROM `sports_data_raw_parquet.reddit_parquet`
         """
         query_job = bigquery_client.query(query)
         reddit_count = next(query_job.result())[0]

@@ -295,13 +295,13 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
             continue
 
     if best_thread:
-        return extract_thread_data(best_thread)
+        return extract_thread_data(best_thread, match["match_id"])
 
     logging.info("No matching thread found")
     return None
 
 
-def extract_thread_data(thread) -> Dict:
+def extract_thread_data(thread, match_id=None) -> Dict:
     """Extract relevant data from Reddit thread with enhanced comment handling"""
     logging.info(f"Extracting data from thread: {thread.title}")
 
@@ -326,6 +326,7 @@ def extract_thread_data(thread) -> Dict:
                 )
 
         thread_data = {
+            "match_id": match_id,
             "thread_id": thread.id if thread.id is not None else "None",
             "title": thread.title if thread.title is not None else "None",
             "body": thread.selftext if thread.selftext is not None else "None",
@@ -348,6 +349,7 @@ def extract_thread_data(thread) -> Dict:
         return {
             "error": str(e),
             "thread_id": thread.id if thread.id is not None else "None",
+            "match_id": match_id,
         }
 
 
