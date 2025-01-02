@@ -38,7 +38,6 @@ def load_reddit_to_bigquery(event, context):
         table_ref = dataset_ref.table("reddit_parquet")
 
         schema = [
-            bigquery.SchemaField("match_id", "STRING"),
             bigquery.SchemaField("thread_id", "STRING"),
             bigquery.SchemaField("title", "STRING"),
             bigquery.SchemaField("body", "STRING"),
@@ -95,7 +94,17 @@ def load_reddit_to_bigquery(event, context):
 
         query = """
             SELECT COUNT(*) as reddit_count 
-            FROM `sports_data_raw_parquet.reddit_parquet`
+            FROM (
+                SELECT 
+                    REGEXP_EXTRACT(_FILE_NAME, r'([^/]+)\.parquet$') as match_id,
+                    thread_id,
+                    title,
+                    body,
+                    created_utc,
+                    score,
+                    top_comments
+                FROM `sports_data_raw_parquet.reddit_parquet`
+            )
         """
         query_job = bigquery_client.query(query)
         reddit_count = next(query_job.result())[0]
