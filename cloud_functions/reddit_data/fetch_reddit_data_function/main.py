@@ -34,7 +34,7 @@ def fetch_reddit_data(event, context):
 
             publisher = pubsub_v1.PublisherClient()
             next_topic_path = publisher.topic_path(
-                os.environ["GCP_PROJECT_ID"], "reddit_to_parquet_topic"
+                os.environ["GCP_PROJECT_ID"], "convert_reddit_to_parquet_topic"
             )
 
             next_message = {
@@ -152,7 +152,7 @@ def fetch_reddit_data(event, context):
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(
-            os.environ["GCP_PROJECT_ID"], "reddit_to_parquet_topic"
+            os.environ["GCP_PROJECT_ID"], "convert_reddit_to_parquet_topic"
         )
 
         publish_data = {
