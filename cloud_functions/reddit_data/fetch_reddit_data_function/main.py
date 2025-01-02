@@ -33,19 +33,20 @@ def fetch_reddit_data(event, context):
             )
 
             publisher = pubsub_v1.PublisherClient()
-            next_topic_path = publisher.topic_path(
+            topic_path = publisher.topic_path(
                 os.environ["GCP_PROJECT_ID"], "convert_reddit_to_parquet_topic"
             )
 
-            next_message = {
+            publish_data = {
                 "action": "convert_reddit",
-                "timestamp": datetime.now().isoformat(),
                 "processed_matches": 0,
                 "total_matches": 0,
             }
 
             future = publisher.publish(
-                next_topic_path, data=json.dumps(next_message).encode("utf-8")
+                topic_path,
+                data=json.dumps(publish_data).encode("utf-8"),
+                timestamp=datetime.now().isoformat(),
             )
 
             publish_result = future.result()
