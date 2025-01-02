@@ -78,14 +78,6 @@ def load_reddit_to_bigquery(event, context):
                 f"gs://{bucket_name}/reddit_data_parquet/*.parquet"
             ]
             external_config.schema = schema
-            external_config.hive_partitioning_options = (
-                bigquery.HivePartitioningOptions(
-                    mode="CUSTOM",
-                    source_uri_prefix=f"gs://{bucket_name}/reddit_data_parquet/",
-                    fields=["match_id"],
-                )
-            )
-
             table.external_data_configuration = external_config
             bigquery_client.update_table(table, ["external_data_configuration"])
             logging.info("Updated external table 'reddit_parquet' configuration.")
@@ -96,14 +88,6 @@ def load_reddit_to_bigquery(event, context):
                 f"gs://{bucket_name}/reddit_data_parquet/*.parquet"
             ]
             external_config.schema = schema
-            external_config.hive_partitioning_options = (
-                bigquery.HivePartitioningOptions(
-                    mode="CUSTOM",
-                    source_uri_prefix=f"gs://{bucket_name}/reddit_data_parquet/",
-                    fields=["match_id"],
-                )
-            )
-
             table = bigquery.Table(table_ref)
             table.external_data_configuration = external_config
             bigquery_client.create_table(table)
