@@ -199,6 +199,8 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     highest_score: float = 0
 
     search_queries = [
+        f'flair:"Match Thread" {match["competition"].lower()} {home_team_clean}',
+        f'flair:"Match Thread" {match["competition"].lower()} {away_team_clean}',
         f'flair:"Match Thread" {home_team_clean}',
         f'flair:"Match Thread" {away_team_clean}',
         f'flair:"Post Match Thread" {home_team_clean}',
@@ -209,8 +211,6 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
         f'flair:"Match Thread" {away_team_clean} vs {home_team_clean}',
         f'flair:"Match Thread" {home_team_clean} {away_team_clean}',
         f'flair:"Match Thread" {away_team_clean} {home_team_clean}',
-        f'flair:"Match Thread" {match["competition"].lower()} {home_team_clean}',
-        f'flair:"Match Thread" {match["competition"].lower()} {away_team_clean}',
         f'flair:"Post Match Thread" {home_team_clean} {away_team_clean}',
         f'flair:"Post Match Thread" {away_team_clean} {home_team_clean}',
         f'flair:"Post Match Thread" {match["competition"].lower()} {home_team_clean}',
