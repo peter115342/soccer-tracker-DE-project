@@ -184,45 +184,48 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     competition_variations = get_competition_variations(match["competition"])
 
     best_thread = None
-    highest_score = 0.0
+    highest_score: float = 0
 
     search_queries = [
-        f'flair:"match thread" {home_team_clean}',
-        f'flair:"match thread" {away_team_clean}',
-        f'flair:"post match thread" {home_team_clean}',
-        f'flair:"post match thread" {away_team_clean}',
-        'flair:"match thread"',
-        'flair:"post match thread"',
-        f'flair:"match thread" {home_team_clean} vs {away_team_clean}',
-        f'flair:"match thread" {away_team_clean} vs {home_team_clean}',
-        f'flair:"post match thread" {match["competition"].lower()}',
-        f'flair:"post match thread" {home_team_clean} vs {away_team_clean}',
-        f'flair:"post match thread" {away_team_clean} vs {home_team_clean}',
-        f'flair:"match thread" {home_team_clean} {away_team_clean}',
-        f'flair:"match thread" {away_team_clean} {home_team_clean}',
-        f'flair:"match thread" {match["competition"].lower()} {home_team_clean}',
-        f'flair:"match thread" {match["competition"].lower()} {away_team_clean}',
-        f'flair:"post match thread" {home_team_clean} {away_team_clean}',
-        f'flair:"post match thread" {away_team_clean} {home_team_clean}',
-        f'flair:"post match thread" {match["competition"].lower()} {home_team_clean}',
-        f'flair:"post match thread" {match["competition"].lower()} {away_team_clean}',
+        f'flair:"Match Thread" {home_team_clean}',
+        f'flair:"Match Thread" {away_team_clean}',
+        f'flair:"Post Match Thread" {home_team_clean}',
+        f'flair:"Post Match Thread" {away_team_clean}',
+        f'flair:"Post-Match Thread" {home_team_clean}',
+        f'flair:"Post-Match Thread" {away_team_clean}',
+        'flair:"Match Thread"',
+        'flair:"Post Match Thread"',
+        'flair:"Post-Match Thread"',
+        f'flair:"Post-Match Thread" {match["competition"].lower()}',
+        f'flair:"Post-Match Thread" {home_team_clean} vs {away_team_clean}',
+        f'flair:"Post-Match Thread" {away_team_clean} vs {home_team_clean}',
         *[
-            f'flair:"match thread" {part}'
+            f'flair:"Match Thread" {part}'
             for part in home_team_clean.split()
             if len(part) > 3
         ],
         *[
-            f'flair:"match thread" {part}'
+            f'flair:"Match Thread" {part}'
             for part in away_team_clean.split()
             if len(part) > 3
         ],
         *[
-            f'flair:"post match thread" {part}'
+            f'flair:"Post Match Thread" {part}'
             for part in home_team_clean.split()
             if len(part) > 3
         ],
         *[
-            f'flair:"post match thread" {part}'
+            f'flair:"Post Match Thread" {part}'
+            for part in away_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post-Match Thread" {part}'
+            for part in home_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post-Match Thread" {part}'
             for part in away_team_clean.split()
             if len(part) > 3
         ],
@@ -242,71 +245,58 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
             )
 
             for thread in search_results:
-                try:
-                    if not thread or thread.created_utc is None:
-                        logging.warning(
-                            f"Skipping thread with missing data: {thread.id if thread else 'unknown'}"
-                        )
-                        continue
+                thread_date = datetime.fromtimestamp(
+                    thread.created_utc, tz=timezone.utc
+                ).date()
 
-                    thread_date = datetime.fromtimestamp(
-                        thread.created_utc, tz=timezone.utc
-                    ).date()
-
-                    if thread_date not in valid_dates:
-                        continue
-
-                    title_lower = thread.title.lower() if thread.title else ""
-                    if not title_lower:
-                        continue
-
-                    competition_match = any(
-                        comp.lower() in title_lower for comp in competition_variations
-                    )
-
-                    if not competition_match:
-                        continue
-
-                    title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
-
-                    title_digits = re.findall(r"\b\d{1,2}\b", title_lower)
-
-                    date_match = (
-                        str(match_date.day) in title_digits
-                        or str(match_date.month) in title_digits
-                    )
-
-                    home_scores = [
-                        fuzz.partial_ratio(home_team_full, part.strip())
-                        for part in title_parts
-                    ] + [
-                        fuzz.partial_ratio(home_team_clean, part.strip())
-                        for part in title_parts
-                    ]
-
-                    away_scores = [
-                        fuzz.partial_ratio(away_team_full, part.strip())
-                        for part in title_parts
-                    ] + [
-                        fuzz.partial_ratio(away_team_clean, part.strip())
-                        for part in title_parts
-                    ]
-
-                    total_score = (max(home_scores) + max(away_scores)) / 2
-
-                    if date_match:
-                        total_score += 10
-
-                    if total_score > highest_score and total_score > 25:
-                        highest_score = total_score
-                        best_thread = thread
-                        logging.info(
-                            f"New best match found: {thread.title} (Score: {total_score})"
-                        )
-
-                except Exception as e:
-                    logging.error(f"Error processing thread: {str(e)}")
+                if thread_date not in valid_dates:
                     continue
+
+                title_lower = thread.title.lower()
+
+                competition_match = any(
+                    comp.lower() in title_lower for comp in competition_variations
+                )
+
+                if not competition_match:
+                    continue
+
+                title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
+
+                title_digits = re.findall(r"\b\d{1,2}\b", title_lower)
+
+                date_match = (
+                    str(match_date.day) in title_digits
+                    or str(match_date.month) in title_digits
+                )
+
+                home_scores = [
+                    fuzz.partial_ratio(home_team_full, part.strip())
+                    for part in title_parts
+                ] + [
+                    fuzz.partial_ratio(home_team_clean, part.strip())
+                    for part in title_parts
+                ]
+
+                away_scores = [
+                    fuzz.partial_ratio(away_team_full, part.strip())
+                    for part in title_parts
+                ] + [
+                    fuzz.partial_ratio(away_team_clean, part.strip())
+                    for part in title_parts
+                ]
+
+                total_score = (max(home_scores) + max(away_scores)) / 2
+
+                if date_match:
+                    total_score += 10
+
+                if total_score > highest_score and total_score > 25:
+                    highest_score = total_score
+                    best_thread = thread
+                    logging.info(
+                        f"New best match found: {thread.title} (Score: {total_score})"
+                    )
 
         except Exception as e:
             logging.error(f"Error searching with query '{search_query}': {str(e)}")
