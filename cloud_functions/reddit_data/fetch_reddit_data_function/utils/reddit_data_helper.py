@@ -184,14 +184,12 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
         f'flair:"Post Match Thread" {away_team_clean}',
         f'flair:"Post-Match Thread" {home_team_clean}',
         f'flair:"Post-Match Thread" {away_team_clean}',
+        f'flair:"Post-Match Thread" {match["competition"].lower()}',
+        f'flair:"Post-Match Thread" {home_team_clean} vs {away_team_clean}',
+        f'flair:"Post-Match Thread" {away_team_clean} vs {home_team_clean}',
         'flair:"Match Thread"',
         'flair:"Post Match Thread"',
         'flair:"Post-Match Thread"',
-        f"{home_team_clean} vs {away_team_clean}",
-        f"{away_team_clean} vs {home_team_clean}",
-        f'"{match["competition"].lower()}"',
-        home_team_clean,
-        away_team_clean,
         *[
             f'flair:"Match Thread" {part}'
             for part in home_team_clean.split()
@@ -239,6 +237,16 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
             time.sleep(0.5)
 
             for thread in search_results:
+                if not any(
+                    flair in thread.link_flair_text.lower()
+                    for flair in [
+                        "match thread",
+                        "post match thread",
+                        "post-match thread",
+                    ]
+                ):
+                    continue
+
                 thread_date = datetime.fromtimestamp(
                     thread.created_utc, tz=timezone.utc
                 ).date()
