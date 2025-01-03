@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import praw
+from praw.exceptions import RedditAPIException
 import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
@@ -159,7 +160,7 @@ def get_processed_matches() -> List[Dict]:
 
 
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Enhanced match thread search with improved matching logic."""
+    """Enhanced match thread search with improved rate limit handling."""
     logging.info(f"Searching for match: {match['home_team']} vs {match['away_team']}")
 
     subreddit = reddit.subreddit("soccer")
@@ -172,127 +173,129 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     next_days = match_date + timedelta(days=2)
     prev_days = match_date - timedelta(days=2)
     valid_dates = {prev_days, match_date, next_days}
+
     competition_variations = get_competition_variations(match["competition"])
 
     best_thread = None
     highest_score: float = 0
 
-    search_queries = [
-        f'flair:"Match Thread" {home_team_clean}',
-        f'flair:"Match Thread" {away_team_clean}',
-        f'flair:"Post Match Thread" {home_team_clean}',
-        f'flair:"Post Match Thread" {away_team_clean}',
-        f'flair:"Post-Match Thread" {home_team_clean}',
-        f'flair:"Post-Match Thread" {away_team_clean}',
-        f'flair:"Post-Match Thread" {match["competition"].lower()}',
-        f'flair:"Post-Match Thread" {home_team_clean} vs {away_team_clean}',
-        f'flair:"Post-Match Thread" {away_team_clean} vs {home_team_clean}',
+    base_flairs = [
         'flair:"Match Thread"',
         'flair:"Post Match Thread"',
         'flair:"Post-Match Thread"',
-        *[
-            f'flair:"Match Thread" {part}'
-            for part in home_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Match Thread" {part}'
-            for part in away_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post Match Thread" {part}'
-            for part in home_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post Match Thread" {part}'
-            for part in away_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post-Match Thread" {part}'
-            for part in home_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post-Match Thread" {part}'
-            for part in away_team_clean.split()
-            if len(part) > 3
-        ],
     ]
 
-    for search_query in search_queries:
-        try:
-            search_results = list(
-                subreddit.search(
-                    search_query,
-                    sort="new",
-                    time_filter="month",
-                    syntax="lucene",
-                    limit=200,
-                )
+    team_terms = [
+        home_team_clean,
+        away_team_clean,
+        *[part for part in home_team_clean.split() if len(part) > 3],
+        *[part for part in away_team_clean.split() if len(part) > 3],
+    ]
+
+    combined_query = " OR ".join(
+        [f'({flair} AND ({" OR ".join(team_terms)}))' for flair in base_flairs]
+    )
+
+    specific_combinations = [
+        f'{flair} AND "{home_team_clean} vs {away_team_clean}"' for flair in base_flairs
+    ] + [
+        f'{flair} AND "{away_team_clean} vs {home_team_clean}"' for flair in base_flairs
+    ]
+
+    final_query = f"{combined_query} OR {' OR '.join(specific_combinations)}"
+
+    try:
+        search_results = list(
+            subreddit.search(
+                final_query,
+                sort="new",
+                time_filter="month",
+                syntax="lucene",
+                limit=100,
+            )
+        )
+
+        time.sleep(0.5)
+
+        for thread in search_results:
+            thread_date = datetime.fromtimestamp(
+                thread.created_utc, tz=timezone.utc
+            ).date()
+
+            if thread_date not in valid_dates:
+                continue
+
+            title_lower = thread.title.lower()
+
+            competition_match = any(
+                comp.lower() in title_lower for comp in competition_variations
             )
 
-            time.sleep(0.5)
+            if not competition_match:
+                continue
 
-            for thread in search_results:
-                thread_date = datetime.fromtimestamp(
-                    thread.created_utc, tz=timezone.utc
-                ).date()
+            title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
 
-                if thread_date not in valid_dates:
-                    continue
+            title_digits = re.findall(r"\b\d{1,2}\b", title_lower)
 
-                title_lower = thread.title.lower()
+            date_match = (
+                str(match_date.day) in title_digits
+                or str(match_date.month) in title_digits
+            )
 
-                competition_match = any(
-                    comp.lower() in title_lower for comp in competition_variations
+            home_scores = [
+                fuzz.partial_ratio(home_team_full, part.strip()) for part in title_parts
+            ] + [
+                fuzz.partial_ratio(home_team_clean, part.strip())
+                for part in title_parts
+            ]
+
+            away_scores = [
+                fuzz.partial_ratio(away_team_full, part.strip()) for part in title_parts
+            ] + [
+                fuzz.partial_ratio(away_team_clean, part.strip())
+                for part in title_parts
+            ]
+
+            total_score = (max(home_scores) + max(away_scores)) / 2
+
+            if date_match:
+                total_score += 10
+
+            if total_score > highest_score and total_score > 25:
+                highest_score = total_score
+                best_thread = thread
+                logging.info(
+                    f"New best match found: {thread.title} (Score: {total_score})"
                 )
 
-                if not competition_match:
-                    continue
-
-                title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
-
-                title_digits = re.findall(r"\b\d{1,2}\b", title_lower)
-
-                date_match = (
-                    str(match_date.day) in title_digits
-                    or str(match_date.month) in title_digits
+    except RedditAPIException as e:
+        for subexception in e.items:
+            if "RATELIMIT" in subexception.error_type:
+                delay_match = re.search(
+                    r"try again in (\d+) (seconds?|minutes?)",
+                    subexception.message.lower(),
                 )
-
-                home_scores = [
-                    fuzz.partial_ratio(home_team_full, part.strip())
-                    for part in title_parts
-                ] + [
-                    fuzz.partial_ratio(home_team_clean, part.strip())
-                    for part in title_parts
-                ]
-
-                away_scores = [
-                    fuzz.partial_ratio(away_team_full, part.strip())
-                    for part in title_parts
-                ] + [
-                    fuzz.partial_ratio(away_team_clean, part.strip())
-                    for part in title_parts
-                ]
-
-                total_score = (max(home_scores) + max(away_scores)) / 2
-
-                if date_match:
-                    total_score += 10
-
-                if total_score > highest_score and total_score > 25:
-                    highest_score = total_score
-                    best_thread = thread
-                    logging.info(
-                        f"New best match found: {thread.title} (Score: {total_score})"
+                if delay_match:
+                    delay_amount = int(delay_match.group(1))
+                    unit = delay_match.group(2)
+                    if "minute" in unit:
+                        delay_seconds = delay_amount * 60
+                    else:
+                        delay_seconds = delay_amount
+                    logging.warning(
+                        f"Rate limit hit, sleeping for {delay_seconds} seconds"
                     )
-
-        except Exception as e:
-            logging.error(f"Error searching with query '{search_query}': {str(e)}")
-            continue
+                    time.sleep(delay_seconds)
+                    return find_match_thread(reddit, match)
+                else:
+                    logging.error(
+                        f"Could not parse rate limit delay from message: {subexception.message}"
+                    )
+                    raise
+        else:
+            logging.error(f"Reddit API exception: {e}")
+            raise
 
     if best_thread:
         return extract_thread_data(best_thread, match["match_id"])
