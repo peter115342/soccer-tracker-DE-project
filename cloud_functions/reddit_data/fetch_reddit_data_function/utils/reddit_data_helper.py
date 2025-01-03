@@ -19,6 +19,15 @@ REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
+def handle_ratelimit(reddit):
+    """Handle rate limits dynamically using Reddit API information"""
+    if reddit.auth.limits["remaining"] < 2:
+        sleep_time = reddit.auth.limits["reset_timestamp"] - time.time()
+        if sleep_time > 0:
+            logging.info(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds")
+            time.sleep(sleep_time)
+
+
 def get_competition_variations(competition: str) -> List[str]:
     """Generate variations of competition names"""
     variations = {
@@ -187,11 +196,9 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
         'flair:"Match Thread"',
         'flair:"Post Match Thread"',
         'flair:"Post-Match Thread"',
-        f"{home_team_clean} vs {away_team_clean}",
-        f"{away_team_clean} vs {home_team_clean}",
-        f'"{match["competition"].lower()}"',
-        home_team_clean,
-        away_team_clean,
+        f'flair:"Post-Match Thread" {match["competition"].lower()}',
+        f'flair:"Post-Match Thread" {home_team_clean} vs {away_team_clean}',
+        f'flair:"Post-Match Thread" {away_team_clean} vs {home_team_clean}',
         *[
             f'flair:"Match Thread" {part}'
             for part in home_team_clean.split()
@@ -226,17 +233,16 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
     for search_query in search_queries:
         try:
+            handle_ratelimit(reddit)
             search_results = list(
                 subreddit.search(
                     search_query,
                     sort="new",
                     time_filter="month",
                     syntax="lucene",
-                    limit=200,
+                    limit=100,
                 )
             )
-
-            time.sleep(0.5)
 
             for thread in search_results:
                 thread_date = datetime.fromtimestamp(
