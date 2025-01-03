@@ -118,7 +118,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
     search_queries = generate_search_queries(match)
     best_thread = None
-    highest_similarity = 0
+    highest_similarity: float = 0
 
     for query in search_queries:
         try:
