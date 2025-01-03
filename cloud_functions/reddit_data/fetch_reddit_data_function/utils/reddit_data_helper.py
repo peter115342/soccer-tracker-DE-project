@@ -236,6 +236,8 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                 )
             )
 
+            time.sleep(0.5)
+
             for thread in search_results:
                 thread_date = datetime.fromtimestamp(
                     thread.created_utc, tz=timezone.utc
