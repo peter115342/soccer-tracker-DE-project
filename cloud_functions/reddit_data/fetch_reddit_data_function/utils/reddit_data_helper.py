@@ -12,8 +12,6 @@ from datetime import timedelta
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
-# Environment variables
 REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
@@ -68,7 +66,6 @@ def get_processed_matches() -> List[Dict]:
     matches = [dict(row.items()) for row in query_job]
     logging.info(f"Found {len(matches)} total matches in BigQuery")
 
-    # Filter out matches that have already been processed
     unprocessed_matches = []
     for match in matches:
         blob = bucket.blob(f"reddit_data/{match['match_id']}.json")
@@ -95,7 +92,6 @@ def generate_search_queries(match: Dict) -> List[str]:
     away_team = clean_text(match["away_team"])
     competition = clean_text(match["competition"])
 
-    # Generate various combinations for search queries
     queries = [
         f'flair:"Match Thread" "{home_team}" "{away_team}"',
         f'flair:"Post Match Thread" "{home_team}" "{away_team}"',
@@ -167,7 +163,11 @@ def extract_thread_data(thread, match_id: int) -> Dict:
     try:
         thread.comments.replace_more(limit=0)
         comments = []
-        for comment in thread.comments.list():
+        top_comments = sorted(
+            thread.comments.list(), key=lambda x: x.score, reverse=True
+        )[:10]
+
+        for comment in top_comments:
             comments.append(
                 {
                     "id": comment.id,
