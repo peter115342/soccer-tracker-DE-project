@@ -187,45 +187,42 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     highest_score: float = 0
 
     search_queries = [
-        f'flair:"Match Thread" {home_team_clean}',
-        f'flair:"Match Thread" {away_team_clean}',
-        f'flair:"Post Match Thread" {home_team_clean}',
-        f'flair:"Post Match Thread" {away_team_clean}',
-        f'flair:"Post-Match Thread" {home_team_clean}',
-        f'flair:"Post-Match Thread" {away_team_clean}',
-        'flair:"Match Thread"',
-        'flair:"Post Match Thread"',
-        'flair:"Post-Match Thread"',
-        f'flair:"Post-Match Thread" {match["competition"].lower()}',
-        f'flair:"Post-Match Thread" {home_team_clean} vs {away_team_clean}',
-        f'flair:"Post-Match Thread" {away_team_clean} vs {home_team_clean}',
+        f'flair:"match thread" {home_team_clean}',
+        f'flair:"match thread" {away_team_clean}',
+        f'flair:"post match thread" {home_team_clean}',
+        f'flair:"post match thread" {away_team_clean}',
+        'flair:"match thread"',
+        'flair:"post match thread"',
+        f'flair:"match thread" {home_team_clean} vs {away_team_clean}',
+        f'flair:"match thread" {away_team_clean} vs {home_team_clean}',
+        f'flair:"post match thread" {match["competition"].lower()}',
+        f'flair:"post match thread" {home_team_clean} vs {away_team_clean}',
+        f'flair:"post match thread" {away_team_clean} vs {home_team_clean}',
+        f'flair:"match thread" {home_team_clean} {away_team_clean}',
+        f'flair:"match thread" {away_team_clean} {home_team_clean}',
+        f'flair:"match thread" {match["competition"].lower()} {home_team_clean}',
+        f'flair:"match thread" {match["competition"].lower()} {away_team_clean}',
+        f'flair:"post match thread" {home_team_clean} {away_team_clean}',
+        f'flair:"post match thread" {away_team_clean} {home_team_clean}',
+        f'flair:"post match thread" {match["competition"].lower()} {home_team_clean}',
+        f'flair:"post match thread" {match["competition"].lower()} {away_team_clean}',
         *[
-            f'flair:"Match Thread" {part}'
+            f'flair:"match thread" {part}'
             for part in home_team_clean.split()
             if len(part) > 3
         ],
         *[
-            f'flair:"Match Thread" {part}'
+            f'flair:"match thread" {part}'
             for part in away_team_clean.split()
             if len(part) > 3
         ],
         *[
-            f'flair:"Post Match Thread" {part}'
+            f'flair:"post match thread" {part}'
             for part in home_team_clean.split()
             if len(part) > 3
         ],
         *[
-            f'flair:"Post Match Thread" {part}'
-            for part in away_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post-Match Thread" {part}'
-            for part in home_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post-Match Thread" {part}'
+            f'flair:"post match thread" {part}'
             for part in away_team_clean.split()
             if len(part) > 3
         ],
