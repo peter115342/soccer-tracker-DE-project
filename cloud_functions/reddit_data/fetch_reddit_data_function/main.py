@@ -10,7 +10,6 @@ from .utils.reddit_data_helper import (
     get_processed_matches,
     find_match_thread,
     save_to_gcs,
-    RateLimiter,
 )
 
 
@@ -63,8 +62,7 @@ def fetch_reddit_data(event, context):
 
                     matches_for_rate.append(match)
 
-                    rate_limiter = RateLimiter(requests_per_minute=60)
-                    thread_data = find_match_thread(reddit, match, rate_limiter)
+                    thread_data = find_match_thread(reddit, match)
 
                     if thread_data:
                         save_to_gcs(thread_data, match["match_id"])
