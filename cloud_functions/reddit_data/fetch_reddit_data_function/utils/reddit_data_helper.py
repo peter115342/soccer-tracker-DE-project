@@ -184,7 +184,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     competition_variations = get_competition_variations(match["competition"])
 
     best_thread = None
-    highest_score: float = 0
+    highest_score = 0.0
 
     search_queries = [
         f'flair:"match thread" {home_team_clean}',
@@ -242,58 +242,71 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
             )
 
             for thread in search_results:
-                thread_date = datetime.fromtimestamp(
-                    thread.created_utc, tz=timezone.utc
-                ).date()
+                try:
+                    if not thread or thread.created_utc is None:
+                        logging.warning(
+                            f"Skipping thread with missing data: {thread.id if thread else 'unknown'}"
+                        )
+                        continue
 
-                if thread_date not in valid_dates:
-                    continue
+                    thread_date = datetime.fromtimestamp(
+                        thread.created_utc, tz=timezone.utc
+                    ).date()
 
-                title_lower = thread.title.lower()
+                    if thread_date not in valid_dates:
+                        continue
 
-                competition_match = any(
-                    comp.lower() in title_lower for comp in competition_variations
-                )
+                    title_lower = thread.title.lower() if thread.title else ""
+                    if not title_lower:
+                        continue
 
-                if not competition_match:
-                    continue
-
-                title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
-
-                title_digits = re.findall(r"\b\d{1,2}\b", title_lower)
-
-                date_match = (
-                    str(match_date.day) in title_digits
-                    or str(match_date.month) in title_digits
-                )
-
-                home_scores = [
-                    fuzz.partial_ratio(home_team_full, part.strip())
-                    for part in title_parts
-                ] + [
-                    fuzz.partial_ratio(home_team_clean, part.strip())
-                    for part in title_parts
-                ]
-
-                away_scores = [
-                    fuzz.partial_ratio(away_team_full, part.strip())
-                    for part in title_parts
-                ] + [
-                    fuzz.partial_ratio(away_team_clean, part.strip())
-                    for part in title_parts
-                ]
-
-                total_score = (max(home_scores) + max(away_scores)) / 2
-
-                if date_match:
-                    total_score += 10
-
-                if total_score > highest_score and total_score > 25:
-                    highest_score = total_score
-                    best_thread = thread
-                    logging.info(
-                        f"New best match found: {thread.title} (Score: {total_score})"
+                    competition_match = any(
+                        comp.lower() in title_lower for comp in competition_variations
                     )
+
+                    if not competition_match:
+                        continue
+
+                    title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
+
+                    title_digits = re.findall(r"\b\d{1,2}\b", title_lower)
+
+                    date_match = (
+                        str(match_date.day) in title_digits
+                        or str(match_date.month) in title_digits
+                    )
+
+                    home_scores = [
+                        fuzz.partial_ratio(home_team_full, part.strip())
+                        for part in title_parts
+                    ] + [
+                        fuzz.partial_ratio(home_team_clean, part.strip())
+                        for part in title_parts
+                    ]
+
+                    away_scores = [
+                        fuzz.partial_ratio(away_team_full, part.strip())
+                        for part in title_parts
+                    ] + [
+                        fuzz.partial_ratio(away_team_clean, part.strip())
+                        for part in title_parts
+                    ]
+
+                    total_score = (max(home_scores) + max(away_scores)) / 2
+
+                    if date_match:
+                        total_score += 10
+
+                    if total_score > highest_score and total_score > 25:
+                        highest_score = total_score
+                        best_thread = thread
+                        logging.info(
+                            f"New best match found: {thread.title} (Score: {total_score})"
+                        )
+
+                except Exception as e:
+                    logging.error(f"Error processing thread: {str(e)}")
+                    continue
 
         except Exception as e:
             logging.error(f"Error searching with query '{search_query}': {str(e)}")
