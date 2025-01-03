@@ -1,13 +1,15 @@
 import os
 import json
 import logging
-import praw
+import asyncpraw
+import asyncio
 import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from rapidfuzz import fuzz
 import unicodedata
 from datetime import timedelta
+import time
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -18,7 +20,38 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 
 
-def initialize_reddit():
+class RateLimiter:
+    def __init__(self, requests_per_minute=60):
+        self.interval = 60 / requests_per_minute
+        self.last_request = 0
+
+    async def wait(self):
+        now = time.time()
+        elapsed = now - self.last_request
+        if elapsed < self.interval:
+            await asyncio.sleep(self.interval - elapsed)
+        self.last_request = time.time()
+
+
+class RedditCache:
+    def __init__(self, bucket_name):
+        self.storage_client = storage.Client()
+        self.bucket = self.storage_client.bucket(bucket_name)
+        self.cache = {}
+
+    def get(self, match_id: str) -> Optional[Dict]:
+        if match_id in self.cache:
+            return self.cache[match_id]
+
+        blob = self.bucket.blob(f"reddit_cache/{match_id}.json")
+        if blob.exists():
+            data = json.loads(blob.download_as_string())
+            self.cache[match_id] = data
+            return data
+        return None
+
+
+async def initialize_reddit():
     """Initialize Reddit API client with proper error handling."""
     try:
         if not REDDIT_CLIENT_ID or not REDDIT_CLIENT_SECRET:
@@ -26,13 +59,13 @@ def initialize_reddit():
                 "Reddit API credentials are not set in environment variables."
             )
 
-        reddit = praw.Reddit(
+        reddit = asyncpraw.Reddit(
             client_id=REDDIT_CLIENT_ID,
             client_secret=REDDIT_CLIENT_SECRET,
             user_agent="soccer_match_analyzer v1.0",
         )
         # Test the connection
-        reddit.user.me()
+        await reddit.user.me()
         logging.info("Successfully connected to Reddit API")
         return reddit
     except Exception as e:
@@ -45,8 +78,6 @@ def get_processed_matches() -> List[Dict]:
     client = bigquery.Client(project=GCP_PROJECT_ID)
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
-
-    logging.info("Fetching all matches from BigQuery")
 
     query = """
         SELECT
@@ -64,16 +95,13 @@ def get_processed_matches() -> List[Dict]:
 
     query_job = client.query(query)
     matches = [dict(row.items()) for row in query_job]
-    logging.info(f"Found {len(matches)} total matches in BigQuery")
 
     unprocessed_matches = []
     for match in matches:
         blob = bucket.blob(f"reddit_data/{match['match_id']}.json")
         if not blob.exists():
             unprocessed_matches.append(match)
-            logging.debug(f"Match ID {match['match_id']} is unprocessed.")
 
-    logging.info(f"Found {len(unprocessed_matches)} matches without Reddit data")
     return unprocessed_matches
 
 
@@ -87,31 +115,35 @@ def clean_text(text: str) -> str:
 
 
 def generate_search_queries(match: Dict) -> List[str]:
-    """Generate a list of search queries for Reddit."""
+    """Generate optimized search queries."""
     home_team = clean_text(match["home_team"])
     away_team = clean_text(match["away_team"])
-    competition = clean_text(match["competition"])
-
-    queries = [
-        f'flair:"Match Thread" "{home_team}" "{away_team}"',
-        f'flair:"Post Match Thread" "{home_team}" "{away_team}"',
-        f'flair:"Match Thread" "{home_team}"',
-        f'flair:"Match Thread" "{away_team}"',
-        f'flair:"Match Thread" "{competition}" "{home_team}"',
-        f'flair:"Match Thread" "{competition}" "{away_team}"',
-        f'flair:"Post Match Thread" "{competition}" "{home_team}"',
-        f'flair:"Post Match Thread" "{competition}" "{away_team}"',
+    return [
+        f'flair:"Match Thread" OR flair:"Post Match Thread" title:"{home_team}" AND title:"{away_team}"'
     ]
-    return queries
 
 
-def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """
-    Find the Reddit thread corresponding to a football match.
-    """
+async def process_matches(matches, reddit):
+    """Process matches in batches with rate limiting."""
+    rate_limiter = RateLimiter(requests_per_minute=60)
+    batch_size = 5
+
+    for i in range(0, len(matches), batch_size):
+        batch = matches[i : i + batch_size]
+        tasks = [find_match_thread(reddit, match, rate_limiter) for match in batch]
+        results = await asyncio.gather(*tasks)
+        await asyncio.sleep(2)  # Pause between batches
+        for result in results:
+            yield result
+
+
+async def find_match_thread(
+    reddit, match: Dict, rate_limiter: RateLimiter
+) -> Optional[Dict]:
+    """Asynchronously find the Reddit thread corresponding to a football match."""
     logging.info(f"Searching Reddit threads for match ID {match['match_id']}")
 
-    subreddit = reddit.subreddit("soccer")
+    subreddit = await reddit.subreddit("soccer")
     match_date = match["utcDate"]
     time_filter_start = int((match_date - timedelta(days=1)).timestamp())
     time_filter_end = int((match_date + timedelta(days=2)).timestamp())
@@ -121,14 +153,13 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     highest_score: float = 0.0
 
     for query in search_queries:
-        logging.debug(f"Searching with query: {query}")
+        await rate_limiter.wait()
         try:
-            results = subreddit.search(query, sort="new", limit=50)
-            for thread in results:
-                if not (time_filter_start <= thread.created_utc <= time_filter_end):
+            async for submission in subreddit.search(query, sort="new", limit=50):
+                if not (time_filter_start <= submission.created_utc <= time_filter_end):
                     continue
 
-                title = clean_text(thread.title)
+                title = clean_text(submission.title)
                 home_team = clean_text(match["home_team"])
                 away_team = clean_text(match["away_team"])
 
@@ -139,35 +170,24 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
                 if score > highest_score:
                     highest_score = score
-                    best_match = thread
+                    best_match = submission
 
         except Exception as e:
             logging.error(f"Error during Reddit search: {e}")
             continue
 
     if best_match and highest_score > 60:
-        logging.info(
-            f"Best match thread found with score {highest_score}: {best_match.title}"
-        )
-        return extract_thread_data(best_match, match["match_id"])
-    else:
-        logging.info(
-            f"No suitable Reddit thread found for match ID {match['match_id']}"
-        )
-        return None
+        return await extract_thread_data(best_match, match["match_id"])
+    return None
 
 
-def extract_thread_data(thread, match_id: int) -> Dict:
-    """Extract data from the Reddit thread."""
+async def extract_thread_data(thread, match_id: int) -> Dict:
+    """Asynchronously extract data from the Reddit thread."""
     logging.info(f"Extracting data from thread ID {thread.id}")
     try:
-        thread.comments.replace_more(limit=0)
+        await thread.comments.replace_more(limit=0)
         comments = []
-        top_comments = sorted(
-            thread.comments.list(), key=lambda x: x.score, reverse=True
-        )[:10]
-
-        for comment in top_comments:
+        async for comment in thread.comments:
             comments.append(
                 {
                     "id": comment.id,
@@ -186,7 +206,7 @@ def extract_thread_data(thread, match_id: int) -> Dict:
             "created_utc": thread.created_utc,
             "score": thread.score,
             "num_comments": thread.num_comments,
-            "comments": comments,
+            "comments": comments[:10],  # Keep top 10 comments
         }
         return thread_data
     except Exception as e:
@@ -194,7 +214,7 @@ def extract_thread_data(thread, match_id: int) -> Dict:
         return {}
 
 
-def save_to_gcs(data: Dict, match_id: int) -> None:
+async def save_to_gcs(data: Dict, match_id: int) -> None:
     """Save the thread data to GCS if it doesn't already exist."""
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
