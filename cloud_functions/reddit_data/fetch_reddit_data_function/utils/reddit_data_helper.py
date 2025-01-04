@@ -1,12 +1,13 @@
 import os
 import json
 import logging
-import praw
+import asyncpraw
 import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from rapidfuzz import fuzz
 import time
+import asyncio
 from datetime import datetime, timezone
 import unicodedata
 
@@ -59,16 +60,16 @@ def get_competition_variations(competition: str) -> List[str]:
     return variations.get(competition, [competition])
 
 
-def handle_ratelimit(reddit):
-    limits = reddit.auth.limits or {}
-    remaining = limits.get("remaining", 0)
-    reset_timestamp = limits.get("reset_timestamp")
+async def handle_ratelimit(reddit):
+    limits = await reddit.auth.limits
+    remaining = limits.get("remaining", 0) if limits else 0
+    reset_timestamp = limits.get("reset_timestamp") if limits else None
 
     if remaining is not None and remaining < 2 and reset_timestamp:
         sleep_time = max(reset_timestamp - time.time(), 0)
         if sleep_time > 0:
             logging.info(f"Rate limit reached. Waiting {sleep_time:.2f} seconds")
-            time.sleep(sleep_time + 1)
+            await asyncio.sleep(sleep_time + 1)
 
 
 def clean_team_name(team_name: str) -> str:
@@ -86,7 +87,7 @@ def clean_team_name(team_name: str) -> str:
     return re.sub(r"\s+", " ", team_name).strip()
 
 
-def initialize_reddit():
+async def initialize_reddit():
     max_retries = 3
     for attempt in range(max_retries):
         try:
@@ -102,12 +103,12 @@ def initialize_reddit():
                     f"Missing required environment variables: {', '.join(missing_vars)}"
                 )
 
-            reddit = praw.Reddit(
+            reddit = asyncpraw.Reddit(
                 client_id=REDDIT_CLIENT_ID,
                 client_secret=REDDIT_CLIENT_SECRET,
                 user_agent="soccer_match_analyzer v1.0",
             )
-            reddit.user.me()
+            await reddit.user.me()
             logging.info("Successfully connected to Reddit API")
             return reddit
 
@@ -117,7 +118,7 @@ def initialize_reddit():
             )
             if attempt == max_retries - 1:
                 raise
-            time.sleep(5 * (attempt + 1))
+            await asyncio.sleep(5 * (attempt + 1))
 
 
 def get_processed_matches() -> List[Dict]:
@@ -151,7 +152,7 @@ def get_processed_matches() -> List[Dict]:
     return unprocessed_matches
 
 
-def calculate_thread_match_score(thread, match: Dict, match_date) -> float:
+async def calculate_thread_match_score(thread, match: Dict, match_date) -> float:
     score: float = 0
     title_lower = thread.title.lower()
 
@@ -181,10 +182,10 @@ def calculate_thread_match_score(thread, match: Dict, match_date) -> float:
     return score
 
 
-def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
+async def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     logging.info(f"Searching for match: {match['home_team']} vs {match['away_team']}")
 
-    subreddit = reddit.subreddit("soccer")
+    subreddit = await reddit.subreddit("soccer")
     match_date = match["utcDate"].date()
 
     home_team_clean = clean_team_name(match["home_team"])
@@ -223,12 +224,12 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
 
     search_results = []
     for query in search_queries:
-        handle_ratelimit(reddit)
+        await handle_ratelimit(reddit)
         try:
-            results = subreddit.search(
+            async for submission in subreddit.search(
                 query, sort="new", time_filter="week", syntax="lucene", limit=50
-            )
-            search_results.extend(results)
+            ):
+                search_results.append(submission)
         except Exception as e:
             logging.error(f"Error searching with query '{query}': {str(e)}")
             continue
@@ -239,27 +240,28 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
     for thread in search_results:
         if thread.id not in seen_ids:
             seen_ids.add(thread.id)
-            score = calculate_thread_match_score(thread, match, match_date)
+            score = await calculate_thread_match_score(thread, match, match_date)
             if score > 70:
                 scored_threads.append((score, thread))
 
     if scored_threads:
         best_thread = max(scored_threads, key=lambda x: x[0])[1]
-        return extract_thread_data(best_thread, match["match_id"])
+        return await extract_thread_data(best_thread, match["match_id"])
 
     return None
 
 
-def extract_thread_data(thread, match_id: int) -> Dict:
+async def extract_thread_data(thread, match_id: int) -> Dict:
     logging.info(f"Extracting data from thread: {thread.title}")
 
     try:
-        thread.comments.replace_more(limit=0)
+        await thread.comments.replace_more(limit=0)
         top_comments = []
 
-        for comment in sorted(thread.comments, key=lambda x: x.score, reverse=True)[
-            :10
-        ]:
+        comments = await thread.comments()
+        sorted_comments = sorted(comments, key=lambda x: x.score, reverse=True)[:10]
+
+        for comment in sorted_comments:
             if len(comment.body.strip()) > 10:
                 top_comments.append(
                     {
