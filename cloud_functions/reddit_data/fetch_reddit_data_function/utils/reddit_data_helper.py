@@ -323,7 +323,9 @@ def extract_thread_data(thread, match_id=None) -> Dict:
         thread.comments.replace_more(limit=0)
         top_comments = []
 
-        for comment in sorted(thread.comments, key=lambda x: x.score, reverse=True)[:5]:
+        for comment in sorted(thread.comments, key=lambda x: x.score, reverse=True)[
+            :10
+        ]:
             if len(comment.body.strip()) > 10:
                 top_comments.append(
                     {
