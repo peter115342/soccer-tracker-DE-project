@@ -21,11 +21,23 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 def handle_ratelimit(reddit):
     """Handle rate limits dynamically using Reddit API information"""
-    if reddit.auth.limits["remaining"] < 2:
-        sleep_time = reddit.auth.limits["reset_timestamp"] - time.time()
-        if sleep_time > 0:
-            logging.info(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds")
-            time.sleep(sleep_time)
+    limits = reddit.auth.limits or {}
+    remaining = limits.get("remaining")
+    reset_timestamp = limits.get("reset_timestamp")
+
+    if remaining is not None and remaining < 2:
+        if reset_timestamp is not None:
+            sleep_time = reset_timestamp - time.time()
+            if sleep_time > 0:
+                logging.info(
+                    f"Rate limit reached. Waiting for {sleep_time:.2f} seconds"
+                )
+                time.sleep(sleep_time)
+        else:
+            logging.info(
+                "Rate limit reached but reset_timestamp is None. Sleeping 60s."
+            )
+            time.sleep(60)
 
 
 def get_competition_variations(competition: str) -> List[str]:
@@ -191,14 +203,18 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
         f'flair:"Match Thread" {away_team_clean}',
         f'flair:"Post Match Thread" {home_team_clean}',
         f'flair:"Post Match Thread" {away_team_clean}',
-        f'flair:"Post-Match Thread" {home_team_clean}',
-        f'flair:"Post-Match Thread" {away_team_clean}',
         'flair:"Match Thread"',
         'flair:"Post Match Thread"',
-        'flair:"Post-Match Thread"',
-        f'flair:"Post-Match Thread" {match["competition"].lower()}',
-        f'flair:"Post-Match Thread" {home_team_clean} vs {away_team_clean}',
-        f'flair:"Post-Match Thread" {away_team_clean} vs {home_team_clean}',
+        f'flair:"Match Thread" {home_team_clean} vs {away_team_clean}',
+        f'flair:"Match Thread" {away_team_clean} vs {home_team_clean}',
+        f'flair:"Match Thread" {home_team_clean} {away_team_clean}',
+        f'flair:"Match Thread" {away_team_clean} {home_team_clean}',
+        f'flair:"Match Thread" {match["competition"].lower()} {home_team_clean}',
+        f'flair:"Match Thread" {match["competition"].lower()} {away_team_clean}',
+        f'flair:"Post Match Thread" {home_team_clean} {away_team_clean}',
+        f'flair:"Post Match Thread" {away_team_clean} {home_team_clean}',
+        f'flair:"Post Match Thread" {match["competition"].lower()} {home_team_clean}',
+        f'flair:"Post Match Thread" {match["competition"].lower()} {away_team_clean}',
         *[
             f'flair:"Match Thread" {part}'
             for part in home_team_clean.split()
@@ -216,16 +232,6 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
         ],
         *[
             f'flair:"Post Match Thread" {part}'
-            for part in away_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post-Match Thread" {part}'
-            for part in home_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post-Match Thread" {part}'
             for part in away_team_clean.split()
             if len(part) > 3
         ],
@@ -240,7 +246,7 @@ def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
                     sort="new",
                     time_filter="month",
                     syntax="lucene",
-                    limit=100,
+                    limit=200,
                 )
             )
 
