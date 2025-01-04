@@ -251,7 +251,7 @@ jobs:
           uv run gcloud functions deploy fetch_reddit_data \
           --runtime python312 \
           --trigger-topic fetch_reddit_data_topic \
-          --entry-point cloud_function_handler \
+          --entry-point fetch_reddit_data \
           --timeout 540s \
           --memory 1GiB \
           --region europe-central2 \
