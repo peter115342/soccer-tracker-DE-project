@@ -60,16 +60,15 @@ def get_competition_variations(competition: str) -> List[str]:
 
 
 def handle_ratelimit(reddit):
-    limits = reddit.auth.limits
-    if limits:
-        remaining = limits.get("remaining", 0)
-        reset_timestamp = limits.get("reset_timestamp")
+    limits = reddit.auth.limits or {}
+    remaining = limits.get("remaining", 0)
+    reset_timestamp = limits.get("reset_timestamp")
 
-        if remaining < 2 and reset_timestamp:
-            sleep_time = max(reset_timestamp - time.time(), 0)
-            if sleep_time > 0:
-                logging.info(f"Rate limit reached. Waiting {sleep_time:.2f} seconds")
-                time.sleep(sleep_time + 1)
+    if remaining is not None and remaining < 2 and reset_timestamp:
+        sleep_time = max(reset_timestamp - time.time(), 0)
+        if sleep_time > 0:
+            logging.info(f"Rate limit reached. Waiting {sleep_time:.2f} seconds")
+            time.sleep(sleep_time + 1)
 
 
 def clean_team_name(team_name: str) -> str:
