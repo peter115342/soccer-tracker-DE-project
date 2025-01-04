@@ -39,7 +39,7 @@ def get_processed_matches():
         homeTeam.name as home_team,
         awayTeam.name as away_team,
         competition.name as competition
-    FROM `matches_processed`
+    FROM `sports_data_eu.matches_processed`
     WHERE status = 'FINISHED'
     """
 
