@@ -61,7 +61,7 @@ def get_competition_variations(competition: str) -> List[str]:
 
 
 async def handle_ratelimit(reddit):
-    limits = await reddit.auth.limits
+    limits = reddit.auth.limits
     remaining = limits.get("remaining", 0) if limits else 0
     reset_timestamp = limits.get("reset_timestamp") if limits else None
 
