@@ -86,7 +86,7 @@ def fetch_reddit_data(event, context):
             matches_for_rate = []
             processed_for_rate = 0
 
-            for match in matches:
+            for match in matches[:]:
                 try:
                     match_date = match["utcDate"].date()
                     logging.info(
@@ -101,6 +101,7 @@ def fetch_reddit_data(event, context):
 
                     if thread_data:
                         save_to_gcs(thread_data, match["match_id"])
+                        matches.remove(match)
                         processed_count += 1
                         processed_for_rate += 1
                         logging.info(

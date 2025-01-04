@@ -143,10 +143,12 @@ def get_processed_matches() -> List[Dict]:
     matches = list(client.query(query).result())
     unprocessed_matches = []
 
-    for match in matches:
-        blob = bucket.blob(f"reddit_data/{match['match_id']}.json")
-        if not blob.exists():
-            unprocessed_matches.append(match)
+    blobs = list(bucket.list_blobs(prefix="reddit_data/"))
+    existing_match_ids = {int(blob.name.split("/")[-1].split(".")[0]) for blob in blobs}
+
+    unprocessed_matches = [
+        match for match in matches if match["match_id"] not in existing_match_ids
+    ]
 
     return unprocessed_matches
 
