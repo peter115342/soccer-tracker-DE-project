@@ -155,11 +155,13 @@ def calculate_thread_match_score(thread, match: Dict, match_date) -> float:
     score: float = 0
     title_lower = thread.title.lower()
 
-    thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc).date()
-    if thread_date == match_date:
-        score += 30
-    elif abs((thread_date - match_date).days) <= 1:
-        score += 15
+    match_datetime = match["utcDate"]
+    thread_datetime = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc)
+
+    if thread_datetime.date() == match_datetime.date():
+        score += 35
+    else:
+        return 0
 
     home_score = fuzz.partial_ratio(match["home_team"].lower(), title_lower)
     away_score = fuzz.partial_ratio(match["away_team"].lower(), title_lower)
