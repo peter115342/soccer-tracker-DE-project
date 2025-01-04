@@ -68,44 +68,50 @@ def find_match_thread(reddit, match):
     try:
         match_date = match["utcDate"].timestamp()
         subreddit = reddit.subreddit("soccer")
-        search_query = f"title:\"Post Match Thread\" AND title:\"{match['home_team']}\" AND title:\"{match['away_team']}\""
 
-        for submission in subreddit.search(
-            search_query, sort="new", time_filter="week"
-        ):
-            post_date = submission.created_utc
-            if abs(post_date - match_date) <= 86400:
-                submission.comment_sort = "top"
-                top_comments = []
-                comment_count = 0
+        team_query = f"\"{match['home_team']}\" AND \"{match['away_team']}\""
+        search_queries = [
+            f'(title:"Post Match Thread" OR flair:"Post Match Thread") AND {team_query}',
+            f'(title:"Match Thread" OR flair:"Match Thread") AND {team_query}',
+        ]
 
-                submission.comments.replace_more(limit=0)
-                for comment in submission.comments:
-                    if comment_count >= 10:
-                        break
-                    top_comments.append(
-                        {
-                            "id": comment.id,
-                            "body": comment.body,
-                            "score": comment.score,
-                            "author": str(comment.author),
-                            "created_utc": int(comment.created_utc),
-                        }
-                    )
-                    comment_count += 1
+        for search_query in search_queries:
+            for submission in subreddit.search(
+                search_query, sort="new", time_filter="week"
+            ):
+                post_date = submission.created_utc
+                if abs(post_date - match_date) <= 86400:
+                    submission.comment_sort = "top"
+                    top_comments = []
+                    comment_count = 0
 
-                thread_data = {
-                    "match_id": match["match_id"],
-                    "thread_id": submission.id,
-                    "title": submission.title,
-                    "body": submission.selftext,
-                    "created_utc": int(submission.created_utc),
-                    "score": submission.score,
-                    "upvote_ratio": submission.upvote_ratio,
-                    "num_comments": submission.num_comments,
-                    "top_comments": top_comments,
-                }
-                return thread_data
+                    submission.comments.replace_more(limit=0)
+                    for comment in submission.comments:
+                        if comment_count >= 10:
+                            break
+                        top_comments.append(
+                            {
+                                "id": comment.id,
+                                "body": comment.body,
+                                "score": comment.score,
+                                "author": str(comment.author),
+                                "created_utc": int(comment.created_utc),
+                            }
+                        )
+                        comment_count += 1
+
+                    thread_data = {
+                        "match_id": match["match_id"],
+                        "thread_id": submission.id,
+                        "title": submission.title,
+                        "body": submission.selftext,
+                        "created_utc": int(submission.created_utc),
+                        "score": submission.score,
+                        "upvote_ratio": submission.upvote_ratio,
+                        "num_comments": submission.num_comments,
+                        "top_comments": top_comments,
+                    }
+                    return thread_data
         return None
 
     except Exception as e:
