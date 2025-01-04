@@ -74,7 +74,7 @@ def find_match_thread(reddit, match):
             search_query, sort="new", time_filter="week"
         ):
             post_date = submission.created_utc
-            if abs(post_date - match_date) <= 86400:  # Within 24 hours
+            if abs(post_date - match_date) <= 86400:
                 submission.comment_sort = "top"
                 top_comments = []
                 comment_count = 0
