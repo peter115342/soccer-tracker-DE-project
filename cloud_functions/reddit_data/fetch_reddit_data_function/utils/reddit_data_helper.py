@@ -239,7 +239,6 @@ async def find_match_thread(
     for query in search_queries:
         await handle_ratelimit(reddit)
         try:
-            # Limit to 'week' for safety, but you can adjust time_filter as needed
             async for submission in subreddit.search(
                 query, sort="new", time_filter="week", limit=50, syntax="lucene"
             ):
@@ -325,8 +324,10 @@ async def _extract_thread_data(
     """
     try:
         await submission.comments.replace_more(limit=0)
+        all_comments = submission.comments.list()
+        if not all_comments:
+            all_comments = []
 
-        # Collect top 10 comments by score
         sorted_comments = sorted(
             submission.comments.list(),
             key=lambda c: c.score if c.score else 0,
