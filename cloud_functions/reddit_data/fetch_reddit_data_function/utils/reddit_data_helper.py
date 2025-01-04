@@ -2,12 +2,13 @@ import os
 import json
 import logging
 import praw
+import re
 from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from rapidfuzz import fuzz
-from datetime import timedelta
-import re
+import time
 import unicodedata
+from datetime import datetime, timezone, timedelta
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -16,59 +17,140 @@ logging.basicConfig(
 REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
-GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
+
+
+def handle_ratelimit(reddit):
+    """Handle rate limits dynamically using Reddit API information"""
+    if reddit.auth.limits["remaining"] < 2:
+        sleep_time = reddit.auth.limits["reset_timestamp"] - time.time()
+        if sleep_time > 0:
+            logging.info(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds")
+            time.sleep(sleep_time)
+
+
+def get_competition_variations(competition: str) -> List[str]:
+    """Generate variations of competition names"""
+    variations = {
+        "Primera Division": [
+            "La Liga",
+            "LALIGA",
+            "Spanish Primera",
+            "Primera División",
+            "La Liga Santander",
+            "Spanish La Liga",
+            "Spanish League",
+            "Spain",
+        ],
+        "Serie A": [
+            "Italian Serie A",
+            "Serie A TIM",
+            "Calcio",
+            "Italian League",
+            "Italy",
+            "Italian",
+        ],
+        "Ligue 1": [
+            "French Ligue 1",
+            "Ligue 1 Uber Eats",
+            "French League",
+            "France",
+            "French",
+        ],
+        "Premier League": [
+            "EPL",
+            "English Premier League",
+            "BPL",
+            "PL",
+            "English League",
+            "England",
+        ],
+        "Bundesliga": [
+            "German Bundesliga",
+            "BL",
+            "German League",
+            "Germany",
+            "German",
+        ],
+    }
+    return variations.get(competition, [competition])
+
+
+def clean_team_name(team_name: str) -> str:
+    """Simplify team names for better matching while preserving key identifiers."""
+    team_name = team_name.lower()
+    team_name = unicodedata.normalize("NFKD", team_name)
+    team_name = re.sub(r"[^a-z\s]", "", team_name)
+
+    remove_terms = [
+        r"\b(fc|cf|sc|ac|club|cp|cd|ssd|aas|ssc|as|us|usl|sv|ss|kv|kvk|krc|afc|cfc)\b"
+    ]
+
+    for term in remove_terms:
+        team_name = re.sub(term, "", team_name)
+
+    team_name = re.sub(r"\s+", " ", team_name)
+    return team_name.strip()
 
 
 def initialize_reddit():
-    """Initialize Reddit API client with proper error handling."""
-    try:
-        if not REDDIT_CLIENT_ID or not REDDIT_CLIENT_SECRET:
-            raise ValueError(
-                "Reddit API credentials are not set in environment variables."
+    """Initialize Reddit API client with enhanced validation and retry logic"""
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            required_vars = {
+                "REDDIT_CLIENT_ID": REDDIT_CLIENT_ID,
+                "REDDIT_CLIENT_SECRET": REDDIT_CLIENT_SECRET,
+                "BUCKET_NAME": GCS_BUCKET_NAME,
+            }
+
+            missing_vars = [var for var, value in required_vars.items() if not value]
+            if missing_vars:
+                raise ValueError(
+                    f"Missing required environment variables: {', '.join(missing_vars)}"
+                )
+
+            reddit = praw.Reddit(
+                client_id=REDDIT_CLIENT_ID,
+                client_secret=REDDIT_CLIENT_SECRET,
+                user_agent="soccer_match_analyzer v1.0",
             )
+            reddit.user.me()
+            logging.info("Successfully connected to Reddit API")
+            return reddit
 
-        reddit = praw.Reddit(
-            client_id=REDDIT_CLIENT_ID,
-            client_secret=REDDIT_CLIENT_SECRET,
-            user_agent="soccer_match_analyzer v1.0",
-        )
-        reddit.user.me()  # Test connection
-        logging.info("Successfully connected to Reddit API")
-        return reddit
-    except Exception as e:
-        logging.error(f"Error initializing Reddit client: {e}")
-        raise
-
-
-def clean_text(text: str) -> str:
-    """Clean and normalize text for comparison."""
-    text = text.lower()
-    text = unicodedata.normalize("NFKD", text)
-    text = re.sub(r"[^a-z0-9\s]", "", text)
-    return re.sub(r"\s+", " ", text).strip()
+        except Exception as e:
+            logging.error(
+                f"Reddit initialization attempt {attempt + 1} failed: {str(e)}"
+            )
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(5 * (attempt + 1))
 
 
 def get_processed_matches() -> List[Dict]:
-    """Fetch unprocessed matches from BigQuery."""
-    client = bigquery.Client(project=GCP_PROJECT_ID)
+    """Fetch recent matches from BigQuery with enhanced filtering"""
+    client = bigquery.Client()
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
 
+    logging.info("Fetching matches from BigQuery")
+
     query = """
         SELECT
-            id AS match_id,
-            homeTeam.name AS home_team,
-            awayTeam.name AS away_team,
-            competition.name AS competition,
+            homeTeam.name as home_team,
+            awayTeam.name as away_team,
+            competition.name as competition,
             utcDate,
-            score.fullTime.homeTeam AS home_score,
-            score.fullTime.awayTeam AS away_score
-        FROM `sports_data_eu.matches_processed`
+            id as match_id,
+            score.fullTime.homeTeam as home_score,
+            score.fullTime.awayTeam as away_score
+        FROM sports_data_eu.matches_processed
         WHERE score.fullTime.homeTeam IS NOT NULL
         AND score.fullTime.awayTeam IS NOT NULL
+        ORDER BY utcDate DESC
     """
 
-    matches = [dict(row.items()) for row in client.query(query)]
+    matches = list(client.query(query).result())
     logging.info(f"Found {len(matches)} total matches in BigQuery")
 
     unprocessed_matches = []
@@ -76,128 +158,229 @@ def get_processed_matches() -> List[Dict]:
         blob = bucket.blob(f"reddit_data/{match['match_id']}.json")
         if not blob.exists():
             unprocessed_matches.append(match)
-            logging.debug(f"Match ID {match['match_id']} is unprocessed")
+            logging.info(
+                f"Adding unprocessed match: {match['home_team']} vs {match['away_team']} "
+                f"({match['home_score']}-{match['away_score']}) from {match['competition']}"
+            )
 
     logging.info(f"Found {len(unprocessed_matches)} matches without Reddit data")
     return unprocessed_matches
 
 
-def generate_search_queries(match: Dict) -> List[str]:
-    """Generate optimized search queries for Reddit."""
-    home = clean_text(match["home_team"])
-    away = clean_text(match["away_team"])
-    competition = clean_text(match["competition"])
-
-    base_queries = [
-        f"{home} vs {away}",
-        f"{away} vs {home}",
-        f"{home}-{away}",
-        f"{away}-{home}",
-    ]
-
-    search_queries = []
-    for flair in ["Match Thread", "Post Match Thread"]:
-        for query in base_queries:
-            search_queries.append(f'flair:"{flair}" {query}')
-            if competition:
-                search_queries.append(f'flair:"{flair}" {competition} {query}')
-
-    return search_queries
-
-
 def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    """Find the most relevant Reddit thread for a match."""
-    logging.info(f"Searching Reddit threads for match ID {match['match_id']}")
+    """Enhanced match thread search with improved matching logic."""
+    logging.info(f"Searching for match: {match['home_team']} vs {match['away_team']}")
 
     subreddit = reddit.subreddit("soccer")
-    match_date = match["utcDate"]
-    search_window = timedelta(hours=16)
+    match_date = match["utcDate"].date()
 
-    time_start = int((match_date - search_window).timestamp())
-    time_end = int((match_date + search_window).timestamp())
+    home_team_full = match["home_team"].lower()
+    away_team_full = match["away_team"].lower()
+    home_team_clean = clean_team_name(match["home_team"])
+    away_team_clean = clean_team_name(match["away_team"])
+    next_days = match_date + timedelta(days=2)
+    prev_days = match_date - timedelta(days=2)
+    valid_dates = {prev_days, match_date, next_days}
+    competition_variations = get_competition_variations(match["competition"])
 
-    search_queries = generate_search_queries(match)
     best_thread = None
-    highest_similarity: float = 0
+    highest_score: float = 0
 
-    for query in search_queries:
+    search_queries = [
+        f'flair:"Match Thread" {home_team_clean}',
+        f'flair:"Match Thread" {away_team_clean}',
+        f'flair:"Post Match Thread" {home_team_clean}',
+        f'flair:"Post Match Thread" {away_team_clean}',
+        f'flair:"Post-Match Thread" {home_team_clean}',
+        f'flair:"Post-Match Thread" {away_team_clean}',
+        'flair:"Match Thread"',
+        'flair:"Post Match Thread"',
+        'flair:"Post-Match Thread"',
+        f'flair:"Post-Match Thread" {match["competition"].lower()}',
+        f'flair:"Post-Match Thread" {home_team_clean} vs {away_team_clean}',
+        f'flair:"Post-Match Thread" {away_team_clean} vs {home_team_clean}',
+        *[
+            f'flair:"Match Thread" {part}'
+            for part in home_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Match Thread" {part}'
+            for part in away_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post Match Thread" {part}'
+            for part in home_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post Match Thread" {part}'
+            for part in away_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post-Match Thread" {part}'
+            for part in home_team_clean.split()
+            if len(part) > 3
+        ],
+        *[
+            f'flair:"Post-Match Thread" {part}'
+            for part in away_team_clean.split()
+            if len(part) > 3
+        ],
+    ]
+
+    for search_query in search_queries:
         try:
-            for submission in subreddit.search(query, sort="new", limit=10):
-                if not (time_start <= submission.created_utc <= time_end):
+            handle_ratelimit(reddit)
+            search_results = list(
+                subreddit.search(
+                    search_query,
+                    sort="new",
+                    time_filter="month",
+                    syntax="lucene",
+                    limit=100,
+                )
+            )
+
+            for thread in search_results:
+                thread_date = datetime.fromtimestamp(
+                    thread.created_utc, tz=timezone.utc
+                ).date()
+
+                if thread_date not in valid_dates:
                     continue
 
-                title_similarity = fuzz.ratio(
-                    clean_text(submission.title),
-                    clean_text(f"{match['home_team']} vs {match['away_team']}"),
+                title_lower = thread.title.lower()
+
+                competition_match = any(
+                    comp.lower() in title_lower for comp in competition_variations
                 )
 
-                if title_similarity > highest_similarity:
-                    highest_similarity = title_similarity
-                    best_thread = submission
+                if not competition_match:
+                    continue
+
+                title_parts = re.split(r"vs\.?|v\.?|\||[-:]", title_lower)
+
+                title_digits = re.findall(r"\b\d{1,2}\b", title_lower)
+
+                date_match = (
+                    str(match_date.day) in title_digits
+                    or str(match_date.month) in title_digits
+                )
+
+                home_scores = [
+                    fuzz.partial_ratio(home_team_full, part.strip())
+                    for part in title_parts
+                ] + [
+                    fuzz.partial_ratio(home_team_clean, part.strip())
+                    for part in title_parts
+                ]
+
+                away_scores = [
+                    fuzz.partial_ratio(away_team_full, part.strip())
+                    for part in title_parts
+                ] + [
+                    fuzz.partial_ratio(away_team_clean, part.strip())
+                    for part in title_parts
+                ]
+
+                total_score = (max(home_scores) + max(away_scores)) / 2
+
+                if date_match:
+                    total_score += 10
+
+                if total_score > highest_score and total_score > 25:
+                    highest_score = total_score
+                    best_thread = thread
+                    logging.info(
+                        f"New best match found: {thread.title} (Score: {total_score})"
+                    )
 
         except Exception as e:
-            logging.error(f"Search error: {e}")
+            logging.error(f"Error searching with query '{search_query}': {str(e)}")
             continue
 
-    if best_thread and highest_similarity > 75:
+    if best_thread:
         return extract_thread_data(best_thread, match["match_id"])
+
+    logging.info("No matching thread found")
     return None
 
 
-def extract_thread_data(thread, match_id: int) -> Dict:
-    """Extract and structure thread data."""
-    logging.info(f"Extracting data from thread ID {thread.id}")
+def extract_thread_data(thread, match_id=None) -> Dict:
+    """Extract relevant data from Reddit thread with enhanced comment handling"""
+    logging.info(f"Extracting data from thread: {thread.title}")
+
     try:
         thread.comments.replace_more(limit=0)
+        top_comments = []
 
-        top_comments = sorted(
-            [comment for comment in thread.comments.list() if not comment.stickied],
-            key=lambda x: x.score,
-            reverse=True,
-        )[:10]
-
-        comments_data = [
-            {
-                "id": comment.id,
-                "author": str(comment.author) if comment.author else "[deleted]",
-                "body": comment.body,
-                "score": comment.score,
-                "created_utc": comment.created_utc,
-            }
-            for comment in top_comments
-        ]
+        for comment in sorted(thread.comments, key=lambda x: x.score, reverse=True)[:5]:
+            if len(comment.body.strip()) > 10:
+                top_comments.append(
+                    {
+                        "id": comment.id,
+                        "body": comment.body if comment.body is not None else "None",
+                        "score": comment.score,
+                        "author": str(comment.author)
+                        if comment.author is not None
+                        else "None",
+                        "created_utc": comment.created_utc
+                        if comment.created_utc is not None
+                        else 0,
+                    }
+                )
 
         thread_data = {
             "match_id": match_id,
-            "thread_id": thread.id,
-            "title": thread.title,
-            "body": thread.selftext,
+            "thread_id": thread.id if thread.id is not None else "None",
+            "title": thread.title if thread.title is not None else "None",
+            "body": thread.selftext if thread.selftext is not None else "None",
             "created_utc": thread.created_utc,
             "score": thread.score,
-            "comment_count": thread.num_comments,
-            "top_comments": comments_data,
+            "upvote_ratio": thread.upvote_ratio
+            if thread.upvote_ratio is not None
+            else 0.0,
+            "num_comments": thread.num_comments
+            if thread.num_comments is not None
+            else 0,
+            "top_comments": top_comments,
         }
+
+        logging.info(f"Extracted {len(top_comments)} top comments from thread")
         return thread_data
+
     except Exception as e:
-        logging.error(f"Error extracting thread data: {e}")
-        return {}
+        logging.error(f"Error extracting thread data: {str(e)}")
+        return {
+            "error": str(e),
+            "thread_id": thread.id if thread.id is not None else "None",
+            "match_id": match_id,
+        }
 
 
-def save_to_gcs(data: Dict, match_id: int) -> None:
-    """Save thread data to GCS with duplicate handling."""
+def save_to_gcs(thread_data: Dict, match_id: int) -> None:
+    """Save Reddit thread data to GCS with validation"""
+    if not thread_data:
+        logging.error("No thread data to save")
+        return
+
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
     blob = bucket.blob(f"reddit_data/{match_id}.json")
 
-    if blob.exists():
-        logging.info(
-            f"Data for match ID {match_id} already exists in GCS. Skipping save."
-        )
-        return
-
-    try:
-        blob.upload_from_string(data=json.dumps(data), content_type="application/json")
-        logging.info(f"Data for match ID {match_id} saved to GCS.")
-    except Exception as e:
-        logging.error(f"Error saving data to GCS for match ID {match_id}: {e}")
-        raise
+    if not blob.exists():
+        try:
+            blob.upload_from_string(
+                data=json.dumps(thread_data, ensure_ascii=False),
+                content_type="application/json",
+            )
+            logging.info(
+                f"Successfully saved Reddit thread for match ID {match_id} to GCS"
+            )
+        except Exception as e:
+            logging.error(f"Error saving to GCS: {str(e)}")
+    else:
+        logging.info(f"Reddit thread for match ID {match_id} already exists in GCS")
