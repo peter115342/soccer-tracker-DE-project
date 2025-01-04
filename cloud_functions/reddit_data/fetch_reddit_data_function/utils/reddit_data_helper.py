@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-import asyncpraw
+import praw
 from google.cloud import storage
 from google.cloud import bigquery
 
@@ -14,10 +14,10 @@ REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.environ.get("REDDIT_USER_AGENT")
 
 
-async def initialize_reddit():
+def initialize_reddit():
     """Initialize Reddit API client"""
     try:
-        reddit = asyncpraw.Reddit(
+        reddit = praw.Reddit(
             client_id=REDDIT_CLIENT_ID,
             client_secret=REDDIT_CLIENT_SECRET,
             user_agent=REDDIT_USER_AGENT,
@@ -63,16 +63,14 @@ def get_processed_matches():
         return []
 
 
-async def find_match_thread(reddit, match):
+def find_match_thread(reddit, match):
     """Find and extract data from match thread"""
     try:
         match_date = match["utcDate"].timestamp()
-
-        subreddit = await reddit.subreddit("soccer")
-
+        subreddit = reddit.subreddit("soccer")
         search_query = f"title:\"Post Match Thread\" AND title:\"{match['home_team']}\" AND title:\"{match['away_team']}\""
 
-        async for submission in subreddit.search(
+        for submission in subreddit.search(
             search_query, sort="new", time_filter="week"
         ):
             post_date = submission.created_utc
@@ -81,8 +79,8 @@ async def find_match_thread(reddit, match):
                 top_comments = []
                 comment_count = 0
 
-                await submission.comments.replace_more(limit=0)
-                async for comment in submission.comments:
+                submission.comments.replace_more(limit=0)
+                for comment in submission.comments:
                     if comment_count >= 10:
                         break
                     top_comments.append(
@@ -107,9 +105,7 @@ async def find_match_thread(reddit, match):
                     "num_comments": submission.num_comments,
                     "top_comments": top_comments,
                 }
-
                 return thread_data
-
         return None
 
     except Exception as e:

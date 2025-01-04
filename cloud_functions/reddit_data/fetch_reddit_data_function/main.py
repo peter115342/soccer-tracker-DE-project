@@ -3,8 +3,8 @@ from google.cloud import pubsub_v1
 import json
 import os
 from datetime import datetime, timedelta, timezone
-import aiohttp
-import asyncio
+import requests
+import time
 from .utils.reddit_data_helper import (
     initialize_reddit,
     get_processed_matches,
@@ -13,11 +13,48 @@ from .utils.reddit_data_helper import (
 )
 
 
-async def fetch_reddit_data(event, context):
+def send_discord_notification(title: str, message: str, color: int):
+    """Sends a notification to Discord with the specified title, message, and color"""
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not webhook_url:
+        logging.warning("Discord webhook URL not set")
+        return
+
+    if len(message) > 1900:
+        message_parts = [message[i : i + 1900] for i in range(0, len(message), 1900)]
+        for i, part in enumerate(message_parts):
+            discord_data = {
+                "embeds": [
+                    {
+                        "title": f"{title} (Part {i+1}/{len(message_parts)})",
+                        "description": part,
+                        "color": color,
+                    }
+                ]
+            }
+            headers = {"Content-Type": "application/json"}
+            response = requests.post(webhook_url, json=discord_data, headers=headers)
+            if response.status_code != 204:
+                logging.error(
+                    f"Failed to send Discord notification part {i+1}: {response.status_code}, {response.text}"
+                )
+    else:
+        discord_data = {
+            "embeds": [{"title": title, "description": message, "color": color}]
+        }
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(webhook_url, json=discord_data, headers=headers)
+        if response.status_code != 204:
+            logging.error(
+                f"Failed to send Discord notification: {response.status_code}, {response.text}"
+            )
+
+
+def fetch_reddit_data(event, context):
     """Cloud Function to fetch Reddit match thread data with enhanced tracking"""
     try:
         logging.info("Starting Reddit data fetch process")
-        reddit = await initialize_reddit()
+        reddit = initialize_reddit()
         if not reddit:
             raise Exception("Failed to initialize Reddit client")
         logging.info("Reddit client initialized successfully")
@@ -27,7 +64,7 @@ async def fetch_reddit_data(event, context):
 
         if not matches:
             message = "📝 No matches found to process"
-            await send_discord_notification(
+            send_discord_notification(
                 title="Reddit Data Fetch Status",
                 message=message,
                 color=16776960,  # Yellow
@@ -46,7 +83,6 @@ async def fetch_reddit_data(event, context):
 
             processed_count = 0
             not_found_matches = []
-
             matches_for_rate = []
             processed_for_rate = 0
 
@@ -61,8 +97,7 @@ async def fetch_reddit_data(event, context):
                         continue
 
                     matches_for_rate.append(match)
-
-                    thread_data = await find_match_thread(reddit, match)
+                    thread_data = find_match_thread(reddit, match)
 
                     if thread_data:
                         save_to_gcs(thread_data, match["match_id"])
@@ -86,8 +121,8 @@ async def fetch_reddit_data(event, context):
                         and getattr(e.response, "status_code", None) == 429
                     ):
                         logging.info("Rate limit hit, waiting 180 seconds...")
-                        await asyncio.sleep(180)
-                        thread_data = await find_match_thread(reddit, match)
+                        time.sleep(180)
+                        thread_data = find_match_thread(reddit, match)
                         if thread_data:
                             save_to_gcs(thread_data, match["match_id"])
                             processed_count += 1
@@ -104,27 +139,20 @@ async def fetch_reddit_data(event, context):
                 ]
                 total_matches = len(matches_for_rate)
                 success_count = processed_for_rate
-                failure_count = total_matches - success_count
-                success_rate = (
-                    (success_count / total_matches) * 100 if total_matches else 0
-                )
             else:
                 not_found_matches = [info for info, _ in not_found_matches]
                 total_matches = len(matches)
                 success_count = processed_count
-                failure_count = total_matches - success_count
-                success_rate = (
-                    (success_count / total_matches) * 100 if total_matches else 0
-                )
+
+            failure_count = total_matches - success_count
+            success_rate = (success_count / total_matches) * 100 if total_matches else 0
 
             if total_matches == 0:
                 final_message = "No new matches found to process."
                 logging.info(final_message)
                 color = 16776960  # Yellow
-                await send_discord_notification(
-                    title="Reddit Data Fetch Status",
-                    message=final_message,
-                    color=color,
+                send_discord_notification(
+                    title="Reddit Data Fetch Status", message=final_message, color=color
                 )
             else:
                 status_message = [
@@ -154,7 +182,7 @@ async def fetch_reddit_data(event, context):
                 else:
                     color = 15158332  # Red
 
-                await send_discord_notification(
+                send_discord_notification(
                     title="Reddit Data Fetch Results",
                     message=final_message,
                     color=color,
@@ -184,14 +212,13 @@ async def fetch_reddit_data(event, context):
             logging.error(f"Failed to publish message: {str(pub_error)}")
             raise
 
-        await reddit.close()
         return final_message, 200
 
     except Exception as e:
         error_message = f"Error fetching Reddit data: {str(e)}"
         logging.exception(error_message)
 
-        await send_discord_notification(
+        send_discord_notification(
             title="Reddit Data Fetch Failed",
             message=error_message,
             color=15158332,  # Red
@@ -218,58 +245,4 @@ async def fetch_reddit_data(event, context):
         except Exception as pub_error:
             logging.error(f"Failed to publish error message: {str(pub_error)}")
 
-        if "reddit" in locals():
-            await reddit.close()
         return error_message, 500
-
-
-async def send_discord_notification(title: str, message: str, color: int):
-    """Sends a notification to Discord with the specified title, message, and color"""
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        logging.warning("Discord webhook URL not set")
-        return
-
-    if len(message) > 1900:
-        message_parts = [message[i : i + 1900] for i in range(0, len(message), 1900)]
-        for i, part in enumerate(message_parts):
-            discord_data = {
-                "embeds": [
-                    {
-                        "title": f"{title} (Part {i+1}/{len(message_parts)})",
-                        "description": part,
-                        "color": color,
-                    }
-                ]
-            }
-
-            headers = {"Content-Type": "application/json"}
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    webhook_url, json=discord_data, headers=headers
-                ) as response:
-                    if response.status != 204:
-                        response_text = await response.text()
-                        logging.error(
-                            f"Failed to send Discord notification part {i+1}: {response.status}, {response_text}"
-                        )
-    else:
-        discord_data = {
-            "embeds": [{"title": title, "description": message, "color": color}]
-        }
-
-        headers = {"Content-Type": "application/json"}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                webhook_url, json=discord_data, headers=headers
-            ) as response:
-                if response.status != 204:
-                    response_text = await response.text()
-                    logging.error(
-                        f"Failed to send Discord notification: {response.status}, {response_text}"
-                    )
-
-
-def cloud_function_handler(event, context):
-    """Wrapper function to run the async code"""
-    return asyncio.run(fetch_reddit_data(event, context))
