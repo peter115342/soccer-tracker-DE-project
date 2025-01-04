@@ -175,11 +175,14 @@ async def handle_ratelimit(reddit: asyncpraw.Reddit) -> None:
     """
     Checks the current rate-limiting information from Reddit and sleeps if needed.
     """
-    if not reddit.auth.limits:
+
+    limits = reddit.auth.limits or {}
+
+    if not limits:
         return
 
-    remaining = reddit.auth.limits.get("remaining", 0)
-    reset_timestamp = reddit.auth.limits.get("reset_timestamp")
+    remaining = limits.get("remaining", 0) or 0
+    reset_timestamp = limits.get("reset_timestamp")
 
     if remaining <= 1 and reset_timestamp:
         wait_time = max(reset_timestamp - time.time(), 0)
