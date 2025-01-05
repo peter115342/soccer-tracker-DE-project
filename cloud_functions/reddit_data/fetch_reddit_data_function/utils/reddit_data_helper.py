@@ -24,6 +24,11 @@ def get_match_dates_from_bq() -> List[str]:
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `sports_data_eu.matches_processed`
+        WHERE DATE(utcDate) NOT IN (
+            SELECT DISTINCT DATE(_TABLE_SUFFIX) as processed_date
+            FROM `sports_data_eu.reddit_threads_*`
+            WHERE _TABLE_SUFFIX BETWEEN '2020-01-01' AND CURRENT_DATE()
+        )
         ORDER BY match_date
     """
     query_job = client.query(query)
@@ -37,25 +42,38 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
     end_timestamp = start_timestamp + 86400  # Add 24 hours in seconds
 
+    seen_thread_ids = set()
     threads = []
-    for flair in ["Match Thread", "Post Match Thread"]:
-        for submission in subreddit.search(f'flair:"{flair}"', syntax="lucene"):
-            if start_timestamp <= submission.created_utc <= end_timestamp:
-                thread_data = {
-                    "thread_id": submission.id,
-                    "title": submission.title,
-                    "body": submission.selftext,
-                    "created_utc": int(submission.created_utc),
-                    "score": submission.score,
-                    "upvote_ratio": submission.upvote_ratio,
-                    "num_comments": submission.num_comments,
-                    "flair": flair,
-                    "top_comments": [],
-                }
 
-                submission.comment_sort = "top"
-                submission.comments.replace_more(limit=0)
-                for comment in submission.comments[:10]:
+    submissions = subreddit.search(
+        'flair:"Match Thread" OR flair:"Post Match Thread"', syntax="lucene"
+    )
+
+    for submission in submissions:
+        if (
+            start_timestamp <= submission.created_utc <= end_timestamp
+            and submission.id not in seen_thread_ids
+        ):
+            seen_thread_ids.add(submission.id)
+            thread_data = {
+                "thread_id": submission.id,
+                "title": submission.title,
+                "body": submission.selftext,
+                "created_utc": int(submission.created_utc),
+                "score": submission.score,
+                "upvote_ratio": submission.upvote_ratio,
+                "num_comments": submission.num_comments,
+                "flair": submission.link_flair_text,
+                "top_comments": [],
+            }
+
+            seen_comment_ids = set()
+            submission.comment_sort = "top"
+            submission.comments.replace_more(limit=0)
+
+            for comment in submission.comments[:10]:
+                if comment.id not in seen_comment_ids:
+                    seen_comment_ids.add(comment.id)
                     thread_data["top_comments"].append(
                         {
                             "id": comment.id,
@@ -66,7 +84,7 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                         }
                     )
 
-                threads.append(thread_data)
+            threads.append(thread_data)
 
     return {"date": date, "threads": threads}
 
