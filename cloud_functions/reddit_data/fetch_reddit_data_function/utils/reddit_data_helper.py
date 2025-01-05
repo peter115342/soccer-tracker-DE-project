@@ -1,14 +1,13 @@
 import os
 import json
 import logging
+import praw
 from datetime import datetime
 from google.cloud import storage, bigquery
 from typing import List, Dict, Any
-import praw
 
 logging.basicConfig(level=logging.INFO)
 
-# Initialize Reddit API client
 reddit = praw.Reddit(
     client_id=os.environ.get("REDDIT_CLIENT_ID"),
     client_secret=os.environ.get("REDDIT_CLIENT_SECRET"),
@@ -23,7 +22,7 @@ def get_match_dates_from_bq() -> List[str]:
     """Fetch unique dates from matches_processed table in BigQuery"""
     client = bigquery.Client()
     query = """
-        SELECT DISTINCT DATE(utcDate) as match_date 
+        SELECT DISTINCT DATE(utcDate) as match_date
         FROM `sports_data_eu.matches_processed`
         ORDER BY match_date
     """
@@ -32,31 +31,16 @@ def get_match_dates_from_bq() -> List[str]:
 
 
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
-    """Fetch ALL Match Thread and Post Match Thread posts from r/soccer for a specific date"""
+    """Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date"""
     subreddit = reddit.subreddit("soccer")
 
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
-    end_timestamp = start_timestamp + 86400  # Add 24 hours
+    end_timestamp = start_timestamp + 86400  # Add 24 hours in seconds
 
-    seen_thread_ids = set()
     threads = []
-
-    # Fetch both Match Thread and Post Match Thread
     for flair in ["Match Thread", "Post Match Thread"]:
-        search_query = f'flair:"{flair}"'
-
-        for submission in subreddit.search(
-            query=search_query,
-            sort="new",
-            time_filter="day",
-            syntax="lucene",
-            limit=None,
-        ):
-            if (
-                start_timestamp <= submission.created_utc <= end_timestamp
-                and submission.id not in seen_thread_ids
-            ):
-                seen_thread_ids.add(submission.id)
+        for submission in subreddit.search(f'flair:"{flair}"', syntax="lucene"):
+            if start_timestamp <= submission.created_utc <= end_timestamp:
                 thread_data = {
                     "thread_id": submission.id,
                     "title": submission.title,
@@ -69,29 +53,22 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                     "top_comments": [],
                 }
 
-                seen_comment_ids = set()
                 submission.comment_sort = "top"
                 submission.comments.replace_more(limit=0)
-
                 for comment in submission.comments[:10]:
-                    if comment.id not in seen_comment_ids:
-                        seen_comment_ids.add(comment.id)
-                        thread_data["top_comments"].append(
-                            {
-                                "id": comment.id,
-                                "body": comment.body,
-                                "score": comment.score,
-                                "author": str(comment.author),
-                                "created_utc": int(comment.created_utc),
-                            }
-                        )
+                    thread_data["top_comments"].append(
+                        {
+                            "id": comment.id,
+                            "body": comment.body,
+                            "score": comment.score,
+                            "author": str(comment.author),
+                            "created_utc": int(comment.created_utc),
+                        }
+                    )
 
                 threads.append(thread_data)
-                logging.info(f"Processed {flair} {submission.id} for date {date}")
 
-    result_data = {"date": date, "threads": threads}
-    logging.info(f"Found {len(threads)} total threads for date {date}")
-    return result_data
+    return {"date": date, "threads": threads}
 
 
 def save_to_gcs(data: dict, date: str) -> None:
@@ -102,9 +79,7 @@ def save_to_gcs(data: dict, date: str) -> None:
 
     try:
         blob.upload_from_string(data=json.dumps(data), content_type="application/json")
-        logging.info(
-            f"Saved {len(data['threads'])} Reddit threads for date {date} to GCS"
-        )
+        logging.info(f"Saved Reddit threads for date {date} to GCS")
     except Exception as e:
         logging.error(f"Error saving Reddit threads for date {date} to GCS: {e}")
         raise
