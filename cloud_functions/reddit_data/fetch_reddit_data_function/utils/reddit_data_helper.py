@@ -18,68 +18,53 @@ GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
-def get_match_dates_from_bq() -> List[str]:
-    """Fetch unique dates from matches_processed table in BigQuery"""
-    client = bigquery.Client()
-    query = """
-        SELECT DISTINCT DATE(utcDate) as match_date
-        FROM `sports_data_eu.matches_processed`
-        ORDER BY match_date
-    """
-    query_job = client.query(query)
-    return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
-
-
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date"""
     subreddit = reddit.subreddit("soccer")
 
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
-    end_timestamp = start_timestamp + 86400  # Add 24 hours in seconds
+    end_timestamp = start_timestamp + 86400
 
     seen_thread_ids = set()
     threads = []
 
-    submissions = subreddit.search(
-        'flair:"Match Thread" OR flair:"Post Match Thread"', syntax="lucene"
-    )
+    for flair in ["Match Thread", "Post Match Thread"]:
+        for submission in subreddit.search(f'flair:"{flair}"', syntax="lucene"):
+            if (
+                start_timestamp <= submission.created_utc <= end_timestamp
+                and submission.id not in seen_thread_ids
+            ):
+                seen_thread_ids.add(submission.id)
+                thread_data = {
+                    "thread_id": submission.id,
+                    "title": submission.title,
+                    "body": submission.selftext,
+                    "created_utc": int(submission.created_utc),
+                    "score": submission.score,
+                    "upvote_ratio": submission.upvote_ratio,
+                    "num_comments": submission.num_comments,
+                    "flair": flair,
+                    "top_comments": [],
+                }
 
-    for submission in submissions:
-        if (
-            start_timestamp <= submission.created_utc <= end_timestamp
-            and submission.id not in seen_thread_ids
-        ):
-            seen_thread_ids.add(submission.id)
-            thread_data = {
-                "thread_id": submission.id,
-                "title": submission.title,
-                "body": submission.selftext,
-                "created_utc": int(submission.created_utc),
-                "score": submission.score,
-                "upvote_ratio": submission.upvote_ratio,
-                "num_comments": submission.num_comments,
-                "flair": submission.link_flair_text,
-                "top_comments": [],
-            }
+                seen_comment_ids = set()
+                submission.comment_sort = "top"
+                submission.comments.replace_more(limit=0)
 
-            seen_comment_ids = set()
-            submission.comment_sort = "top"
-            submission.comments.replace_more(limit=0)
+                for comment in submission.comments[:10]:
+                    if comment.id not in seen_comment_ids:
+                        seen_comment_ids.add(comment.id)
+                        thread_data["top_comments"].append(
+                            {
+                                "id": comment.id,
+                                "body": comment.body,
+                                "score": comment.score,
+                                "author": str(comment.author),
+                                "created_utc": int(comment.created_utc),
+                            }
+                        )
 
-            for comment in submission.comments[:10]:
-                if comment.id not in seen_comment_ids:
-                    seen_comment_ids.add(comment.id)
-                    thread_data["top_comments"].append(
-                        {
-                            "id": comment.id,
-                            "body": comment.body,
-                            "score": comment.score,
-                            "author": str(comment.author),
-                            "created_utc": int(comment.created_utc),
-                        }
-                    )
-
-            threads.append(thread_data)
+                threads.append(thread_data)
 
     return {"date": date, "threads": threads}
 
