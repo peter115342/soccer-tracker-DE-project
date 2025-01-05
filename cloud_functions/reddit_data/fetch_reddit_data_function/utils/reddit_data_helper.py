@@ -3,7 +3,7 @@ import json
 import logging
 import praw
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict
 from google.cloud import storage, bigquery
 from rapidfuzz import fuzz
 import time
@@ -75,14 +75,11 @@ def clean_team_name(team_name: str) -> str:
     team_name = team_name.lower()
     team_name = unicodedata.normalize("NFKD", team_name)
     team_name = re.sub(r"[^a-z\s]", "", team_name)
-
     remove_terms = [
         r"\b(fc|cf|sc|ac|club|cp|cd|ssd|aas|ssc|as|us|usl|sv|ss|kv|kvk|krc|afc|cfc)\b"
     ]
-
     for term in remove_terms:
         team_name = re.sub(term, "", team_name)
-
     return re.sub(r"\s+", " ", team_name).strip()
 
 
@@ -95,7 +92,6 @@ def initialize_reddit():
                 "REDDIT_CLIENT_SECRET": REDDIT_CLIENT_SECRET,
                 "BUCKET_NAME": GCS_BUCKET_NAME,
             }
-
             missing_vars = [var for var, value in required_vars.items() if not value]
             if missing_vars:
                 raise ValueError(
@@ -110,7 +106,6 @@ def initialize_reddit():
             reddit.user.me()
             logging.info("Successfully connected to Reddit API")
             return reddit
-
         except Exception as e:
             logging.error(
                 f"Reddit initialization attempt {attempt + 1} failed: {str(e)}"
@@ -120,49 +115,78 @@ def initialize_reddit():
             time.sleep(5 * (attempt + 1))
 
 
-def get_processed_matches() -> List[Dict]:
+def get_processed_matches() -> Dict[datetime.date, List[Dict]]:
     client = bigquery.Client()
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
 
     query = """
-        SELECT
-            homeTeam.name as home_team,
-            awayTeam.name as away_team,
-            competition.name as competition,
-            utcDate,
-            id as match_id,
-            score.fullTime.homeTeam as home_score,
-            score.fullTime.awayTeam as away_score
+        SELECT DISTINCT
+            DATE(utcDate) as match_date,
+            ARRAY_AGG(STRUCT(
+                homeTeam.name as home_team,
+                awayTeam.name as away_team,
+                competition.name as competition,
+                utcDate,
+                id as match_id,
+                score.fullTime.homeTeam as home_score,
+                score.fullTime.awayTeam as away_score
+            )) as matches
         FROM sports_data_eu.matches_processed
         WHERE score.fullTime.homeTeam IS NOT NULL
         AND score.fullTime.awayTeam IS NOT NULL
-        ORDER BY utcDate DESC
+        GROUP BY DATE(utcDate)
+        ORDER BY match_date DESC
     """
 
-    matches = list(client.query(query).result())
+    matches_by_date = {}
+    query_results = client.query(query).result()
 
     blobs = list(bucket.list_blobs(prefix="reddit_data/"))
-    existing_match_ids = set()
+    existing_match_ids = {
+        int(blob.name.split("/")[-1][:-5])
+        for blob in blobs
+        if blob.name.endswith(".json")
+    }
 
-    for blob in blobs:
+    for row in query_results:
+        matches = [
+            match for match in row.matches if match.match_id not in existing_match_ids
+        ]
+        if matches:
+            matches_by_date[row.match_date] = matches
+
+    return matches_by_date
+
+
+def fetch_threads_for_date(reddit, date: datetime.date) -> List[praw.models.Submission]:
+    subreddit = reddit.subreddit("soccer")
+    threads = []
+
+    search_queries = ['flair:"Match Thread"', 'flair:"Post Match Thread"']
+
+    for query in search_queries:
+        handle_ratelimit(reddit)
         try:
-            filename = blob.name.split("/")[-1]
-            if filename.endswith(".json"):
-                match_id = int(filename[:-5])
-                existing_match_ids.add(match_id)
-        except (IndexError, ValueError):
+            start_timestamp = int(
+                datetime.combine(date, datetime.min.time()).timestamp()
+            )
+            end_timestamp = int(datetime.combine(date, datetime.max.time()).timestamp())
+
+            date_query = f"{query} AND timestamp:{start_timestamp}..{end_timestamp}"
+            results = subreddit.search(
+                date_query, sort="new", syntax="lucene", limit=100
+            )
+            threads.extend(results)
+        except Exception as e:
+            logging.error(f"Error searching with query '{query}': {str(e)}")
             continue
 
-    unprocessed_matches = [
-        match for match in matches if match["match_id"] not in existing_match_ids
-    ]
-
-    return unprocessed_matches
+    return list(set(threads))
 
 
 def calculate_thread_match_score(thread, match: Dict, match_date) -> float:
-    score: float = 0
+    score = 0
     title_lower = thread.title.lower()
 
     thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc).date()
@@ -187,75 +211,6 @@ def calculate_thread_match_score(thread, match: Dict, match_date) -> float:
             score += 15
 
     return score
-
-
-def find_match_thread(reddit, match: Dict) -> Optional[Dict]:
-    logging.info(f"Searching for match: {match['home_team']} vs {match['away_team']}")
-
-    subreddit = reddit.subreddit("soccer")
-    match_date = match["utcDate"].date()
-
-    home_team_clean = clean_team_name(match["home_team"])
-    away_team_clean = clean_team_name(match["away_team"])
-
-    search_queries = [
-        f'flair:"Match Thread" {home_team_clean}',
-        f'flair:"Match Thread" {away_team_clean}',
-        f'flair:"Post Match Thread" {home_team_clean}',
-        f'flair:"Post Match Thread" {away_team_clean}',
-        'flair:"Match Thread"',
-        'flair:"Post Match Thread"',
-        f'flair:"Match Thread" {home_team_clean} vs {away_team_clean}',
-        f'flair:"Match Thread" {away_team_clean} vs {home_team_clean}',
-        *[
-            f'flair:"Match Thread" {part}'
-            for part in home_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Match Thread" {part}'
-            for part in away_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post Match Thread" {part}'
-            for part in home_team_clean.split()
-            if len(part) > 3
-        ],
-        *[
-            f'flair:"Post Match Thread" {part}'
-            for part in away_team_clean.split()
-            if len(part) > 3
-        ],
-    ]
-
-    search_results = []
-    for query in search_queries:
-        handle_ratelimit(reddit)
-        try:
-            results = subreddit.search(
-                query, sort="new", time_filter="week", syntax="lucene", limit=50
-            )
-            search_results.extend(results)
-        except Exception as e:
-            logging.error(f"Error searching with query '{query}': {str(e)}")
-            continue
-
-    seen_ids = set()
-    scored_threads = []
-
-    for thread in search_results:
-        if thread.id not in seen_ids:
-            seen_ids.add(thread.id)
-            score = calculate_thread_match_score(thread, match, match_date)
-            if score > 70:
-                scored_threads.append((score, thread))
-
-    if scored_threads:
-        best_thread = max(scored_threads, key=lambda x: x[0])[1]
-        return extract_thread_data(best_thread, match["match_id"])
-
-    return None
 
 
 def extract_thread_data(thread, match_id: int) -> Dict:
