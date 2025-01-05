@@ -38,8 +38,10 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     end_timestamp = start_timestamp + 86400  # Add 24 hours in seconds
 
     threads = []
-    for flair in ["Match Thread", "Post Match Thread"]:
-        for submission in subreddit.search(f'flair:"{flair}"', syntax="lucene"):
+    for flair in ["match thread", "Post Match Thread"]:
+        for submission in subreddit.search(
+            f'flair:"{flair}"', syntax="lucene", limit=100
+        ):
             if start_timestamp <= submission.created_utc <= end_timestamp:
                 thread_data = {
                     "thread_id": submission.id,
