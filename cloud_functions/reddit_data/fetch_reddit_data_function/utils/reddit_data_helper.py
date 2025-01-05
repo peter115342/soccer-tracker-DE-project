@@ -115,7 +115,7 @@ def initialize_reddit():
             time.sleep(5 * (attempt + 1))
 
 
-def get_processed_matches() -> Dict[datetime.date, List[Dict]]:
+def get_processed_matches() -> Dict[date, List[Dict]]:
     client = bigquery.Client()
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
