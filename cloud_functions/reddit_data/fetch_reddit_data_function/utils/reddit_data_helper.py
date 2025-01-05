@@ -24,11 +24,6 @@ def get_match_dates_from_bq() -> List[str]:
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `sports_data_eu.matches_processed`
-        WHERE DATE(utcDate) NOT IN (
-            SELECT DISTINCT DATE(_TABLE_SUFFIX) as processed_date
-            FROM `sports_data_eu.reddit_threads_*`
-            WHERE _TABLE_SUFFIX BETWEEN '2020-01-01' AND CURRENT_DATE()
-        )
         ORDER BY match_date
     """
     query_job = client.query(query)
