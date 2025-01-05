@@ -3,11 +3,11 @@ import json
 import logging
 import praw
 import re
-from typing import List, Dict
+from typing import List, Dict, Optional
 from google.cloud import storage, bigquery
 from rapidfuzz import fuzz
 import time
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone
 import unicodedata
 
 logging.basicConfig(
@@ -115,7 +115,7 @@ def initialize_reddit():
             time.sleep(5 * (attempt + 1))
 
 
-def get_processed_matches() -> Dict[date, List[Dict]]:
+def get_processed_matches() -> Dict[datetime.date, List[Dict]]:
     client = bigquery.Client()
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
@@ -161,7 +161,7 @@ def get_processed_matches() -> Dict[date, List[Dict]]:
     return matches_by_date
 
 
-def fetch_threads_for_date(reddit, date: date) -> List[praw.models.Submission]:
+def fetch_threads_for_date(reddit, date: datetime.date) -> List[praw.models.Submission]:
     subreddit = reddit.subreddit("soccer")
     threads = []
 
@@ -188,18 +188,27 @@ def fetch_threads_for_date(reddit, date: date) -> List[praw.models.Submission]:
 
 
 def calculate_thread_match_score(thread, match: Dict, match_date) -> float:
-    score: float = 0
+    score = 0
     title_lower = thread.title.lower()
+
+    home_team_clean = clean_team_name(match["home_team"])
+    away_team_clean = clean_team_name(match["away_team"])
+
+    vs_pattern = f"{home_team_clean} vs {away_team_clean}"
+    reverse_vs_pattern = f"{away_team_clean} vs {home_team_clean}"
+
+    if vs_pattern in title_lower or reverse_vs_pattern in title_lower:
+        score += 50
+
+    home_score = fuzz.partial_ratio(home_team_clean, title_lower)
+    away_score = fuzz.partial_ratio(away_team_clean, title_lower)
+    score += (home_score + away_score) / 3
 
     thread_date = datetime.fromtimestamp(thread.created_utc, tz=timezone.utc).date()
     if thread_date == match_date:
         score += 30
     elif abs((thread_date - match_date).days) <= 1:
         score += 15
-
-    home_score = fuzz.partial_ratio(match["home_team"].lower(), title_lower)
-    away_score = fuzz.partial_ratio(match["away_team"].lower(), title_lower)
-    score += (home_score + away_score) / 4
 
     if any(
         var.lower() in title_lower

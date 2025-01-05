@@ -87,7 +87,7 @@ def fetch_reddit_data(event, context):
 
                         for thread in threads:
                             score = calculate_thread_match_score(thread, match, date)
-                            if score > 70 and score > best_score:
+                            if score > 40 and score > best_score:
                                 best_score = score
                                 best_thread = thread
 
