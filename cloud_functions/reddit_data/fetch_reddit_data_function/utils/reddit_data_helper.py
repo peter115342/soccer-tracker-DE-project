@@ -151,7 +151,9 @@ def get_processed_matches() -> Dict[date, List[Dict]]:
 
     for row in query_results:
         matches = [
-            match for match in row.matches if match.match_id not in existing_match_ids
+            {**match, "match_id": match.id}
+            for match in row.matches
+            if match.id not in existing_match_ids
         ]
         if matches:
             matches_by_date[row.match_date] = matches
