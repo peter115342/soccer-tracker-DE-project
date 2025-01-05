@@ -3,11 +3,11 @@ import json
 import logging
 import praw
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict
 from google.cloud import storage, bigquery
 from rapidfuzz import fuzz
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 import unicodedata
 
 logging.basicConfig(
@@ -115,7 +115,7 @@ def initialize_reddit():
             time.sleep(5 * (attempt + 1))
 
 
-def get_processed_matches() -> Dict[datetime.date, List[Dict]]:
+def get_processed_matches() -> Dict[date, List[Dict]]:
     client = bigquery.Client()
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
@@ -161,7 +161,7 @@ def get_processed_matches() -> Dict[datetime.date, List[Dict]]:
     return matches_by_date
 
 
-def fetch_threads_for_date(reddit, date: datetime.date) -> List[praw.models.Submission]:
+def fetch_threads_for_date(reddit, date: date) -> List[praw.models.Submission]:
     subreddit = reddit.subreddit("soccer")
     threads = []
 
@@ -188,7 +188,7 @@ def fetch_threads_for_date(reddit, date: datetime.date) -> List[praw.models.Subm
 
 
 def calculate_thread_match_score(thread, match: Dict, match_date) -> float:
-    score = 0
+    score: float = 0
     title_lower = thread.title.lower()
 
     home_team_clean = clean_team_name(match["home_team"])
