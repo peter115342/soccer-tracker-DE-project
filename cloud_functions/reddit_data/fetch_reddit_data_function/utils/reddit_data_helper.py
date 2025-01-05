@@ -115,7 +115,7 @@ def initialize_reddit():
             time.sleep(5 * (attempt + 1))
 
 
-def get_processed_matches() -> Dict[date, List[Dict]]:
+def get_processed_matches() -> Dict[datetime.date, List[Dict]]:
     client = bigquery.Client()
     storage_client = storage.Client()
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
@@ -151,9 +151,9 @@ def get_processed_matches() -> Dict[date, List[Dict]]:
 
     for row in query_results:
         matches = [
-            {**match, "match_id": match.id}
+            match
             for match in row.matches
-            if match.id not in existing_match_ids
+            if match["match_id"] not in existing_match_ids
         ]
         if matches:
             matches_by_date[row.match_date] = matches
