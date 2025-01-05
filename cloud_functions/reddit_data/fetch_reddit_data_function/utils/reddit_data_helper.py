@@ -23,7 +23,7 @@ def get_match_dates_from_bq() -> List[str]:
     client = bigquery.Client()
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
-        FROM `matches_processed`
+        FROM `sports_data_eu.matches_processed`
         ORDER BY match_date
     """
     query_job = client.query(query)
@@ -34,7 +34,6 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date"""
     subreddit = reddit.subreddit("soccer")
 
-    # Convert date string to timestamp range
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
     end_timestamp = start_timestamp + 86400  # Add 24 hours in seconds
 
@@ -56,7 +55,6 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                     "top_comments": [],
                 }
 
-                # Get top 10 comments
                 submission.comment_sort = "top"
                 submission.comments.replace_more(limit=0)
                 for comment in submission.comments[:10]:
