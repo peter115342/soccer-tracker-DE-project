@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import praw
-from datetime import datetime
+from datetime import datetime, timedelta
 from google.cloud import storage, bigquery
 from typing import List, Dict, Any
 
@@ -31,21 +31,22 @@ def get_match_dates_from_bq() -> List[str]:
 
 
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
-    """Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date"""
+    """Fetch all Match Thread and Post Match Thread posts from r/soccer for a specific date"""
     subreddit = reddit.subreddit("soccer")
 
-    start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
-    end_timestamp = start_timestamp + 86400
+    start_datetime = datetime.strptime(date, "%Y-%m-%d")
+    end_datetime = start_datetime + timedelta(days=1)
+    start_timestamp = int(start_datetime.timestamp())
+    end_timestamp = int(end_datetime.timestamp()) - 1
 
     seen_thread_ids = set()
     threads = []
 
     for flair in ["Match Thread", "Post Match Thread"]:
-        for submission in subreddit.search(f'flair:"{flair}"', syntax="lucene"):
-            if (
-                start_timestamp <= submission.created_utc <= end_timestamp
-                and submission.id not in seen_thread_ids
-            ):
+        query = f'flair:"{flair}" AND timestamp:{start_timestamp}..{end_timestamp}'
+
+        for submission in subreddit.search(query, syntax="lucene", limit=100):
+            if submission.id not in seen_thread_ids:
                 seen_thread_ids.add(submission.id)
                 thread_data = {
                     "thread_id": submission.id,
