@@ -23,7 +23,7 @@ def get_match_dates_from_bq() -> List[str]:
     """Fetch unique dates from matches_processed table in BigQuery"""
     client = bigquery.Client()
     query = """
-        SELECT DISTINCT DATE(utcDate) as match_date
+        SELECT DISTINCT DATE(utcDate) as match_date 
         FROM `sports_data_eu.matches_processed`
         ORDER BY match_date
     """
@@ -36,11 +36,12 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     subreddit = reddit.subreddit("soccer")
 
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
-    end_timestamp = start_timestamp + 86400  # Add 24 hours in seconds
+    end_timestamp = start_timestamp + 86400  # Add 24 hours
 
     seen_thread_ids = set()
     threads = []
 
+    # Fetch both Match Thread and Post Match Thread
     for flair in ["Match Thread", "Post Match Thread"]:
         search_query = f'flair:"{flair}"'
 
@@ -75,20 +76,21 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                 for comment in submission.comments[:10]:
                     if comment.id not in seen_comment_ids:
                         seen_comment_ids.add(comment.id)
-                        comment_data = {
-                            "id": comment.id,
-                            "body": comment.body,
-                            "score": comment.score,
-                            "author": str(comment.author),
-                            "created_utc": int(comment.created_utc),
-                        }
-                        thread_data["top_comments"].append(comment_data)
+                        thread_data["top_comments"].append(
+                            {
+                                "id": comment.id,
+                                "body": comment.body,
+                                "score": comment.score,
+                                "author": str(comment.author),
+                                "created_utc": int(comment.created_utc),
+                            }
+                        )
 
                 threads.append(thread_data)
-                logging.info(f"Processed thread {submission.id} for date {date}")
+                logging.info(f"Processed {flair} {submission.id} for date {date}")
 
     result_data = {"date": date, "threads": threads}
-    logging.info(f"Found {len(threads)} threads for date {date}")
+    logging.info(f"Found {len(threads)} total threads for date {date}")
     return result_data
 
 
