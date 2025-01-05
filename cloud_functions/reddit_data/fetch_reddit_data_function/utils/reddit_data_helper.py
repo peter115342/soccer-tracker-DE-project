@@ -18,6 +18,18 @@ GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
+def get_match_dates_from_bq() -> List[str]:
+    """Fetch unique dates from matches_processed table in BigQuery"""
+    client = bigquery.Client()
+    query = """
+        SELECT DISTINCT DATE(utcDate) as match_date
+        FROM `sports_data_eu.matches_processed`
+        ORDER BY match_date
+    """
+    query_job = client.query(query)
+    return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
+
+
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date"""
     subreddit = reddit.subreddit("soccer")
