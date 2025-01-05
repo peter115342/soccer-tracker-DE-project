@@ -1,7 +1,5 @@
 import logging
-from datetime import datetime
 import os
-from google.cloud import pubsub_v1
 import json
 import requests
 from .utils.reddit_data_helper import (
