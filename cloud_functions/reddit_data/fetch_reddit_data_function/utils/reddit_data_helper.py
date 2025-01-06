@@ -1,8 +1,8 @@
 import os
 import json
 import logging
-import praw
 from datetime import datetime
+import praw
 from google.cloud import storage, bigquery
 from typing import List, Dict, Any
 
@@ -19,30 +19,41 @@ GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
 def get_match_dates_from_bq() -> List[str]:
-    """Fetch unique dates from matches_processed table in BigQuery"""
+    """
+    Fetch unique dates from matches_processed table in BigQuery.
+    Returns dates in descending order to process newest matches first.
+    """
     client = bigquery.Client()
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `sports_data_eu.matches_processed`
-        ORDER BY match_date
+        WHERE DATE(utcDate) <= CURRENT_DATE()
+        ORDER BY match_date DESC
     """
     query_job = client.query(query)
     return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
 
 
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
-    """Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date"""
+    """
+    Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date.
+    Uses timestamp-based filtering and collects all available threads.
+    """
     subreddit = reddit.subreddit("soccer")
 
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
-    end_timestamp = start_timestamp + 86400  # Add 24 hours in seconds
+    end_timestamp = start_timestamp + 86400
 
     threads = []
     for flair in ["match thread", "Post Match Thread"]:
-        for submission in subreddit.search(
-            f'flair:"{flair}"', syntax="lucene", limit=100
-        ):
-            if start_timestamp <= submission.created_utc <= end_timestamp:
+        search_query = (
+            f'flair:"{flair}" AND timestamp:{start_timestamp}..{end_timestamp}'
+        )
+
+        try:
+            for submission in subreddit.search(
+                query=search_query, syntax="lucene", limit=None, sort="new"
+            ):
                 thread_data = {
                     "thread_id": submission.id,
                     "title": submission.title,
@@ -69,19 +80,35 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                     )
 
                 threads.append(thread_data)
+                logging.info(f"Collected thread: {submission.title}")
 
-    return {"date": date, "threads": threads}
+        except Exception as e:
+            logging.error(f"Error fetching {flair} threads for {date}: {str(e)}")
+            continue
+
+    result = {"date": date, "threads": threads, "thread_count": len(threads)}
+
+    logging.info(f"Collected {len(threads)} threads for date {date}")
+    return result
 
 
 def save_to_gcs(data: dict, date: str) -> None:
-    """Save the Reddit threads data to GCS"""
+    """
+    Save the Reddit threads data to GCS with error handling and logging.
+    Creates a dated JSON file in the reddit_data/raw/ directory.
+    """
     storage_client = storage.Client(project=GCP_PROJECT_ID)
     bucket = storage_client.bucket(GCS_BUCKET_NAME)
-    blob = bucket.blob(f"reddit_data/raw/{date}.json")
+    blob_path = f"reddit_data/raw/{date}.json"
+    blob = bucket.blob(blob_path)
 
     try:
-        blob.upload_from_string(data=json.dumps(data), content_type="application/json")
-        logging.info(f"Saved Reddit threads for date {date} to GCS")
+        json_data = json.dumps(data, indent=2)
+        blob.upload_from_string(data=json_data, content_type="application/json")
+        logging.info(
+            f"Successfully saved {data['thread_count']} Reddit threads for {date} to GCS: {blob_path}"
+        )
     except Exception as e:
-        logging.error(f"Error saving Reddit threads for date {date} to GCS: {e}")
-        raise
+        error_msg = f"Error saving Reddit threads for date {date} to GCS: {str(e)}"
+        logging.error(error_msg)
+        raise Exception(error_msg)
