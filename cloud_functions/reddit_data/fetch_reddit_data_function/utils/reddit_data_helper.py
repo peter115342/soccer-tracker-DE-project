@@ -81,7 +81,7 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                 query=f'flair:"{flair}"',
                 syntax="lucene",
                 sort="new",
-                time_filter="year",
+                time_filter="all",
                 limit=None,
             ):
                 if start_timestamp <= submission.created_utc <= end_timestamp:
