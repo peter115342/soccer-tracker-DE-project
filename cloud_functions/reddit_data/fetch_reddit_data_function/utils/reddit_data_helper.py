@@ -8,6 +8,7 @@ from typing import List, Dict, Any
 
 logging.basicConfig(level=logging.INFO)
 
+# Initialize Reddit API client
 reddit = praw.Reddit(
     client_id=os.environ.get("REDDIT_CLIENT_ID"),
     client_secret=os.environ.get("REDDIT_CLIENT_SECRET"),
@@ -27,6 +28,7 @@ def get_match_dates_from_bq() -> List[str]:
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `sports_data_eu.matches_processed`
+        WHERE DATE(utcDate) <= CURRENT_DATE()
         ORDER BY match_date DESC
     """
     query_job = client.query(query)
@@ -36,50 +38,55 @@ def get_match_dates_from_bq() -> List[str]:
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """
     Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date.
-    Uses timestamp-based filtering and collects all available threads.
+    Filters posts based on their created_utc timestamp matching the given date.
     """
     subreddit = reddit.subreddit("soccer")
 
+    # Convert date to start and end timestamps for filtering
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
     end_timestamp = start_timestamp + 86400
 
     threads = []
     for flair in ["match thread", "Post Match Thread"]:
-        search_query = (
-            f'flair:"{flair}" AND timestamp:{start_timestamp}..{end_timestamp}'
-        )
-
         try:
+            # Search for all posts with the specific flair from the last year
             for submission in subreddit.search(
-                query=search_query, syntax="lucene", limit=None, sort="new"
+                query=f'flair:"{flair}"',
+                syntax="lucene",
+                sort="new",
+                time_filter="year",
+                limit=None,
             ):
-                thread_data = {
-                    "thread_id": submission.id,
-                    "title": submission.title,
-                    "body": submission.selftext,
-                    "created_utc": int(submission.created_utc),
-                    "score": submission.score,
-                    "upvote_ratio": submission.upvote_ratio,
-                    "num_comments": submission.num_comments,
-                    "flair": flair,
-                    "top_comments": [],
-                }
+                # Check if post timestamp falls within our target date
+                if start_timestamp <= submission.created_utc <= end_timestamp:
+                    thread_data = {
+                        "thread_id": submission.id,
+                        "title": submission.title,
+                        "body": submission.selftext,
+                        "created_utc": int(submission.created_utc),
+                        "score": submission.score,
+                        "upvote_ratio": submission.upvote_ratio,
+                        "num_comments": submission.num_comments,
+                        "flair": flair,
+                        "top_comments": [],
+                    }
 
-                submission.comment_sort = "top"
-                submission.comments.replace_more(limit=0)
-                for comment in submission.comments[:10]:
-                    thread_data["top_comments"].append(
-                        {
-                            "id": comment.id,
-                            "body": comment.body,
-                            "score": comment.score,
-                            "author": str(comment.author),
-                            "created_utc": int(comment.created_utc),
-                        }
-                    )
+                    # Collect top comments
+                    submission.comment_sort = "top"
+                    submission.comments.replace_more(limit=0)
+                    for comment in submission.comments[:10]:
+                        thread_data["top_comments"].append(
+                            {
+                                "id": comment.id,
+                                "body": comment.body,
+                                "score": comment.score,
+                                "author": str(comment.author),
+                                "created_utc": int(comment.created_utc),
+                            }
+                        )
 
-                threads.append(thread_data)
-                logging.info(f"Collected thread: {submission.title}")
+                    threads.append(thread_data)
+                    logging.info(f"Collected thread: {submission.title}")
 
         except Exception as e:
             logging.error(f"Error fetching {flair} threads for {date}: {str(e)}")
@@ -102,6 +109,7 @@ def save_to_gcs(data: dict, date: str) -> None:
     blob = bucket.blob(blob_path)
 
     try:
+        # Save with pretty printing for better readability
         json_data = json.dumps(data, indent=2)
         blob.upload_from_string(data=json_data, content_type="application/json")
         logging.info(
