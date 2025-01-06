@@ -33,11 +33,25 @@ def get_match_dates_from_bq() -> List[str]:
     return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
 
 
+def check_file_exists_in_gcs(date: str) -> bool:
+    """Check if a file already exists in GCS for the given date"""
+    storage_client = storage.Client(project=GCP_PROJECT_ID)
+    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+    blob_path = f"reddit_data/raw/{date}.json"
+    blob = bucket.blob(blob_path)
+    return blob.exists()
+
+
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """
     Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date.
     Filters posts based on their created_utc timestamp matching the given date.
     """
+
+    if check_file_exists_in_gcs(date):
+        logging.info(f"Skipping date {date} as file already exists in GCS")
+        return {"date": date, "threads": [], "thread_count": 0}
+
     subreddit = reddit.subreddit("soccer")
 
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
@@ -62,9 +76,9 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                         "score": submission.score,
                         "upvote_ratio": submission.upvote_ratio,
                         "num_comments": submission.num_comments,
-                        "flair": submission.link_flair_text,
-                        "author": submission.author.name or "",
-                        "url": submission.url,
+                        "flair": submission.link_flair_text or "",
+                        "author": submission.author.name if submission.author else "",
+                        "url": submission.url or "",
                         "top_comments": [],
                     }
 
