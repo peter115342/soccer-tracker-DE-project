@@ -111,7 +111,7 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                         )
 
                     threads.append(thread_data)
-                    logging.info(f"Collected thread: {submission.title}")
+                    logging.warning(f"Collected thread: {submission.title}")
 
         except Exception as e:
             logging.error(f"Error fetching {flair} threads for {date}: {str(e)}")
@@ -119,7 +119,7 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
 
     result = {"date": date, "threads": threads, "thread_count": len(threads)}
 
-    logging.info(f"Collected {len(threads)} threads for date {date}")
+    logging.warning(f"Collected {len(threads)} threads for date {date}")
     return result
 
 
@@ -136,7 +136,7 @@ def save_to_gcs(data: dict, date: str) -> None:
     try:
         json_data = json.dumps(data, indent=2)
         blob.upload_from_string(data=json_data, content_type="application/json")
-        logging.info(
+        logging.warning(
             f"Successfully saved {data['thread_count']} Reddit threads for {date} to GCS: {blob_path}"
         )
     except Exception as e:
