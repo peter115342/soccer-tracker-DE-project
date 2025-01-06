@@ -67,7 +67,7 @@ def get_match_dates_from_bq() -> List[str]:
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """
     Fetch Match Thread / Post Match Thread posts from r/soccer for a specific date.
-    This example also catches posts whose title matches those phrases
+    This function also catches posts whose title matches those phrases
     or if the author is MatchThreadder.
     """
     subreddit = reddit.subreddit("soccer")
@@ -77,14 +77,14 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
 
     query = (
         "("
-        '(flair:"Match Thread" OR flair:"match thread" OR '
-        ' flair:"Post Match Thread" OR flair:"post match thread") '
-        'OR (title:"Match Thread" OR title:"Post Match Thread") '
+        '(flair:"Post Match Thread" OR flair:"post match thread" OR '
+        'flair:":Match_thread:Match Thread") '
+        'OR (title:"Match Thread" OR title:"Post Match Thread" OR title:"Post-Match Thread") '
         'OR (author:"MatchThreadder")'
         ")"
     )
 
-    VALID_FLAIRS = {"match thread", "post match thread"}
+    VALID_FLAIRS = {"Post Match Thread", ":Match_Thread:Match Thread"}
     KEY_TITLE_PHRASES = {"match thread", "post match thread"}
     SPECIAL_AUTHOR = "matchthreadder"
 
