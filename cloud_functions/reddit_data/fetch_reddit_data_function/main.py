@@ -3,6 +3,7 @@ import os
 import json
 import requests
 from .utils.reddit_data_helper import (
+    get_match_dates_from_bq,
     fetch_reddit_threads,
     save_to_gcs,
 )
@@ -10,38 +11,51 @@ from .utils.reddit_data_helper import (
 
 def fetch_reddit_data(event, context):
     """
-    Cloud Function to fetch Reddit match threads from r/soccer and save to GCS bucket.
-    This version processes only the hardcoded date '2024-10-26'.
+    Cloud Function to fetch Reddit match threads from r/soccer and save to GCS bucket
     """
     try:
-        date = "2024-10-26"
+        dates = get_match_dates_from_bq()
 
         threads_processed = 0
         error_count = 0
 
-        try:
-            reddit_data = fetch_reddit_threads(date)
+        for date in dates:
+            try:
+                reddit_data = fetch_reddit_threads(date)
 
-            if reddit_data["threads"]:
-                save_to_gcs(reddit_data, date)
-                threads_processed += len(reddit_data["threads"])
-            else:
-                logging.info(f"No threads found for date {date}")
+                if reddit_data["threads"]:
+                    save_to_gcs(reddit_data, date)
+                    threads_processed += len(reddit_data["threads"])
 
-        except Exception as e:
-            error_count += 1
-            logging.error(f"Error processing date {date}: {e}")
+            except Exception as e:
+                error_count += 1
+                logging.error(f"Error processing date {date}: {e}")
+
+        success_message = f"Processed {threads_processed} Reddit threads across {len(dates)} dates. Errors: {error_count}"
+        logging.info(success_message)
 
         if threads_processed > 0:
-            success_message = (
-                f"Processed {threads_processed} Reddit threads for date {date}."
-            )
-            logging.info(success_message)
             send_discord_notification(
                 "✅ Fetch Reddit Data: Success", success_message, 65280
             )
+
+            # publisher = pubsub_v1.PublisherClient()
+            # topic_path = publisher.topic_path(
+            #     os.environ["GCP_PROJECT_ID"], "process_reddit_data_topic"
+            # )
+
+            # publish_data = {"action": "process_reddit_threads"}
+            # future = publisher.publish(
+            #     topic_path,
+            #     data=json.dumps(publish_data).encode("utf-8"),
+            #     timestamp=datetime.now().isoformat(),
+            # )
+
+            # publish_result = future.result()
+            # logging.info(f"Published trigger message with ID: {publish_result}")
+
         else:
-            message = f"No new Reddit threads found for date {date}"
+            message = "No new Reddit threads found to process"
             logging.info(message)
             send_discord_notification(
                 "📝 Fetch Reddit Data: No New Threads", message, 16776960
