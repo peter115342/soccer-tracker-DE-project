@@ -66,9 +66,8 @@ def get_match_dates_from_bq() -> List[str]:
 
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """
-    Fetch Match Thread / Post Match Thread posts from r/soccer for a specific date.
-    This function also catches posts whose title matches those phrases
-    or if the author is MatchThreadder.
+    Fetch Match Thread / Post Match Thread posts from r/soccer for a specific date,
+    by explicitly searching within a timestamp range.
     """
     subreddit = reddit.subreddit("soccer")
 
@@ -76,9 +75,9 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     end_timestamp = start_timestamp + 86400
 
     query = (
+        f"timestamp:{start_timestamp}..{end_timestamp} "
         "("
-        '(flair:"Post Match Thread" OR flair:"post match thread" OR '
-        'flair:":Match_thread:Match Thread") '
+        '(flair:"Post Match Thread" OR flair:":Match_Thread:Match Thread") '
         'OR (title:"Match Thread" OR title:"Post Match Thread" OR title:"Post-Match Thread") '
         'OR (author:"MatchThreadder")'
         ")"
@@ -91,22 +90,12 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     threads = []
     try:
         for submission in subreddit.search(
-            query=query,
-            syntax="lucene",
-            sort="new",
-            time_filter="all",
-            limit=None,
+            query=query, syntax="cloudsearch", sort="new", limit=None
         ):
-            if start_timestamp <= submission.created_utc <= end_timestamp:
-                flair_text = (
-                    submission.link_flair_text.lower().strip()
-                    if submission.link_flair_text
-                    else ""
-                )
+            if start_timestamp <= submission.created_utc < end_timestamp:
+                flair_text = (submission.link_flair_text or "").lower().strip()
                 title_text = submission.title.lower()
-                author_name = (
-                    str(submission.author).lower() if submission.author else ""
-                )
+                author_name = (str(submission.author) or "").lower()
 
                 cond_flair = flair_text in VALID_FLAIRS
                 cond_title = any(phrase in title_text for phrase in KEY_TITLE_PHRASES)
