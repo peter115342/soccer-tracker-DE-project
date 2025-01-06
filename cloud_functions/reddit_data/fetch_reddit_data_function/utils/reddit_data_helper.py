@@ -6,9 +6,8 @@ import praw
 from google.cloud import storage, bigquery
 from typing import List, Dict, Any
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
-# Initialize Reddit API client
 reddit = praw.Reddit(
     client_id=os.environ.get("REDDIT_CLIENT_ID"),
     client_secret=os.environ.get("REDDIT_CLIENT_SECRET"),
@@ -58,7 +57,7 @@ def get_match_dates_from_bq() -> List[str]:
     all_dates = [row.match_date.strftime("%Y-%m-%d") for row in query_job]
     new_dates = [date for date in all_dates if date not in existing_dates]
 
-    logging.info(
+    logging.warning(
         f"Found {len(new_dates)} new dates to process out of {len(all_dates)} total dates"
     )
     return new_dates
@@ -71,14 +70,12 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """
     subreddit = reddit.subreddit("soccer")
 
-    # Convert date to start and end timestamps for filtering
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
     end_timestamp = start_timestamp + 86400
 
     threads = []
     for flair in ["match thread", "Post Match Thread"]:
         try:
-            # Search for all posts with the specific flair from the last year
             for submission in subreddit.search(
                 query=f'flair:"{flair}"',
                 syntax="lucene",
@@ -86,7 +83,6 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                 time_filter="year",
                 limit=None,
             ):
-                # Check if post timestamp falls within our target date
                 if start_timestamp <= submission.created_utc <= end_timestamp:
                     thread_data = {
                         "thread_id": submission.id,
@@ -100,7 +96,6 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                         "top_comments": [],
                     }
 
-                    # Collect top comments
                     submission.comment_sort = "top"
                     submission.comments.replace_more(limit=0)
                     for comment in submission.comments[:10]:
@@ -138,7 +133,6 @@ def save_to_gcs(data: dict, date: str) -> None:
     blob = bucket.blob(blob_path)
 
     try:
-        # Save with pretty printing for better readability
         json_data = json.dumps(data, indent=2)
         blob.upload_from_string(data=json_data, content_type="application/json")
         logging.info(
