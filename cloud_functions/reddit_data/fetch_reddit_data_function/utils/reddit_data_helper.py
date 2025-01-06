@@ -62,7 +62,9 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                         "score": submission.score,
                         "upvote_ratio": submission.upvote_ratio,
                         "num_comments": submission.num_comments,
-                        "flair": flair,
+                        "flair": submission.link_flair_text,
+                        "author": submission.author.name or "",
+                        "url": submission.url,
                         "top_comments": [],
                     }
 
