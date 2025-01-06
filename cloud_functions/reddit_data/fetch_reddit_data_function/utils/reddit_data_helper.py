@@ -75,7 +75,12 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     end_timestamp = start_timestamp + 86400
 
     threads = []
-    for flair in ["match thread", "Post Match Thread"]:
+    for flair in [
+        "match thread",
+        "post match thread",
+        "Match Thread",
+        "Post Match Thread",
+    ]:
         try:
             for submission in subreddit.search(
                 query=f'flair:"{flair}"',
