@@ -19,20 +19,49 @@ GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
+def get_existing_dates_in_gcs() -> List[str]:
+    """
+    Get list of dates that already have JSON files in GCS.
+    Returns dates extracted from filenames in reddit_data/raw/ directory.
+    """
+    storage_client = storage.Client(project=GCP_PROJECT_ID)
+    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+
+    blobs = bucket.list_blobs(prefix="reddit_data/raw/")
+
+    existing_dates = []
+    for blob in blobs:
+        filename = blob.name.split("/")[-1]
+        if filename.endswith(".json"):
+            date = filename[:-5]
+            existing_dates.append(date)
+
+    return existing_dates
+
+
 def get_match_dates_from_bq() -> List[str]:
     """
     Fetch unique dates from matches_processed table in BigQuery.
+    Excludes dates that already have JSON files in GCS.
     Returns dates in descending order to process newest matches first.
     """
+    existing_dates = get_existing_dates_in_gcs()
+
     client = bigquery.Client()
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `sports_data_eu.matches_processed`
-        WHERE DATE(utcDate) <= CURRENT_DATE()
         ORDER BY match_date DESC
     """
     query_job = client.query(query)
-    return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
+
+    all_dates = [row.match_date.strftime("%Y-%m-%d") for row in query_job]
+    new_dates = [date for date in all_dates if date not in existing_dates]
+
+    logging.info(
+        f"Found {len(new_dates)} new dates to process out of {len(all_dates)} total dates"
+    )
+    return new_dates
 
 
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
