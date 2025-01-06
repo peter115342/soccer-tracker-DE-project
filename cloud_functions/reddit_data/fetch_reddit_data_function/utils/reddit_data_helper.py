@@ -27,7 +27,6 @@ def get_match_dates_from_bq() -> List[str]:
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `sports_data_eu.matches_processed`
-        WHERE DATE(utcDate) <= CURRENT_DATE()
         ORDER BY match_date DESC
     """
     query_job = client.query(query)
