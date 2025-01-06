@@ -60,6 +60,7 @@ def get_match_dates_from_bq() -> List[str]:
     logging.warning(
         f"Found {len(new_dates)} new dates to process out of {len(all_dates)} total dates"
     )
+    logging.warning(f"The dates are: {new_dates}")
     return new_dates
 
 
