@@ -6,7 +6,7 @@ import praw
 from google.cloud import storage, bigquery
 from typing import List, Dict, Any
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 reddit = praw.Reddit(
     client_id=os.environ.get("REDDIT_CLIENT_ID"),
@@ -18,90 +18,42 @@ GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
-def get_existing_dates_in_gcs() -> List[str]:
-    """
-    Get list of dates that already have JSON files in GCS.
-    Returns dates extracted from filenames in reddit_data/raw/ directory.
-    """
-    storage_client = storage.Client(project=GCP_PROJECT_ID)
-    bucket = storage_client.bucket(GCS_BUCKET_NAME)
-
-    blobs = bucket.list_blobs(prefix="reddit_data/raw/")
-
-    existing_dates = []
-    for blob in blobs:
-        filename = blob.name.split("/")[-1]
-        if filename.endswith(".json"):
-            date = filename[:-5]
-            existing_dates.append(date)
-
-    return existing_dates
-
-
 def get_match_dates_from_bq() -> List[str]:
     """
     Fetch unique dates from matches_processed table in BigQuery.
-    Excludes dates that already have JSON files in GCS.
     Returns dates in descending order to process newest matches first.
     """
-    existing_dates = get_existing_dates_in_gcs()
-
     client = bigquery.Client()
     query = """
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `sports_data_eu.matches_processed`
-        ORDER BY match_date ASC
+        ORDER BY match_date DESC
     """
     query_job = client.query(query)
-
-    all_dates = [row.match_date.strftime("%Y-%m-%d") for row in query_job]
-    new_dates = [date for date in all_dates if date not in existing_dates]
-
-    logging.warning(
-        f"Found {len(new_dates)} new dates to process out of {len(all_dates)} total dates"
-    )
-    logging.warning(f"The dates are: {new_dates}")
-    return new_dates
+    return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
 
 
 def fetch_reddit_threads(date: str) -> Dict[str, Any]:
     """
-    Fetch Match Thread / Post Match Thread posts from r/soccer for a specific date,
-    by explicitly searching within a timestamp range.
+    Fetch Match Thread and Post Match Thread posts from r/soccer for a specific date.
+    Filters posts based on their created_utc timestamp matching the given date.
     """
     subreddit = reddit.subreddit("soccer")
 
     start_timestamp = int(datetime.strptime(date, "%Y-%m-%d").timestamp())
     end_timestamp = start_timestamp + 86400
 
-    query = (
-        f"timestamp:{start_timestamp}..{end_timestamp} "
-        "("
-        '(flair:"Post Match Thread" OR flair:":Match_Thread:Match Thread") '
-        'OR (title:"Match Thread" OR title:"Post Match Thread" OR title:"Post-Match Thread") '
-        'OR (author:"MatchThreadder")'
-        ")"
-    )
-
-    VALID_FLAIRS = {"Post Match Thread", ":Match_Thread:Match Thread"}
-    KEY_TITLE_PHRASES = {"match thread", "post match thread"}
-    SPECIAL_AUTHOR = "matchthreadder"
-
     threads = []
-    try:
-        for submission in subreddit.search(
-            query=query, syntax="cloudsearch", sort="new", limit=None
-        ):
-            if start_timestamp <= submission.created_utc < end_timestamp:
-                flair_text = (submission.link_flair_text or "").lower().strip()
-                title_text = submission.title.lower()
-                author_name = (str(submission.author) or "").lower()
-
-                cond_flair = flair_text in VALID_FLAIRS
-                cond_title = any(phrase in title_text for phrase in KEY_TITLE_PHRASES)
-                cond_author = author_name == SPECIAL_AUTHOR
-
-                if cond_flair or cond_title or cond_author:
+    for flair in [":Match_thread:Match Thread", "Post Match Thread"]:
+        try:
+            for submission in subreddit.search(
+                query=f'flair:"{flair}"',
+                syntax="lucene",
+                sort="new",
+                time_filter="all",
+                limit=None,
+            ):
+                if start_timestamp <= submission.created_utc <= end_timestamp:
                     thread_data = {
                         "thread_id": submission.id,
                         "title": submission.title,
@@ -110,8 +62,7 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                         "score": submission.score,
                         "upvote_ratio": submission.upvote_ratio,
                         "num_comments": submission.num_comments,
-                        "flair": submission.link_flair_text,
-                        "author": author_name,
+                        "flair": flair,
                         "top_comments": [],
                     }
 
@@ -129,12 +80,15 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                         )
 
                     threads.append(thread_data)
+                    logging.info(f"Collected thread: {submission.title}")
 
-    except Exception as e:
-        logging.error(f"Error fetching threads for {date}: {str(e)}")
+        except Exception as e:
+            logging.error(f"Error fetching {flair} threads for {date}: {str(e)}")
+            continue
 
     result = {"date": date, "threads": threads, "thread_count": len(threads)}
-    logging.warning(f"Collected {len(threads)} threads for date {date}")
+
+    logging.info(f"Collected {len(threads)} threads for date {date}")
     return result
 
 
@@ -151,7 +105,7 @@ def save_to_gcs(data: dict, date: str) -> None:
     try:
         json_data = json.dumps(data, indent=2)
         blob.upload_from_string(data=json_data, content_type="application/json")
-        logging.warning(
+        logging.info(
             f"Successfully saved {data['thread_count']} Reddit threads for {date} to GCS: {blob_path}"
         )
     except Exception as e:
