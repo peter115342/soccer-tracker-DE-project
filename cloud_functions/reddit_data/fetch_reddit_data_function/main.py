@@ -46,7 +46,7 @@ def fetch_reddit_data(event, context):
 
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(
-            os.environ["GCP_PROJECT_ID"], "process_reddit"
+            os.environ["GCP_PROJECT_ID"], "process_reddit_data_topic"
         )
 
         publish_data = {"action": "process_reddit"}
