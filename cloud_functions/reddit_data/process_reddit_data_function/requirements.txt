@@ -5,3 +5,4 @@ datetime
 google-cloud-storage
 google-cloud-pubsub
 praw
+rapidfuzz
