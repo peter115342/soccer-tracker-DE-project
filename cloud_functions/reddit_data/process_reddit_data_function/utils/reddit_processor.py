@@ -1,5 +1,5 @@
 from google.cloud import storage, bigquery
-from rapidfuzz import fuzz, process
+from rapidfuzz import fuzz
 import json
 import re
 import unicodedata
@@ -83,7 +83,7 @@ def match_thread_to_match(thread: Dict, matches: List[Dict]) -> Optional[Dict]:
     body = thread["body"].lower()
 
     best_match = None
-    highest_score = 0
+    highest_score: float = 0
 
     for match in matches:
         home_team = clean_team_name(match["home_team"])
