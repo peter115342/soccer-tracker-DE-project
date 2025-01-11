@@ -2,7 +2,8 @@ import logging
 import os
 import base64
 import json
-from google.cloud import storage
+from google.cloud import storage, pubsub_v1
+from datetime import datetime
 from .utils.reddit_processor import process_reddit_data
 import requests
 
@@ -40,20 +41,59 @@ def process_reddit_threads(event, context):
 
         total_processed = 0
         total_skipped = 0
+        all_validations = []
 
         for date in dates:
             result = process_reddit_data(date, bucket_name)
             total_processed += result["processed_threads"]
             total_skipped += result["skipped_threads"]
+            all_validations.extend(result["validations"])
+
+        # Prepare validation summary
+        validation_summary = []
+        for validation in all_validations:
+            if validation["valid"]:
+                validation_summary.append(
+                    f"Match {validation['match_id']}: ✅ {', '.join(validation['passed'])}"
+                )
+            else:
+                validation_summary.append(
+                    f"Match {validation['match_id']}: "
+                    f"✅ {', '.join(validation['passed'])} "
+                    f"❌ {', '.join(validation['failed'])}"
+                )
 
         success_message = (
-            f"Successfully processed {total_processed} threads "
-            f"across {len(dates)} dates and skipped {total_skipped} threads"
+            f"Successfully processed {total_processed} new threads "
+            f"across {len(dates)} dates and skipped {total_skipped} threads\n\n"
+            f"Validation Results:\n" + "\n".join(validation_summary)
         )
 
         send_discord_notification(
             "✅ Process Reddit Data: Success", success_message, 65280
         )
+
+        # Trigger next pipeline step if needed
+        if total_processed > 0:
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(
+                os.environ["GCP_PROJECT_ID"], "convert_reddit_data_topic"
+            )
+
+            next_message = {
+                "action": "convert_reddit",
+                "timestamp": datetime.now().isoformat(),
+                "processed_threads": total_processed,
+            }
+
+            future = publisher.publish(
+                topic_path, data=json.dumps(next_message).encode("utf-8")
+            )
+
+            publish_result = future.result()
+            logging.info(
+                f"Published message to convert_reddit_data_topic with ID: {publish_result}"
+            )
 
         return "Processing completed successfully", 200
 
