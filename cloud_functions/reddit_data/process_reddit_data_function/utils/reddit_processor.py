@@ -3,7 +3,7 @@ from rapidfuzz import fuzz
 import json
 import re
 import unicodedata
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import logging
 from datetime import datetime
 
@@ -46,7 +46,7 @@ def clean_team_name(team_name: str) -> str:
     team_name = unicodedata.normalize("NFKD", team_name)
     team_name = re.sub(r"[^a-z\s]", "", team_name)
     team_name = re.sub(
-        r"\b(fc|cf|sc|ac|united|city|club|cp|deportivo|real|cd|athletic|ssd|calcio|aas|ssc|as)\b",
+        r"\b(fc|cf|sc|ac|club|cp|cd|ssd|aas|ssc|as)\b",
         "",
         team_name,
     )
@@ -54,9 +54,9 @@ def clean_team_name(team_name: str) -> str:
     return team_name.strip()
 
 
-def get_existing_matches(bucket) -> Dict[str, Dict]:
+def get_existing_matches(bucket) -> Dict[str, Dict[str, Any]]:
     """Get all existing matches and their thread IDs"""
-    existing_matches = {}
+    existing_matches: Dict[str, Dict[str, Any]] = {}
     for blob in bucket.list_blobs(prefix="reddit_data/matches/"):
         if blob.name.endswith(".json"):
             match_data = json.loads(blob.download_as_string())
@@ -68,12 +68,12 @@ def get_existing_matches(bucket) -> Dict[str, Dict]:
     return existing_matches
 
 
-def get_matches_for_date(date: str) -> List[Dict]:
+def get_matches_for_date(date: str) -> List[Dict[str, Any]]:
     """Fetch matches from BigQuery for a specific date"""
     client = bigquery.Client()
     query = """
         SELECT 
-            id,
+            CAST(id as STRING) as id,
             utcDate,
             homeTeam.name as home_team,
             awayTeam.name as away_team,
@@ -91,16 +91,17 @@ def get_matches_for_date(date: str) -> List[Dict]:
     return [dict(row) for row in client.query(query, job_config=job_config)]
 
 
-def validate_match_data(match_data: Dict, bucket_name: str) -> Dict:
+def validate_match_data(match_data: Dict[str, Any], bucket_name: str) -> Dict[str, Any]:
     """Validate processed match data against BigQuery records"""
     client = bigquery.Client()
 
     thread_date = datetime.fromtimestamp(
         match_data["threads"][0]["created_utc"]
     ).strftime("%Y-%m-%d")
+
     query = """
         SELECT 
-            id,
+            CAST(id as STRING) as id,
             DATE(utcDate) as match_date,
             homeTeam.name as home_team,
             awayTeam.name as away_team
@@ -110,7 +111,7 @@ def validate_match_data(match_data: Dict, bucket_name: str) -> Dict:
 
     job_config = bigquery.QueryJobConfig(
         query_parameters=[
-            bigquery.ScalarQueryParameter("match_id", "INT64", match_data["match_id"])
+            bigquery.ScalarQueryParameter("match_id", "STRING", match_data["match_id"])
         ]
     )
 
@@ -143,7 +144,9 @@ def validate_match_data(match_data: Dict, bucket_name: str) -> Dict:
     }
 
 
-def match_thread_to_match(thread: Dict, matches: List[Dict]) -> Optional[Dict]:
+def match_thread_to_match(
+    thread: Dict[str, Any], matches: List[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
     """Match a Reddit thread to a match using enhanced fuzzy matching"""
     title = thread["title"].lower()
     body = thread["body"].lower()
@@ -201,7 +204,7 @@ def match_thread_to_match(thread: Dict, matches: List[Dict]) -> Optional[Dict]:
     return best_match
 
 
-def process_reddit_data(date: str, bucket_name: str) -> Dict:
+def process_reddit_data(date: str, bucket_name: str) -> Dict[str, Any]:
     """Process Reddit data and organize by match ID"""
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
@@ -220,28 +223,18 @@ def process_reddit_data(date: str, bucket_name: str) -> Dict:
     reddit_data = json.loads(raw_blob.download_as_string())
     matches = get_matches_for_date(date)
 
-    match_threads = {}
-    skipped_threads = 0
-    new_threads_processed = 0
-    validation_results = []
+    match_thread_groups: Dict[str, Dict[str, Any]] = {}
 
     for thread in reddit_data["threads"]:
         matched_match = match_thread_to_match(thread, matches)
 
         if matched_match:
             match_id = str(matched_match["id"])
-
-            if (
-                match_id in existing_matches
-                and thread["thread_id"] in existing_matches[match_id]["thread_ids"]
-            ):
-                skipped_threads += 1
-                continue
-
-            if match_id not in match_threads:
-                match_threads[match_id] = existing_matches.get(match_id, {}).get(
-                    "data",
-                    {
+            if match_id not in match_thread_groups:
+                match_thread_groups[match_id] = {
+                    "Post Match Thread": None,
+                    ":Match_thread:Match Thread": None,
+                    "match_data": {
                         "match_id": match_id,
                         "match_date": date,
                         "home_team": matched_match["home_team"],
@@ -249,19 +242,43 @@ def process_reddit_data(date: str, bucket_name: str) -> Dict:
                         "competition": matched_match["competition"],
                         "threads": [],
                     },
-                )
+                }
+
+            match_thread_groups[match_id][thread["flair"]] = thread
+
+    match_threads: Dict[str, Dict[str, Any]] = {}
+    skipped_threads = 0
+    new_threads_processed = 0
+    validation_results = []
+
+    for match_id, group in match_thread_groups.items():
+        selected_thread = (
+            group["Post Match Thread"] or group[":Match_thread:Match Thread"]
+        )
+        match_data = group["match_data"]
+
+        if selected_thread:
+            if (
+                match_id in existing_matches
+                and selected_thread["thread_id"]
+                in existing_matches[match_id]["thread_ids"]
+            ):
+                skipped_threads += 1
+                continue
 
             thread_data = {
-                "thread_type": thread["flair"],
-                "thread_id": thread["thread_id"],
-                "title": thread["title"],
-                "body": thread["body"],
-                "created_utc": thread["created_utc"],
-                "score": thread["score"],
-                "num_comments": thread["num_comments"],
-                "comments": thread["top_comments"],
+                "thread_type": selected_thread["flair"],
+                "thread_id": selected_thread["thread_id"],
+                "title": selected_thread["title"],
+                "body": selected_thread["body"],
+                "created_utc": selected_thread["created_utc"],
+                "score": selected_thread["score"],
+                "num_comments": selected_thread["num_comments"],
+                "comments": selected_thread["top_comments"],
             }
-            match_threads[match_id]["threads"].append(thread_data)
+
+            match_data["threads"] = [thread_data]
+            match_threads[match_id] = match_data
             new_threads_processed += 1
         else:
             skipped_threads += 1
