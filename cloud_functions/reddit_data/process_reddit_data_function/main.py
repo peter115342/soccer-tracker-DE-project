@@ -62,17 +62,22 @@ def process_reddit_threads(event, context):
                     f"❌ {', '.join(validation['failed'])}"
                 )
 
-        success_message = (
-            f"Successfully processed {total_processed} new threads "
-            f"across {len(dates)} dates and skipped {total_skipped} threads\n\n"
-            f"Validation Results:\n" + "\n".join(validation_summary)
-        )
-
-        send_discord_notification(
-            "✅ Process Reddit Data: Success", success_message, 65280
-        )
-
         if total_processed > 0:
+            success_message = (
+                f"Successfully processed {total_processed} new threads "
+                f"across {len(dates)} dates and skipped {total_skipped} threads\n\n"
+                f"Validation Results:\n" + "\n".join(validation_summary)
+            )
+            send_discord_notification(
+                "✅ Process Reddit Data: Success", success_message, 65280
+            )
+        else:
+            message = "No new Reddit threads to process"
+            send_discord_notification(
+                "📝 Process Reddit Data: No New Threads", message, 16776960
+            )
+
+        if total_processed >= 0:
             publisher = pubsub_v1.PublisherClient()
             topic_path = publisher.topic_path(
                 os.environ["GCP_PROJECT_ID"], "convert_reddit_to_parquet_topic"
