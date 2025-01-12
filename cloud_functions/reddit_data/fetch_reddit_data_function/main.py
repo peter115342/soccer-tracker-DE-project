@@ -37,27 +37,27 @@ def fetch_reddit_data(event, context):
             send_discord_notification(
                 "✅ Fetch Reddit Data: Success", success_message, 65280
             )
+
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(
+                os.environ["GCP_PROJECT_ID"], "process_reddit_data_topic"
+            )
+
+            publish_data = {"action": "process_reddit"}
+            future = publisher.publish(
+                topic_path,
+                data=json.dumps(publish_data).encode("utf-8"),
+                timestamp=datetime.now().isoformat(),
+            )
+
+            publish_result = future.result()
+            logging.info(f"Published trigger message with ID: {publish_result}")
         else:
             message = "No new Reddit threads found to process"
             logging.info(message)
             send_discord_notification(
                 "📝 Fetch Reddit Data: No New Threads", message, 16776960
             )
-
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(
-            os.environ["GCP_PROJECT_ID"], "process_reddit_data_topic"
-        )
-
-        publish_data = {"action": "process_reddit"}
-        future = publisher.publish(
-            topic_path,
-            data=json.dumps(publish_data).encode("utf-8"),
-            timestamp=datetime.now().isoformat(),
-        )
-
-        publish_result = future.result()
-        logging.info(f"Published trigger message with ID: {publish_result}")
 
         return "Process completed successfully", 200
 
