@@ -98,7 +98,6 @@ def validate_match_data(match_data: Dict, bucket_name: str) -> Dict:
     thread_date = datetime.fromtimestamp(
         match_data["threads"][0]["created_utc"]
     ).strftime("%Y-%m-%d")
-
     query = """
         SELECT 
             id,
@@ -111,7 +110,7 @@ def validate_match_data(match_data: Dict, bucket_name: str) -> Dict:
 
     job_config = bigquery.QueryJobConfig(
         query_parameters=[
-            bigquery.ScalarQueryParameter("match_id", "STRING", match_data["match_id"])
+            bigquery.ScalarQueryParameter("match_id", "INT64", match_data["match_id"])
         ]
     )
 
@@ -267,7 +266,6 @@ def process_reddit_data(date: str, bucket_name: str) -> Dict:
         else:
             skipped_threads += 1
 
-    # Validate and save matches
     for match_id, match_data in match_threads.items():
         validation = validate_match_data(match_data, bucket_name)
         validation_results.append(validation)

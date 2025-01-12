@@ -49,7 +49,6 @@ def process_reddit_threads(event, context):
             total_skipped += result["skipped_threads"]
             all_validations.extend(result["validations"])
 
-        # Prepare validation summary
         validation_summary = []
         for validation in all_validations:
             if validation["valid"]:
@@ -73,7 +72,6 @@ def process_reddit_threads(event, context):
             "✅ Process Reddit Data: Success", success_message, 65280
         )
 
-        # Trigger next pipeline step if needed
         if total_processed > 0:
             publisher = pubsub_v1.PublisherClient()
             topic_path = publisher.topic_path(
