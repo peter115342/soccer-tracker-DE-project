@@ -51,6 +51,8 @@ jobs:
           API_FOOTBALL_KEY: "dummy_key"
           GOOGLE_MAPS_API_KEY: "dummy_key"
           GCP_PROJECT_ID: "dummy_id"
+          REDDIT_CLIENT_ID: "dummy_id"
+          REDDIT_CLIENT_SECRET: "dummy_key"
 
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
