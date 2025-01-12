@@ -116,7 +116,7 @@ def test_fetch_reddit_data_no_threads(sample_dates):
         assert "Process completed successfully" in result
         mock_get_dates.assert_called_once()
         assert mock_fetch_threads.call_count == len(sample_dates)
-        mock_publisher_instance.publish.assert_called_once()
+        mock_publisher_instance.publish.assert_not_called()
 
 
 def test_fetch_reddit_data_exception():
