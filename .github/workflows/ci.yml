@@ -46,15 +46,15 @@ jobs:
         with:
           project_id: ${{secrets.GCP_PROJECT_ID}}
 
-      # - name: Run Tests
-      #   env:
-      #     API_FOOTBALL_KEY: "dummy_key"
-      #     GOOGLE_MAPS_API_KEY: "dummy_key"
-      #     GCP_PROJECT_ID: "dummy_id"
+      - name: Run Tests
+        env:
+          API_FOOTBALL_KEY: "dummy_key"
+          GOOGLE_MAPS_API_KEY: "dummy_key"
+          GCP_PROJECT_ID: "dummy_id"
 
-      #   run: |
-      #     export PYTHONPATH=$PYTHONPATH:$(pwd)
-      #     uv run pytest tests/
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          uv run pytest tests/
 
       # - name: Create Pub/Sub Topics
       #   run: |
@@ -259,18 +259,18 @@ jobs:
       #     --set-env-vars "REDDIT_CLIENT_ID=${{secrets.REDDIT_CLIENT_ID}},REDDIT_CLIENT_SECRET=${{secrets.REDDIT_CLIENT_SECRET}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
       #     cd ../..
 
-      # - name: Deploy convert_reddit_data Function
-      #   run: |
-      #     cd cloud_functions/reddit_data/convert_reddit_data_function
-      #     uv run gcloud functions deploy transform_reddit_to_parquet \
-      #       --runtime python312 \
-      #       --trigger-topic convert_reddit_to_parquet_topic \
-      #       --entry-point transform_to_parquet \
-      #       --timeout 540s \
-      #       --memory 1GiB \
-      #       --region europe-central2 \
-      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-      #     cd ../..
+      - name: Deploy convert_reddit_data Function
+        run: |
+          cd cloud_functions/reddit_data/convert_reddit_data_function
+          uv run gcloud functions deploy transform_reddit_to_parquet \
+            --runtime python312 \
+            --trigger-topic convert_reddit_to_parquet_topic \
+            --entry-point transform_to_parquet \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+          cd ../..
 
       # - name: Deploy reddit_to_bigquery Function
       #   run: |
@@ -285,15 +285,15 @@ jobs:
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
       #     cd ../..
 
-      - name: Deploy process_reddit_data Function
-        run: |
-          cd cloud_functions/reddit_data/process_reddit_data_function
-          uv run gcloud functions deploy process_reddit_data \
-            --runtime python312 \
-            --trigger-topic process_reddit_data_topic \
-            --entry-point process_reddit_threads \
-            --timeout 540s \
-            --memory 1GiB \
-            --region europe-central2 \
-            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-          cd ../..
+      # - name: Deploy process_reddit_data Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/process_reddit_data_function
+      #     uv run gcloud functions deploy process_reddit_data \
+      #       --runtime python312 \
+      #       --trigger-topic process_reddit_data_topic \
+      #       --entry-point process_reddit_threads \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..

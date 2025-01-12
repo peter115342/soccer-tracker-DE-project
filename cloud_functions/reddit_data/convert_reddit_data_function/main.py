@@ -29,7 +29,7 @@ def transform_to_parquet(event, context):
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
 
-        blobs = bucket.list_blobs(prefix="reddit_data/")
+        blobs = bucket.list_blobs(prefix="reddit_data/matches")
         json_files = [blob.name for blob in blobs if blob.name.endswith(".json")]
 
         if not json_files:
