@@ -75,7 +75,7 @@ def process_reddit_threads(event, context):
         if total_processed > 0:
             publisher = pubsub_v1.PublisherClient()
             topic_path = publisher.topic_path(
-                os.environ["GCP_PROJECT_ID"], "convert_reddit_data_topic"
+                os.environ["GCP_PROJECT_ID"], "convert_reddit_to_parquet_topic"
             )
 
             next_message = {

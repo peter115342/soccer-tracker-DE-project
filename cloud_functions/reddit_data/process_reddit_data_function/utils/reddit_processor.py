@@ -111,7 +111,7 @@ def validate_match_data(match_data: Dict[str, Any], bucket_name: str) -> Dict[st
 
     job_config = bigquery.QueryJobConfig(
         query_parameters=[
-            bigquery.ScalarQueryParameter("match_id", "STRING", match_data["match_id"])
+            bigquery.ScalarQueryParameter("match_id", "INT64", match_data["match_id"])
         ]
     )
 
