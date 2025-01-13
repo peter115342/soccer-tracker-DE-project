@@ -1,8 +1,19 @@
-name: CI/CD Pipeline with Terraform
+name: Terraform CI/CD Pipeline
 
 on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - main
   push:
     branches:
+      - main
       - dev
     paths:
       - "terraform/**"
@@ -38,6 +49,17 @@ jobs:
         run: |
           uv run ruff check .
 
+      - name: Run Tests
+        env:
+          API_FOOTBALL_KEY: "dummy_key"
+          GOOGLE_MAPS_API_KEY: "dummy_key"
+          GCP_PROJECT_ID: "dummy_id"
+          REDDIT_CLIENT_ID: "dummy_id"
+          REDDIT_CLIENT_SECRET: "dummy_key"
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          uv run pytest tests/
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
@@ -55,10 +77,15 @@ jobs:
           GCP_PROJECT_ID: "dummy_id"
           REDDIT_CLIENT_ID: "dummy_id"
           REDDIT_CLIENT_SECRET: "dummy_key"
-
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
+
+      - name: Create Terraform State Bucket
+        env:
+          BUCKET_NAME: ${{ secrets.GCP_PROJECT_ID }}-terraform-state
+        run: |
+          gsutil ls gs://$BUCKET_NAME || gsutil mb -l europe-central2 gs://$BUCKET_NAME
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -93,7 +120,7 @@ jobs:
           terraform plan -out=tfplan
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'main'
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
