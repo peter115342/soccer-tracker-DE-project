@@ -71,7 +71,7 @@ def fetch_reddit_data(event, context):
 
 
 def send_discord_notification(title: str, message: str, color: int):
-    """Send a notification to Discord with the specified title, message, and color."""
+    """Sends a notification to Discord with the specified title, message, and color."""
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
         logging.warning("Discord webhook URL not set.")
