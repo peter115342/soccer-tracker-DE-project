@@ -18,14 +18,12 @@ provider "google" {
   region  = var.region
 }
 
-# Create a GCS bucket for Cloud Functions source code
 resource "google_storage_bucket" "function_bucket" {
   name     = "${var.project_id}-function-source"
   location = var.region
   uniform_bucket_level_access = true
 }
 
-# Archive files for each Cloud Function
 data "archive_file" "fetch_league_data" {
   type        = "zip"
   source_dir  = "../cloud_functions/league_data/fetch_league_data_function"

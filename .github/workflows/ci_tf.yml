@@ -1,9 +1,8 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline with Terraform
 
 on:
   push:
     branches:
-      #- main
       - dev
     paths:
       - "terraform/**"
