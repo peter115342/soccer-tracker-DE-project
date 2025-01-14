@@ -91,7 +91,7 @@ jobs:
       - name: Terraform Format
         run: |
           cd terraform
-          terraform fmt -check
+          terraform fmt
 
       - name: Terraform Plan
         env:

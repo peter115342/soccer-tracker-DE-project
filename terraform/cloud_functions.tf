@@ -111,7 +111,7 @@ resource "google_cloudfunctions2_function" "fetch_weather_data" {
   }
 }
 
-# Match Data Conversion Function
+# Match Conversion Function
 resource "google_storage_bucket_object" "transform_match_to_parquet" {
   name   = "functions/transform_match_to_parquet.zip"
   bucket = google_storage_bucket.function_bucket.name
