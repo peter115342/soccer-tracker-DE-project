@@ -1,4 +1,4 @@
-# Define Pub/Sub Topics
+data "google_compute_default_service_account" "default" {}
 resource "google_pubsub_topic" "fetch_league_data" {
   name = "fetch_league_data_topic"
 }
