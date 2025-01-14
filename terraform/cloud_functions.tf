@@ -146,7 +146,7 @@ resource "google_cloudfunctions2_function" "transform_match_to_parquet" {
   }
 }
 
-# Weather Data Conversion Function
+# Weather Conversion Function
 resource "google_storage_bucket_object" "transform_weather_to_parquet" {
   name   = "functions/transform_weather_to_parquet.zip"
   bucket = google_storage_bucket.function_bucket.name
