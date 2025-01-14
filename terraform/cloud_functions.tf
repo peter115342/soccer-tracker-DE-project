@@ -1,12 +1,3 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = ">= 4.34.0"
-    }
-  }
-}
-
 # Define Pub/Sub Topics
 resource "google_pubsub_topic" "fetch_league_data" {
   name = "fetch_league_data_topic"
