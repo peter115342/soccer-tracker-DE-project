@@ -1,73 +1,74 @@
 data "google_compute_default_service_account" "default" {}
-resource "google_pubsub_topic" "fetch_league_data" {
+data "google_pubsub_topic" "fetch_league_data" {
   name = "fetch_league_data_topic"
 }
 
-resource "google_pubsub_topic" "fetch_football_data" {
+
+data "google_pubsub_topic" "fetch_football_data" {
   name = "fetch_football_data_topic"
 }
 
-resource "google_pubsub_topic" "fetch_weather_data" {
+data "google_pubsub_topic" "fetch_weather_data" {
   name = "fetch_weather_data_topic"
 }
 
-resource "google_pubsub_topic" "convert_to_parquet" {
+data "google_pubsub_topic" "convert_to_parquet" {
   name = "convert_to_parquet_topic"
 }
 
-resource "google_pubsub_topic" "convert_weather_to_parquet" {
+data "google_pubsub_topic" "convert_weather_to_parquet" {
   name = "convert_weather_to_parquet_topic"
 }
 
-resource "google_pubsub_topic" "match_to_bigquery" {
+data "google_pubsub_topic" "match_to_bigquery" {
   name = "match_to_bigquery_topic"
 }
 
-resource "google_pubsub_topic" "weather_to_bigquery" {
+data "google_pubsub_topic" "weather_to_bigquery" {
   name = "weather_to_bigquery_topic"
 }
 
-resource "google_pubsub_topic" "transform_matches" {
+data "google_pubsub_topic" "transform_matches" {
   name = "transform_matches_topic"
 }
 
-resource "google_pubsub_topic" "transform_weather" {
+data "google_pubsub_topic" "transform_weather" {
   name = "transform_weather_topic"
 }
 
-resource "google_pubsub_topic" "fetch_standings_data" {
+data "google_pubsub_topic" "fetch_standings_data" {
   name = "fetch_standings_data_topic"
 }
 
-resource "google_pubsub_topic" "convert_standings_to_parquet" {
+data "google_pubsub_topic" "convert_standings_to_parquet" {
   name = "convert_standings_to_parquet_topic"
 }
 
-resource "google_pubsub_topic" "standings_to_bigquery" {
+data "google_pubsub_topic" "standings_to_bigquery" {
   name = "standings_to_bigquery_topic"
 }
 
-resource "google_pubsub_topic" "transform_standings" {
+data "google_pubsub_topic" "transform_standings" {
   name = "transform_standings_topic"
 }
 
-resource "google_pubsub_topic" "fetch_reddit_data" {
+data "google_pubsub_topic" "fetch_reddit_data" {
   name = "fetch_reddit_data_topic"
 }
 
-resource "google_pubsub_topic" "convert_reddit_to_parquet" {
+data "google_pubsub_topic" "convert_reddit_to_parquet" {
   name = "convert_reddit_to_parquet_topic"
 }
 
-resource "google_pubsub_topic" "reddit_to_bigquery" {
+data "google_pubsub_topic" "reddit_to_bigquery" {
   name = "reddit_to_bigquery_topic"
 }
 
-resource "google_pubsub_topic" "process_reddit_data" {
+data "google_pubsub_topic" "process_reddit_data" {
   name = "process_reddit_data_topic"
 }
 
-resource "google_pubsub_topic" "transform_reddit" {
+data "google_pubsub_topic" "transform_reddit" {
   name = "transform_reddit_topic"
 }
 
@@ -213,7 +214,7 @@ resource "google_cloudfunctions2_function" "fetch_league_data" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.fetch_league_data.id
+    pubsub_topic   = data.google_pubsub_topic.fetch_league_data.id
   }
 }
 
@@ -249,7 +250,7 @@ resource "google_cloudfunctions2_function" "fetch_football_data" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.fetch_football_data.id
+    pubsub_topic   = data.google_pubsub_topic.fetch_football_data.id
   }
 }
 
@@ -284,7 +285,7 @@ resource "google_cloudfunctions2_function" "fetch_weather_data" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.fetch_weather_data.id
+    pubsub_topic   = data.google_pubsub_topic.fetch_weather_data.id
   }
 }
 
@@ -319,7 +320,7 @@ resource "google_cloudfunctions2_function" "transform_match_to_parquet" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.convert_to_parquet.id
+    pubsub_topic   = data.google_pubsub_topic.convert_to_parquet.id
   }
 }
 
@@ -354,7 +355,7 @@ resource "google_cloudfunctions2_function" "transform_weather_to_parquet" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.convert_weather_to_parquet.id
+    pubsub_topic   = data.google_pubsub_topic.convert_weather_to_parquet.id
   }
 }
 
@@ -389,7 +390,7 @@ resource "google_cloudfunctions2_function" "load_matches_to_bigquery" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.match_to_bigquery.id
+    pubsub_topic   = data.google_pubsub_topic.match_to_bigquery.id
   }
 }
 
@@ -424,7 +425,7 @@ resource "google_cloudfunctions2_function" "load_weather_to_bigquery" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.weather_to_bigquery.id
+    pubsub_topic   = data.google_pubsub_topic.weather_to_bigquery.id
   }
 }
 
@@ -460,7 +461,7 @@ resource "google_cloudfunctions2_function" "transform_matches" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.transform_matches.id
+    pubsub_topic   = data.google_pubsub_topic.transform_matches.id
   }
 }
 
@@ -496,7 +497,7 @@ resource "google_cloudfunctions2_function" "transform_weather" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.transform_weather.id
+    pubsub_topic   = data.google_pubsub_topic.transform_weather.id
   }
 }
 
@@ -532,7 +533,7 @@ resource "google_cloudfunctions2_function" "fetch_standings_data" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.fetch_standings_data.id
+    pubsub_topic   = data.google_pubsub_topic.fetch_standings_data.id
   }
 }
 
@@ -567,7 +568,7 @@ resource "google_cloudfunctions2_function" "transform_standings_to_parquet" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.convert_standings_to_parquet.id
+    pubsub_topic   = data.google_pubsub_topic.convert_standings_to_parquet.id
   }
 }
 
@@ -602,7 +603,7 @@ resource "google_cloudfunctions2_function" "load_standings_to_bigquery" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.standings_to_bigquery.id
+    pubsub_topic   = data.google_pubsub_topic.standings_to_bigquery.id
   }
 }
 
@@ -638,7 +639,7 @@ resource "google_cloudfunctions2_function" "transform_standings" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.transform_standings.id
+    pubsub_topic   = data.google_pubsub_topic.transform_standings.id
   }
 }
 
@@ -675,7 +676,7 @@ resource "google_cloudfunctions2_function" "fetch_reddit_data" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.fetch_reddit_data.id
+    pubsub_topic   = data.google_pubsub_topic.fetch_reddit_data.id
   }
 }
 
@@ -710,7 +711,7 @@ resource "google_cloudfunctions2_function" "transform_reddit_to_parquet" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.convert_reddit_to_parquet.id
+    pubsub_topic   = data.google_pubsub_topic.convert_reddit_to_parquet.id
   }
 }
 
@@ -745,7 +746,7 @@ resource "google_cloudfunctions2_function" "load_reddit_to_bigquery" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.reddit_to_bigquery.id
+    pubsub_topic   = data.google_pubsub_topic.reddit_to_bigquery.id
   }
 }
 
@@ -780,7 +781,7 @@ resource "google_cloudfunctions2_function" "process_reddit_data" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.process_reddit_data.id
+    pubsub_topic   = data.google_pubsub_topic.process_reddit_data.id
   }
 }
 
@@ -816,6 +817,6 @@ resource "google_cloudfunctions2_function" "transform_reddit" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.transform_reddit.id
+    pubsub_topic   = data.google_pubsub_topic.transform_reddit.id
   }
 }
