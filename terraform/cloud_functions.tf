@@ -71,6 +71,116 @@ resource "google_pubsub_topic" "transform_reddit" {
   name = "transform_reddit_topic"
 }
 
+# Storage bucket objects for all functions
+resource "google_storage_bucket_object" "fetch_league_data" {
+  name   = "functions/fetch_league_data.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.fetch_league_data.output_path
+}
+
+resource "google_storage_bucket_object" "fetch_football_data" {
+  name   = "functions/fetch_football_data.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.fetch_football_data.output_path
+}
+
+resource "google_storage_bucket_object" "fetch_weather_data" {
+  name   = "functions/fetch_weather_data.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.fetch_weather_data.output_path
+}
+
+resource "google_storage_bucket_object" "transform_match_to_parquet" {
+  name   = "functions/transform_match_to_parquet.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.transform_match_to_parquet.output_path
+}
+
+resource "google_storage_bucket_object" "transform_weather_to_parquet" {
+  name   = "functions/transform_weather_to_parquet.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.transform_weather_to_parquet.output_path
+}
+
+resource "google_storage_bucket_object" "load_matches_to_bigquery" {
+  name   = "functions/load_matches_to_bigquery.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.load_matches_to_bigquery.output_path
+}
+
+resource "google_storage_bucket_object" "load_weather_to_bigquery" {
+  name   = "functions/load_weather_to_bigquery.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.load_weather_to_bigquery.output_path
+}
+
+resource "google_storage_bucket_object" "transform_matches" {
+  name   = "functions/transform_matches.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.transform_matches.output_path
+}
+
+resource "google_storage_bucket_object" "transform_weather" {
+  name   = "functions/transform_weather.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.transform_weather.output_path
+}
+
+resource "google_storage_bucket_object" "fetch_standings_data" {
+  name   = "functions/fetch_standings_data.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.fetch_standings_data.output_path
+}
+
+resource "google_storage_bucket_object" "transform_standings_to_parquet" {
+  name   = "functions/transform_standings_to_parquet.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.transform_standings_to_parquet.output_path
+}
+
+resource "google_storage_bucket_object" "load_standings_to_bigquery" {
+  name   = "functions/load_standings_to_bigquery.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.load_standings_to_bigquery.output_path
+}
+
+resource "google_storage_bucket_object" "transform_standings" {
+  name   = "functions/transform_standings.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.transform_standings.output_path
+}
+
+resource "google_storage_bucket_object" "fetch_reddit_data" {
+  name   = "functions/fetch_reddit_data.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.fetch_reddit_data.output_path
+}
+
+resource "google_storage_bucket_object" "transform_reddit_to_parquet" {
+  name   = "functions/transform_reddit_to_parquet.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.transform_reddit_to_parquet.output_path
+}
+
+resource "google_storage_bucket_object" "load_reddit_to_bigquery" {
+  name   = "functions/load_reddit_to_bigquery.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.load_reddit_to_bigquery.output_path
+}
+
+resource "google_storage_bucket_object" "process_reddit_data" {
+  name   = "functions/process_reddit_data.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.process_reddit_data.output_path
+}
+
+resource "google_storage_bucket_object" "transform_reddit" {
+  name   = "functions/transform_reddit.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.transform_reddit.output_path
+}
+
+
 # League Data Function
 resource "google_cloudfunctions2_function" "fetch_league_data" {
   name     = "fetch_league_data"
