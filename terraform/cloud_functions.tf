@@ -343,7 +343,7 @@ resource "google_cloudfunctions2_function" "transform_weather_to_parquet" {
     max_instance_count    = 1
     available_memory      = "1024M"
     timeout_seconds       = 540
-    service_account_email = google_service_account.function_sa.email
+    service_account_email = data.google_compute_default_service_account.default.email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME         = var.bucket_name
