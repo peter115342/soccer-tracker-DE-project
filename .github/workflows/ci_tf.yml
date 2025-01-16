@@ -137,7 +137,7 @@ jobs:
           TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
         run: |
           cd terraform
-          terraform plan -out=tfplan
+          terraform plan -out=tfplan -lock=false
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event.inputs.environment == 'main' || github.event.inputs.environment == 'dev'
@@ -153,4 +153,4 @@ jobs:
           TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
         run: |
           cd terraform
-          terraform apply -auto-approve tfplan
+          terraform apply -auto-approve tfplan -lock=false
