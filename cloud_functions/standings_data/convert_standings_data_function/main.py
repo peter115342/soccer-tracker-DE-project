@@ -41,7 +41,7 @@ def transform_to_parquet(event, context):
             message = "No standings JSON files found to convert"
             logging.info(message)
             send_discord_notification(
-                "ℹ️ Convert Standings to Parquet: No Files", message, 16776960
+                "📝 Convert Standings to Parquet: No Files", message, 16776960
             )
 
             publisher = pubsub_v1.PublisherClient()

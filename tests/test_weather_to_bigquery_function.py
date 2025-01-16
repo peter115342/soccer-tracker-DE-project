@@ -2,7 +2,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 import base64
 import json
-from cloud_functions.weather_to_bigquery_function.main import load_weather_to_bigquery
+from cloud_functions.weather_data.weather_to_bigquery_function.main import (
+    load_weather_to_bigquery,
+)
 
 
 @pytest.fixture
@@ -24,7 +26,7 @@ def test_load_weather_to_bigquery_success(sample_event, sample_context):
             {"BUCKET_NAME": "test-bucket", "GCP_PROJECT_ID": "test-project"},
         ),
         patch(
-            "cloud_functions.weather_to_bigquery_function.main.bigquery.Client"
+            "cloud_functions.weather_data.weather_to_bigquery_function.main.bigquery.Client"
         ) as mock_bigquery_client,
     ):
         mock_client_instance = MagicMock()
@@ -61,7 +63,7 @@ def test_load_weather_to_bigquery_existing_table(sample_event, sample_context):
             {"BUCKET_NAME": "test-bucket", "GCP_PROJECT_ID": "test-project"},
         ),
         patch(
-            "cloud_functions.weather_to_bigquery_function.main.bigquery.Client"
+            "cloud_functions.weather_data.weather_to_bigquery_function.main.bigquery.Client"
         ) as mock_bigquery_client,
     ):
         mock_client_instance = MagicMock()
@@ -108,7 +110,7 @@ def test_load_weather_to_bigquery_invalid_message():
 def test_load_weather_to_bigquery_bigquery_exception(sample_event, sample_context):
     with (
         patch(
-            "cloud_functions.weather_to_bigquery_function.main.bigquery.Client"
+            "cloud_functions.weather_data.weather_to_bigquery_function.main.bigquery.Client"
         ) as mock_bigquery_client,
     ):
         mock_client_instance = MagicMock()

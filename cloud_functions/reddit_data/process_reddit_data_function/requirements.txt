@@ -1,0 +1,8 @@
+requests
+google-cloud-bigquery
+flask
+datetime
+google-cloud-storage
+google-cloud-pubsub
+praw
+rapidfuzz

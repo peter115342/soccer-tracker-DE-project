@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from cloud_functions.fetch_match_data_function.main import fetch_football_data
+from cloud_functions.match_data.fetch_match_data_function.main import (
+    fetch_football_data,
+)
 
 
 @pytest.fixture
@@ -20,13 +22,13 @@ def test_fetch_football_data_success(sample_matches):
     context = None
     with (
         patch(
-            "cloud_functions.fetch_match_data_function.main.fetch_matches_for_competitions"
+            "cloud_functions.match_data.fetch_match_data_function.main.fetch_matches_for_competitions"
         ) as mock_fetch_matches,
         patch(
-            "cloud_functions.fetch_match_data_function.main.save_to_gcs"
+            "cloud_functions.match_data.fetch_match_data_function.main.save_to_gcs"
         ) as mock_save_to_gcs,
         patch(
-            "cloud_functions.fetch_match_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.match_data.fetch_match_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_fetch_matches.return_value = sample_matches
@@ -51,25 +53,22 @@ def test_fetch_football_data_no_new_matches():
     context = None
     with (
         patch(
-            "cloud_functions.fetch_match_data_function.main.fetch_matches_for_competitions"
+            "cloud_functions.match_data.fetch_match_data_function.main.fetch_matches_for_competitions"
         ) as mock_fetch_matches,
         patch(
-            "cloud_functions.fetch_match_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.match_data.fetch_match_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_fetch_matches.return_value = []
         mock_publisher_instance = MagicMock()
         mock_publisher.return_value = mock_publisher_instance
-        mock_future = MagicMock()
-        mock_future.result.return_value = "test-publish-id"
-        mock_publisher_instance.publish.return_value = mock_future
 
         result, status_code = fetch_football_data(event, context)
 
         assert status_code == 200
         assert result == "No new matches to process."
+
         mock_fetch_matches.assert_called_once()
-        mock_publisher_instance.publish.assert_called()
 
 
 def test_fetch_football_data_exception():
@@ -77,7 +76,7 @@ def test_fetch_football_data_exception():
     context = None
     with (
         patch(
-            "cloud_functions.fetch_match_data_function.main.fetch_matches_for_competitions"
+            "cloud_functions.match_data.fetch_match_data_function.main.fetch_matches_for_competitions"
         ) as mock_fetch_matches,
     ):
         mock_fetch_matches.side_effect = Exception("Test exception")

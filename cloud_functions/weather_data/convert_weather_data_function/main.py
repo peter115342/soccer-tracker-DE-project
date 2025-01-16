@@ -33,7 +33,7 @@ def transform_to_parquet(event, context):
             message = "No JSON files found in weather_data folder"
             logging.info(message)
             send_discord_notification(
-                "ℹ️ Convert Weather to Parquet: No Files", message, 16776960
+                "📝 Convert Weather to Parquet: No Files", message, 16776960
             )
             return message, 200
 

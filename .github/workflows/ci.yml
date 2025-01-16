@@ -1,10 +1,9 @@
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
     branches:
       - main
-      - dev
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -14,7 +13,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: "3.12"
 
       - name: Install uv
         run: |
@@ -51,33 +50,40 @@ jobs:
           API_FOOTBALL_KEY: "dummy_key"
           GOOGLE_MAPS_API_KEY: "dummy_key"
           GCP_PROJECT_ID: "dummy_id"
+          REDDIT_CLIENT_ID: "dummy_id"
+          REDDIT_CLIENT_SECRET: "dummy_key"
 
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
-          
-      - name: Create Pub/Sub Topics
-        run: |
-          uv run gcloud pubsub topics create fetch_league_data_topic || true
-          uv run gcloud pubsub topics create fetch_football_data_topic || true
-          uv run gcloud pubsub topics create fetch_weather_data_topic || true
-          uv run gcloud pubsub topics create convert_to_parquet_topic || true
-          uv run gcloud pubsub topics create convert_weather_to_parquet_topic || true
-          uv run gcloud pubsub topics create match_to_bigquery_topic || true
-          uv run gcloud pubsub topics create weather_to_bigquery_topic || true
-          uv run gcloud pubsub topics create transform_matches_topic || true
-          uv run gcloud pubsub topics create transform_weather_topic || true
-          uv run gcloud pubsub topics create fetch_standings_data_topic || true
-          uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
-          uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
-          uv run gcloud pubsub topics create standings_to_bigquery_topic || true
-          uv run gcloud pubsub topics create transform_standings_topic || true
+
+      # - name: Create Pub/Sub Topics
+      #   run: |
+      #     uv run gcloud pubsub topics create fetch_league_data_topic || true
+      #     uv run gcloud pubsub topics create fetch_football_data_topic || true
+      #     uv run gcloud pubsub topics create fetch_weather_data_topic || true
+      #     uv run gcloud pubsub topics create convert_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create convert_weather_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create match_to_bigquery_topic || true
+      #     uv run gcloud pubsub topics create weather_to_bigquery_topic || true
+      #     uv run gcloud pubsub topics create transform_matches_topic || true
+      #     uv run gcloud pubsub topics create transform_weather_topic || true
+      #     uv run gcloud pubsub topics create fetch_standings_data_topic || true
+      #     uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create standings_to_bigquery_topic || true
+      #     uv run gcloud pubsub topics create transform_standings_topic || true
+      #     uv run gcloud pubsub topics create fetch_reddit_data_topic || true
+      #     uv run gcloud pubsub topics create convert_reddit_to_parquet_topic || true
+      #     uv run gcloud pubsub topics create reddit_to_bigquery_topic || true
+      #     uv run gcloud pubsub topics create process_reddit_data_topic || true
+      #     uv run gcloud pubsub topics create transform_reddit_topic || true
 
       # - name: Deploy fetch_league_data Function
       #   run: |
-      #     cd cloud_functions/fetch_league_data_function
+      #     cd cloud_functions/league_data/fetch_league_data_function
       #     uv run gcloud functions deploy fetch_league_data \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic fetch_league_data_topic \
       #       --entry-point fetch_league_data \
       #       --timeout 540s \
@@ -88,9 +94,9 @@ jobs:
 
       # - name: Deploy fetch_football_data Function
       #   run: |
-      #     cd cloud_functions/fetch_match_data_function
+      #     cd cloud_functions/match_data/fetch_match_data_function
       #     uv run gcloud functions deploy fetch_football_data \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic fetch_football_data_topic \
       #       --entry-point fetch_football_data \
       #       --timeout 540s \
@@ -101,9 +107,9 @@ jobs:
 
       # - name: Deploy fetch_weather_data Function
       #   run: |
-      #     cd cloud_functions/fetch_weather_data_function
+      #     cd cloud_functions/weather_data/fetch_weather_data_function
       #     uv run gcloud functions deploy fetch_weather_data \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic fetch_weather_data_topic \
       #       --entry-point fetch_weather_data \
       #       --timeout 540s \
@@ -114,9 +120,9 @@ jobs:
 
       # - name: Deploy convert_match_data Function
       #   run: |
-      #     cd cloud_functions/convert_match_data_function
+      #     cd cloud_functions/match_data/convert_match_data_function
       #     uv run gcloud functions deploy transform_match_to_parquet \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic convert_to_parquet_topic \
       #       --entry-point transform_to_parquet \
       #       --timeout 540s \
@@ -127,9 +133,9 @@ jobs:
 
       # - name: Deploy convert_weather_data Function
       #   run: |
-      #     cd cloud_functions/convert_weather_data_function
+      #     cd cloud_functions/weather_data/convert_weather_data_function
       #     uv run gcloud functions deploy transform_weather_to_parquet \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic convert_weather_to_parquet_topic \
       #       --entry-point transform_to_parquet \
       #       --timeout 540s \
@@ -140,9 +146,9 @@ jobs:
 
       # - name: Deploy match_to_bigquery Function
       #   run: |
-      #     cd cloud_functions/match_to_bigquery_function
+      #     cd cloud_functions/match_data/match_to_bigquery_function
       #     uv run gcloud functions deploy load_matches_to_bigquery \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic match_to_bigquery_topic \
       #       --entry-point load_matches_to_bigquery \
       #       --timeout 540s \
@@ -153,9 +159,9 @@ jobs:
 
       # - name: Deploy weather_to_bigquery Function
       #   run: |
-      #     cd cloud_functions/weather_to_bigquery_function
+      #     cd cloud_functions/weather_data/weather_to_bigquery_function
       #     uv run gcloud functions deploy load_weather_to_bigquery \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic weather_to_bigquery_topic \
       #       --entry-point load_weather_to_bigquery \
       #       --timeout 540s \
@@ -166,9 +172,9 @@ jobs:
 
       # - name: Deploy match_transform Function
       #   run: |
-      #     cd cloud_functions/match_transform_function
+      #     cd cloud_functions/match_data/match_transform_function
       #     uv run gcloud functions deploy transform_matches \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic transform_matches_topic \
       #       --entry-point transform_matches \
       #       --timeout 540s \
@@ -179,9 +185,9 @@ jobs:
 
       # - name: Deploy weather_transform Function
       #   run: |
-      #     cd cloud_functions/weather_transform_function
+      #     cd cloud_functions/weather_data/weather_transform_function
       #     uv run gcloud functions deploy transform_weather \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic transform_weather_topic \
       #       --entry-point transform_weather \
       #       --timeout 540s \
@@ -190,12 +196,11 @@ jobs:
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
-
       # - name: Deploy fetch_standings_data Function
       #   run: |
-      #     cd cloud_functions/fetch_standings_data_function
+      #     cd cloud_functions/standings_data/fetch_standings_data_function
       #     uv run gcloud functions deploy fetch_standings_data \
-      #     --runtime python39 \
+      #     --runtime python312 \
       #     --trigger-topic fetch_standings_data_topic \
       #     --entry-point fetch_standings_data \
       #     --timeout 540s \
@@ -206,9 +211,9 @@ jobs:
 
       # - name: Deploy convert_standings_data Function
       #   run: |
-      #     cd cloud_functions/convert_standings_data_function
+      #     cd cloud_functions/standings_data/convert_standings_data_function
       #     uv run gcloud functions deploy transform_standings_to_parquet \
-      #     --runtime python39 \
+      #     --runtime python312 \
       #     --trigger-topic convert_standings_to_parquet_topic \
       #     --entry-point transform_to_parquet \
       #     --timeout 540s \
@@ -219,9 +224,9 @@ jobs:
 
       # - name: Deploy standings_to_bigquery Function
       #   run: |
-      #     cd cloud_functions/standings_to_bigquery_function
+      #     cd cloud_functions/standings_data/standings_to_bigquery_function
       #     uv run gcloud functions deploy load_standings_to_bigquery \
-      #       --runtime python39 \
+      #       --runtime python312 \
       #       --trigger-topic standings_to_bigquery_topic \
       #       --entry-point load_standings_to_bigquery \
       #       --timeout 540s \
@@ -232,9 +237,9 @@ jobs:
 
       # - name: Deploy standings_transform Function
       #   run: |
-      #     cd cloud_functions/standings_transform_function
+      #     cd cloud_functions/standings_data/standings_transform_function
       #     uv run gcloud functions deploy transform_standings \
-      #     --runtime python39 \
+      #     --runtime python312 \
       #     --trigger-topic transform_standings_topic \
       #     --entry-point transform_standings \
       #     --timeout 540s \
@@ -243,4 +248,67 @@ jobs:
       #     --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
-      
+      # - name: Deploy fetch_reddit_data Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/fetch_reddit_data_function
+      #     uv run gcloud functions deploy fetch_reddit_data \
+      #     --runtime python312 \
+      #     --trigger-topic fetch_reddit_data_topic \
+      #     --entry-point fetch_reddit_data \
+      #     --timeout 540s \
+      #     --memory 1GiB \
+      #     --region europe-central2 \
+      #     --set-env-vars "REDDIT_CLIENT_ID=${{secrets.REDDIT_CLIENT_ID}},REDDIT_CLIENT_SECRET=${{secrets.REDDIT_CLIENT_SECRET}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
+
+      # - name: Deploy convert_reddit_data Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/convert_reddit_data_function
+      #     uv run gcloud functions deploy transform_reddit_to_parquet \
+      #       --runtime python312 \
+      #       --trigger-topic convert_reddit_to_parquet_topic \
+      #       --entry-point transform_to_parquet \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
+
+      # - name: Deploy reddit_to_bigquery Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/reddit_to_bigquery_function
+      #     uv run gcloud functions deploy load_reddit_to_bigquery \
+      #       --runtime python312 \
+      #       --trigger-topic reddit_to_bigquery_topic \
+      #       --entry-point load_reddit_to_bigquery \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
+
+      # - name: Deploy process_reddit_data Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/process_reddit_data_function
+      #     uv run gcloud functions deploy process_reddit_data \
+      #       --runtime python312 \
+      #       --trigger-topic process_reddit_data_topic \
+      #       --entry-point process_reddit_threads \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
+
+      # - name: Deploy reddit_transform Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/reddit_transform_function
+      #     uv run gcloud functions deploy transform_reddit \
+      #       --runtime python312 \
+      #       --trigger-topic transform_reddit_topic \
+      #       --entry-point transform_reddit \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
+      #     cd ../..

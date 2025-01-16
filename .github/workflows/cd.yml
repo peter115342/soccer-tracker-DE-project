@@ -1,0 +1,190 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Create Virtual Environment
+        run: |
+          uv venv
+
+      - name: Install dependencies using uv
+        run: |
+          uv pip install -e .
+
+      - name: Run mypy
+        run: |
+          uv run mypy --namespace-packages --explicit-package-bases .
+
+      - name: Run ruff
+        run: |
+          uv run ruff check .
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{secrets.GCP_SA_KEY}}"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{secrets.GCP_PROJECT_ID}}
+
+      - name: Run Tests
+        env:
+          API_FOOTBALL_KEY: "dummy_key"
+          GOOGLE_MAPS_API_KEY: "dummy_key"
+          GCP_PROJECT_ID: "dummy_id"
+          REDDIT_CLIENT_ID: "dummy_id"
+          REDDIT_CLIENT_SECRET: "dummy_key"
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          uv run pytest tests/
+
+      - name: Create Terraform State Bucket
+        env:
+          BUCKET_NAME: ${{ secrets.GCP_PROJECT_ID }}-terraform-state
+        run: |
+          gsutil ls gs://$BUCKET_NAME || gsutil mb -l europe-central2 gs://$BUCKET_NAME
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        env:
+          BUCKET_NAME: ${{ secrets.GCP_PROJECT_ID }}-terraform-state
+        run: |
+          cd terraform
+          echo "bucket = \"$BUCKET_NAME\"" > backend.hcl
+          echo "prefix = \"terraform/state\"" >> backend.hcl
+          terraform init -backend-config=backend.hcl
+
+      - name: Import Existing Pub/Sub Topics
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
+          TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TF_VAR_google_maps_api_key: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_reddit_client_id: ${{ secrets.REDDIT_CLIENT_ID }}
+          TF_VAR_reddit_client_secret: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          TF_VAR_dataform_repository: ${{ secrets.DATAFORM_REPOSITORY }}
+          TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
+        run: |
+          cd terraform
+          topics=(
+            "fetch_league_data"
+            "fetch_football_data"
+            "fetch_weather_data"
+            "convert_to_parquet"
+            "convert_weather_to_parquet"
+            "match_to_bigquery"
+            "weather_to_bigquery"
+            "transform_matches"
+            "transform_weather"
+            "fetch_standings_data"
+            "convert_standings_to_parquet"
+            "standings_to_bigquery"
+            "transform_standings"
+            "fetch_reddit_data"
+            "convert_reddit_to_parquet"
+            "reddit_to_bigquery"
+            "process_reddit_data"
+            "transform_reddit"
+          )
+
+          for topic_name in "${topics[@]}"; do
+            terraform import -lock=false -input=false "google_pubsub_topic.${topic_name}" "projects/$TF_VAR_project_id/topics/${topic_name}_topic" || echo "Import failed for $topic_name"
+          done
+
+      - name: Import Existing Cloud Functions
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_region: europe-central2
+          TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TF_VAR_google_maps_api_key: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_reddit_client_id: ${{ secrets.REDDIT_CLIENT_ID }}
+          TF_VAR_reddit_client_secret: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          TF_VAR_dataform_repository: ${{ secrets.DATAFORM_REPOSITORY }}
+          TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
+          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
+        run: |
+          cd terraform
+
+          functions=(
+            "fetch_league_data"
+            "fetch_football_data"
+            "fetch_weather_data"
+            "transform_match_to_parquet"
+            "transform_weather_to_parquet"
+            "load_matches_to_bigquery"
+            "load_weather_to_bigquery"
+            "transform_matches"
+            "transform_weather"
+            "fetch_standings_data"
+            "transform_standings_to_parquet"
+            "load_standings_to_bigquery"
+            "transform_standings"
+            "fetch_reddit_data"
+            "transform_reddit_to_parquet"
+            "load_reddit_to_bigquery"
+            "process_reddit_data"
+            "transform_reddit"
+          )
+
+          for function_name in "${functions[@]}"; do
+            terraform import -lock=false -input=false "google_cloudfunctions2_function.${function_name}" "projects/$TF_VAR_project_id/locations/$TF_VAR_region/functions/${function_name}" || echo "Import failed for $function_name"
+          done
+
+      - name: Terraform Format
+        run: |
+          cd terraform
+          terraform fmt
+
+      - name: Terraform Plan
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
+          TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TF_VAR_google_maps_api_key: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_reddit_client_id: ${{ secrets.REDDIT_CLIENT_ID }}
+          TF_VAR_reddit_client_secret: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          TF_VAR_dataform_repository: ${{ secrets.DATAFORM_REPOSITORY }}
+          TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
+        run: |
+          cd terraform
+          terraform plan -out=tfplan -lock=false
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event.inputs.environment == 'main' || github.event.inputs.environment == 'dev'
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
+          TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TF_VAR_google_maps_api_key: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_reddit_client_id: ${{ secrets.REDDIT_CLIENT_ID }}
+          TF_VAR_reddit_client_secret: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          TF_VAR_dataform_repository: ${{ secrets.DATAFORM_REPOSITORY }}
+          TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
+        run: |
+          cd terraform
+          terraform apply -lock=false tfplan

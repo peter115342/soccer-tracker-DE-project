@@ -34,47 +34,49 @@ def fetch_standings_data(event, context):
             send_discord_notification(
                 "ℹ️ Fetch Standings Data: No New Dates", message, 16776960
             )
-        else:
-            processed_count = 0
-            error_count = 0
+            return "No new data to process", 200
 
-            for date in dates_to_process:
-                try:
-                    standings_list = fetch_standings_for_date(date)
+        processed_count = 0
+        error_count = 0
 
-                    for standings in standings_list:
-                        competition_id = standings["competitionId"]
-                        save_standings_to_gcs(standings, date, competition_id)
-                        processed_count += 1
+        for date in dates_to_process:
+            try:
+                standings_list = fetch_standings_for_date(date)
 
-                except Exception as e:
-                    error_count += 1
-                    logging.error(f"Error processing date {date}: {str(e)}")
+                for standings in standings_list:
+                    competition_id = standings["competitionId"]
+                    save_standings_to_gcs(standings, date, competition_id)
+                    processed_count += 1
 
-            success_message = (
-                f"Processed {len(dates_to_process)} new dates\n"
-                f"Total standings entries: {processed_count}\n"
-                f"Errors: {error_count}"
-            )
+            except Exception as e:
+                error_count += 1
+                logging.error(f"Error processing date {date}: {str(e)}")
 
-            logging.info(success_message)
-            send_discord_notification(
-                "✅ Fetch Standings Data: Complete", success_message, 65280
-            )
-
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(
-            os.environ["GCP_PROJECT_ID"], "convert_standings_to_parquet_topic"
+        success_message = (
+            f"Processed {len(dates_to_process)} new dates\n"
+            f"Total standings entries: {processed_count}\n"
+            f"Errors: {error_count}"
         )
 
-        publish_data = {"action": "convert_standings"}
-        future = publisher.publish(
-            topic_path,
-            data=json.dumps(publish_data).encode("utf-8"),
-            timestamp=datetime.now().isoformat(),
+        logging.info(success_message)
+        send_discord_notification(
+            "✅ Fetch Standings Data: Complete", success_message, 65280
         )
 
-        future.result()
+        if processed_count > 0:
+            publisher = pubsub_v1.PublisherClient()
+            topic_path = publisher.topic_path(
+                os.environ["GCP_PROJECT_ID"], "convert_standings_to_parquet_topic"
+            )
+
+            publish_data = {"action": "convert_standings"}
+            future = publisher.publish(
+                topic_path,
+                data=json.dumps(publish_data).encode("utf-8"),
+                timestamp=datetime.now().isoformat(),
+            )
+
+            future.result()
 
         return "Process completed successfully.", 200
 

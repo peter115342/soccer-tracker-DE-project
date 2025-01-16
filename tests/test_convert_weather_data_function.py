@@ -2,7 +2,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 import base64
 import json
-from cloud_functions.convert_weather_data_function.main import transform_to_parquet
+from cloud_functions.weather_data.convert_weather_data_function.main import (
+    transform_to_parquet,
+)
 
 
 @pytest.fixture
@@ -27,14 +29,14 @@ def test_transform_to_parquet_success(sample_event, sample_context):
             },
         ),
         patch(
-            "cloud_functions.convert_weather_data_function.main.storage.Client"
+            "cloud_functions.weather_data.convert_weather_data_function.main.storage.Client"
         ) as mock_storage_client,
         patch(
-            "cloud_functions.convert_weather_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.weather_data.convert_weather_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
         patch("polars.DataFrame.write_parquet") as mock_write_parquet,
         patch(
-            "cloud_functions.convert_weather_data_function.main.os.path.exists",
+            "cloud_functions.weather_data.convert_weather_data_function.main.os.path.exists",
             return_value=True,
         ),
     ):
@@ -87,10 +89,10 @@ def test_transform_to_parquet_success(sample_event, sample_context):
 def test_transform_to_parquet_no_json_files(sample_event, sample_context):
     with (
         patch(
-            "cloud_functions.convert_weather_data_function.main.storage.Client"
+            "cloud_functions.weather_data.convert_weather_data_function.main.storage.Client"
         ) as mock_storage_client,
         patch(
-            "cloud_functions.convert_weather_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.weather_data.convert_weather_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
     ):
         mock_bucket = MagicMock()
@@ -129,14 +131,14 @@ def test_transform_to_parquet_existing_parquet(sample_event, sample_context):
             },
         ),
         patch(
-            "cloud_functions.convert_weather_data_function.main.storage.Client"
+            "cloud_functions.weather_data.convert_weather_data_function.main.storage.Client"
         ) as mock_storage_client,
         patch(
-            "cloud_functions.convert_weather_data_function.main.pubsub_v1.PublisherClient"
+            "cloud_functions.weather_data.convert_weather_data_function.main.pubsub_v1.PublisherClient"
         ) as mock_publisher,
         patch("polars.DataFrame.write_parquet") as mock_write_parquet,
         patch(
-            "cloud_functions.convert_weather_data_function.main.os.path.exists",
+            "cloud_functions.weather_data.convert_weather_data_function.main.os.path.exists",
             return_value=True,
         ),
     ):
@@ -189,7 +191,7 @@ def test_transform_to_parquet_existing_parquet(sample_event, sample_context):
 def test_transform_to_parquet_exception(sample_event, sample_context):
     with (
         patch(
-            "cloud_functions.convert_weather_data_function.main.storage.Client",
+            "cloud_functions.weather_data.convert_weather_data_function.main.storage.Client",
             side_effect=Exception("Storage Client Error"),
         ),
     ):

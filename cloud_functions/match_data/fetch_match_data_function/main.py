@@ -29,24 +29,7 @@ def fetch_football_data(event, context):
             )
             logging.info(message)
             send_discord_notification(
-                "ℹ️ Fetch Match Data: No New Matches", message, 16776960
-            )
-            publisher = pubsub_v1.PublisherClient()
-            topic_path = publisher.topic_path(
-                os.environ["GCP_PROJECT_ID"], "convert_to_parquet_topic"
-            )
-
-            publish_data = {"action": "convert_matches"}
-
-            future = publisher.publish(
-                topic_path,
-                data=json.dumps(publish_data).encode("utf-8"),
-                timestamp=datetime.now().isoformat(),
-            )
-
-            publish_result = future.result()
-            logging.info(
-                f"Published trigger message to convert_to_parquet_topic with ID: {publish_result}"
+                "📝 Fetch Match Data: No New Matches", message, 16776960
             )
             return "No new matches to process.", 200
 

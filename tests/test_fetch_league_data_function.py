@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from cloud_functions.fetch_league_data_function.main import (
+from cloud_functions.league_data.fetch_league_data_function.main import (
     fetch_league_data,
     load_data_into_bigquery,
 )
@@ -37,10 +37,10 @@ def test_fetch_league_data_success(sample_league_data):
 
     with (
         patch(
-            "cloud_functions.fetch_league_data_function.main.get_league_data"
+            "cloud_functions.league_data.fetch_league_data_function.main.get_league_data"
         ) as mock_get_league_data,
         patch(
-            "cloud_functions.fetch_league_data_function.main.load_data_into_bigquery"
+            "cloud_functions.league_data.fetch_league_data_function.main.load_data_into_bigquery"
         ) as mock_load_data,
     ):
         mock_get_league_data.return_value = sample_league_data
@@ -55,7 +55,7 @@ def test_fetch_league_data_success(sample_league_data):
 
 def test_load_data_into_bigquery(sample_league_data):
     with patch(
-        "cloud_functions.fetch_league_data_function.main.insert_data_into_bigquery"
+        "cloud_functions.league_data.fetch_league_data_function.main.insert_data_into_bigquery"
     ) as mock_insert:
         league_data_list = [sample_league_data]
         load_data_into_bigquery(league_data_list)
@@ -102,10 +102,10 @@ def test_fetch_league_data_exception():
 
     with (
         patch(
-            "cloud_functions.fetch_league_data_function.main.get_league_data"
+            "cloud_functions.league_data.fetch_league_data_function.main.get_league_data"
         ) as mock_get_league_data,
         patch(
-            "cloud_functions.fetch_league_data_function.main.load_data_into_bigquery"
+            "cloud_functions.league_data.fetch_league_data_function.main.load_data_into_bigquery"
         ),
     ):
         mock_get_league_data.side_effect = Exception("API error")
