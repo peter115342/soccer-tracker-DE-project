@@ -102,8 +102,9 @@ jobs:
           )
 
           for topic_name in "${topics[@]}"; do
-            terraform import -lock=false "google_pubsub_topic.${topic_name}" "projects/$TF_VAR_project_id/topics/${topic_name}_topic" || echo "Import failed for $topic_name"
+            terraform import -lock=false -input=false "google_pubsub_topic.${topic_name}" "projects/$TF_VAR_project_id/topics/${topic_name}_topic" || echo "Import failed for $topic_name"
           done
+
       - name: Import Existing Cloud Functions
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
