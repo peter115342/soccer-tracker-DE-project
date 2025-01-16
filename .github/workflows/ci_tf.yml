@@ -82,8 +82,18 @@ jobs:
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_region: europe-central2
+          TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TF_VAR_google_maps_api_key: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_reddit_client_id: ${{ secrets.REDDIT_CLIENT_ID }}
+          TF_VAR_reddit_client_secret: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          TF_VAR_dataform_repository: ${{ secrets.DATAFORM_REPOSITORY }}
+          TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
+          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
         run: |
           cd terraform
+          echo "Starting imports with project: $TF_VAR_project_id in region: $TF_VAR_region"
+
           functions=(
             "fetch_league_data"
             "fetch_football_data"
@@ -104,8 +114,11 @@ jobs:
             "process_reddit_data"
             "transform_reddit"
           )
+
           for function_name in "${functions[@]}"; do
-            terraform import "google_cloudfunctions2_function.${function_name}" "projects/$TF_VAR_project_id/locations/$TF_VAR_region/functions/${function_name}" || true
+            echo "Importing $function_name..."
+            terraform import -input=false "google_cloudfunctions2_function.${function_name}" "projects/$TF_VAR_project_id/locations/$TF_VAR_region/functions/${function_name}" || echo "Import failed for $function_name"
+            echo "Import attempt completed for $function_name"
           done
 
       - name: Terraform Format

@@ -181,7 +181,7 @@ resource "google_storage_bucket_object" "transform_reddit" {
 resource "google_cloudfunctions2_function" "fetch_league_data" {
   name     = "fetch_league_data"
   location = var.region
-
+#test
   build_config {
     runtime     = "python312"
     entry_point = "fetch_league_data"
