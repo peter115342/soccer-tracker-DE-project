@@ -88,6 +88,36 @@ jobs:
           echo "prefix = \"terraform/state\"" >> backend.hcl
           terraform init -backend-config=backend.hcl
 
+      - name: Import Existing Cloud Functions
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_region: europe-central2
+        run: |
+          cd terraform
+          functions=(
+            "fetch_league_data"
+            "fetch_football_data"
+            "fetch_weather_data"
+            "transform_match_to_parquet"
+            "transform_weather_to_parquet"
+            "load_matches_to_bigquery"
+            "load_weather_to_bigquery"
+            "transform_matches"
+            "transform_weather"
+            "fetch_standings_data"
+            "transform_standings_to_parquet"
+            "load_standings_to_bigquery"
+            "transform_standings"
+            "fetch_reddit_data"
+            "transform_reddit_to_parquet"
+            "load_reddit_to_bigquery"
+            "process_reddit_data"
+            "transform_reddit"
+          )
+          for function_name in "${functions[@]}"; do
+            terraform import "google_cloudfunctions2_function.${function_name}" "projects/$TF_VAR_project_id/locations/$TF_VAR_region/functions/${function_name}" || true
+          done
+
       - name: Terraform Format
         run: |
           cd terraform
