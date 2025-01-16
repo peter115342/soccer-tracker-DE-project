@@ -3,7 +3,7 @@ name: CD Pipeline
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   terraform:
@@ -57,28 +57,6 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
 
-      - name: Create Pub/Sub Topics
-        run: |
-          uv run gcloud pubsub topics create fetch_league_data_topic || true
-          uv run gcloud pubsub topics create fetch_football_data_topic || true
-          uv run gcloud pubsub topics create fetch_weather_data_topic || true
-          uv run gcloud pubsub topics create convert_to_parquet_topic || true
-          uv run gcloud pubsub topics create convert_weather_to_parquet_topic || true
-          uv run gcloud pubsub topics create match_to_bigquery_topic || true
-          uv run gcloud pubsub topics create weather_to_bigquery_topic || true
-          uv run gcloud pubsub topics create transform_matches_topic || true
-          uv run gcloud pubsub topics create transform_weather_topic || true
-          uv run gcloud pubsub topics create fetch_standings_data_topic || true
-          uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
-          uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
-          uv run gcloud pubsub topics create standings_to_bigquery_topic || true
-          uv run gcloud pubsub topics create transform_standings_topic || true
-          uv run gcloud pubsub topics create fetch_reddit_data_topic || true
-          uv run gcloud pubsub topics create convert_reddit_to_parquet_topic || true
-          uv run gcloud pubsub topics create reddit_to_bigquery_topic || true
-          uv run gcloud pubsub topics create process_reddit_data_topic || true
-          uv run gcloud pubsub topics create transform_reddit_topic || true
-
       - name: Create Terraform State Bucket
         env:
           BUCKET_NAME: ${{ secrets.GCP_PROJECT_ID }}-terraform-state
@@ -97,6 +75,35 @@ jobs:
           echo "prefix = \"terraform/state\"" >> backend.hcl
           terraform init -backend-config=backend.hcl
 
+      - name: Import Existing Pub/Sub Topics
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          cd terraform
+          topics=(
+            "fetch_league_data"
+            "fetch_football_data"
+            "fetch_weather_data"
+            "convert_to_parquet"
+            "convert_weather_to_parquet"
+            "match_to_bigquery"
+            "weather_to_bigquery"
+            "transform_matches"
+            "transform_weather"
+            "fetch_standings_data"
+            "convert_standings_to_parquet"
+            "standings_to_bigquery"
+            "transform_standings"
+            "fetch_reddit_data"
+            "convert_reddit_to_parquet"
+            "reddit_to_bigquery"
+            "process_reddit_data"
+            "transform_reddit"
+          )
+
+          for topic_name in "${topics[@]}"; do
+            terraform import -lock=false "google_pubsub_topic.${topic_name}" "projects/$TF_VAR_project_id/topics/${topic_name}_topic" || echo "Import failed for $topic_name"
+          done
       - name: Import Existing Cloud Functions
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -111,7 +118,6 @@ jobs:
           TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
         run: |
           cd terraform
-          echo "Starting imports with project: $TF_VAR_project_id in region: $TF_VAR_region"
 
           functions=(
             "fetch_league_data"
@@ -135,9 +141,7 @@ jobs:
           )
 
           for function_name in "${functions[@]}"; do
-            echo "Importing $function_name..."
             terraform import -lock=false -input=false "google_cloudfunctions2_function.${function_name}" "projects/$TF_VAR_project_id/locations/$TF_VAR_region/functions/${function_name}" || echo "Import failed for $function_name"
-            echo "Import attempt completed for $function_name"
           done
 
       - name: Terraform Format

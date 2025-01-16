@@ -3,7 +3,7 @@ name: CI Pipeline
 on:
   push:
     branches:
-      - dev
+      - main
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
