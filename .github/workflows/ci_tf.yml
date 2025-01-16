@@ -153,4 +153,4 @@ jobs:
           TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
         run: |
           cd terraform
-          terraform apply -auto-approve tfplan -lock=false
+          terraform apply tfplan -lock=false
