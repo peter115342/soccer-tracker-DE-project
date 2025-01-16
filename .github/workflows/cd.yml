@@ -78,6 +78,14 @@ jobs:
       - name: Import Existing Pub/Sub Topics
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
+          TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TF_VAR_google_maps_api_key: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_reddit_client_id: ${{ secrets.REDDIT_CLIENT_ID }}
+          TF_VAR_reddit_client_secret: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          TF_VAR_dataform_repository: ${{ secrets.DATAFORM_REPOSITORY }}
+          TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
         run: |
           cd terraform
           topics=(
