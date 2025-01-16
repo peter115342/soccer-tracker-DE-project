@@ -24,7 +24,7 @@ COMPETITION_MAPPING = {
     "2015": "FL1",  # Ligue 1
     "2002": "BL1",  # Bundesliga
 }
-REQUEST_INTERVAL = 6
+REQUEST_INTERVAL = 6  # Seconds between API requests
 
 
 def get_unique_dates() -> List[str]:
