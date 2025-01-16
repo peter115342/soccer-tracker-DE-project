@@ -5,8 +5,6 @@ on:
     branches:
       - main
       - dev
-    paths:
-      - "terraform/**"
 
 jobs:
   terraform:
@@ -117,7 +115,7 @@ jobs:
 
           for function_name in "${functions[@]}"; do
             echo "Importing $function_name..."
-            terraform import -input=false "google_cloudfunctions2_function.${function_name}" "projects/$TF_VAR_project_id/locations/$TF_VAR_region/functions/${function_name}" || echo "Import failed for $function_name"
+            terraform import -lock=false -input=false "google_cloudfunctions2_function.${function_name}" "projects/$TF_VAR_project_id/locations/$TF_VAR_region/functions/${function_name}" || echo "Import failed for $function_name"
             echo "Import attempt completed for $function_name"
           done
 
