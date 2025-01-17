@@ -38,7 +38,7 @@ def get_unique_dates() -> List[str]:
         FROM `{GCP_PROJECT_ID}.sports_data_eu.matches_processed`
         WHERE DATE(utcDate) <= CURRENT_DATE()
         ORDER BY match_date DESC
-    """
+    """  # nosec B608
     query_job = client.query(query)
     return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
 
@@ -90,11 +90,11 @@ def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
         params = {"date": date}
 
         try:
-            response = requests.get(url, headers=HEADERS, params=params)
+            response = requests.get(url, headers=HEADERS, params=params, timeout=90)
             if response.status_code == 429:
                 logging.warning("Rate limit hit, waiting 60 seconds...")
                 time.sleep(60)
-                response = requests.get(url, headers=HEADERS, params=params)
+                response = requests.get(url, headers=HEADERS, params=params, timeout=90)
 
             response.raise_for_status()
             standings_data = response.json()

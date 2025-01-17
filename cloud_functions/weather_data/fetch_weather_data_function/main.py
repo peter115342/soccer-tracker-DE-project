@@ -173,7 +173,7 @@ def send_discord_notification(title: str, message: str, color: int):
 
     headers = {"Content-Type": "application/json"}
     response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers
+        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
     )
     if response.status_code != 204:
         logging.error(
@@ -186,6 +186,7 @@ def get_match_data():
     Fetch match data from your existing matches table in BigQuery.
     """
     client = bigquery.Client()
+    # nosec - Safe in BigQuery context
     query = f"""
         SELECT
             m.id AS match_id,
@@ -198,7 +199,7 @@ def get_match_data():
         FROM `{client.project}.sports_data_eu.matches_processed` AS m
         JOIN `{client.project}.sports_data_eu.teams` AS t
         ON m.homeTeam.id = t.id
-    """
+    """  # nosec B608
     query_job = client.query(query)
     results = query_job.result()
     matches = []

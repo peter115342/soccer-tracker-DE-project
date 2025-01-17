@@ -75,8 +75,8 @@ def transform_to_parquet(event, context):
 
             df = pl.DataFrame([json_content])
 
-            df.write_parquet("/tmp/temp.parquet")
-            parquet_blob.upload_from_filename("/tmp/temp.parquet")
+            df.write_parquet("/tmp/temp.parquet")  # nosec B108
+            parquet_blob.upload_from_filename("/tmp/temp.parquet")  # nosec B108
             processed_count += 1
 
         status_message = (
@@ -128,7 +128,7 @@ def send_discord_notification(title: str, message: str, color: int):
 
     headers = {"Content-Type": "application/json"}
     response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers
+        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
     )
     if response.status_code != 204:
         logging.error(

@@ -118,7 +118,7 @@ def send_discord_notification(title: str, message: str, color: int):
 
     headers = {"Content-Type": "application/json"}
     response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers
+        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
     )
 
     if response.status_code != 204:
