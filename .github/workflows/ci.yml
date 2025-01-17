@@ -35,6 +35,10 @@ jobs:
         run: |
           uv run ruff check .
 
+      - name: Run Bandit
+        run: |
+          uv run bandit -r . -c pyproject.toml
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:

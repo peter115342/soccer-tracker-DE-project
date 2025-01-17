@@ -47,7 +47,7 @@ def fetch_weather_by_coordinates(
             "past_days": days_difference + 1,
             "timezone": "UTC",
         }
-        response = requests.get(forecast_url, params=forecast_params)
+        response = requests.get(forecast_url, params=forecast_params, timeout=90)
         time.sleep(RATE_LIMIT_DELAY)
         response.raise_for_status()
         return response.json()
@@ -65,7 +65,7 @@ def fetch_weather_by_coordinates(
                 "hourly": ",".join(hourly_variables),
                 "timezone": "UTC",
             }
-            response = requests.get(archive_url, params=params)
+            response = requests.get(archive_url, params=params, timeout=90)
             time.sleep(RATE_LIMIT_DELAY)
             response.raise_for_status()
             data = response.json()
