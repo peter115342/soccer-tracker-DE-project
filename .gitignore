@@ -9,8 +9,7 @@ __pycache__/
 .venv/
 venv/
 
-# Credentials
-*.json
+.json
 
 # GCP service account keys
 service-account-key.json
@@ -22,3 +21,7 @@ dataform.json
 delete_files_by_match_id.ps1
 soccer_tracker_de_project.egg-info
 match_ids.json
+.vscode/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/

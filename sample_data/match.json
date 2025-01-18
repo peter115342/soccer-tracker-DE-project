@@ -1,0 +1,66 @@
+{
+    "area": {
+    "id": 2081,
+    "name": "France",
+    "code": "FRA",
+    "flag": "https://crests.football-data.org/773.svg"
+    },
+    "competition": {
+    "id": 2015,
+    "name": "Ligue 1",
+    "code": "FL1",
+    "type": "LEAGUE",
+    "emblem": "https://crests.football-data.org/FL1.png"
+    },
+    "season": {
+    "id": 2290,
+    "startDate": "2024-08-18",
+    "endDate": "2025-05-18",
+    "currentMatchday": 12,
+    "winner": null
+    },
+    "id": 498058,
+    "utcDate": "2024-11-23T20:00:00Z",
+    "status": "FINISHED",
+    "matchday": 12,
+    "stage": "REGULAR_SEASON",
+    "group": null,
+    "lastUpdated": "2024-11-23T22:00:43Z",
+    "homeTeam": {
+    "id": 547,
+    "name": "Stade de Reims",
+    "shortName": "Stade de Reims",
+    "tla": "SDR",
+    "crest": "https://crests.football-data.org/547.png"
+    },
+    "awayTeam": {
+    "id": 523,
+    "name": "Olympique Lyonnais",
+    "shortName": "Olympique Lyon",
+    "tla": "LYO",
+    "crest": "https://crests.football-data.org/523.png"
+    },
+    "score": {
+    "winner": "DRAW",
+    "duration": "REGULAR",
+    "fullTime": {
+    "home": 1,
+    "away": 1
+    },
+    "halfTime": {
+    "home": 0,
+    "away": 1
+    }
+    },
+    "odds": {
+    "msg": "Activate Odds-Package in User-Panel to retrieve odds."
+    },
+    "referees": [
+    {
+    "id": 25786,
+    "name": "Stéphanie Frappart",
+    "type": "REFEREE",
+    "nationality": "France"
+    }
+    ]
+    }
