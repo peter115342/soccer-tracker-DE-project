@@ -40,9 +40,9 @@ def trigger_dataplex_scans(event, context):
         for scan_id in scan_ids:
             scan_name = f"projects/{project_id}/locations/europe-central2/lakes/{lake_id}/dataScanJobs/{scan_id}"
 
-            request = dataplex_v1.TriggerScanRequest(name=scan_name)
+            request = dataplex_v1.RunDataScanRequest(name=scan_name)
 
-            operation = client.trigger_scan(request=request)
+            operation = client.run_data_scan(request=request)
             triggered_scans.append(operation.result())
 
         status_message = (
