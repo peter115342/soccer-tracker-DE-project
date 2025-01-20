@@ -24,7 +24,7 @@ def trigger_dataplex_scans(event, context):
             )
             return error_message, 500
 
-        client = dataplex_v1.DataQualityServiceClient()
+        client = dataplex_v1.DataScanServiceClient()
         project_id = os.environ.get("GCP_PROJECT_ID")
         lake_id = os.environ.get("LAKE_ID")
 
