@@ -328,5 +328,5 @@ jobs:
             --timeout 540s \
             --memory 1GiB \
             --region europe-central2 \
-            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},LAKE_ID=${{secrets.LAKE_ID}}"
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
           cd ../..

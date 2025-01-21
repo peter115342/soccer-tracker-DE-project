@@ -848,7 +848,6 @@ resource "google_cloudfunctions2_function" "trigger_dataplex_scans" {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       GCP_PROJECT_ID      = var.project_id
       LOCATION           = var.region
-      LAKE_ID            = var.lake_id
     }
   }
 

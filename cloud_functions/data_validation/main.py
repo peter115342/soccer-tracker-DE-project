@@ -26,22 +26,23 @@ def trigger_dataplex_scans(event, context):
 
         client = dataplex_v1.DataScanServiceClient()
         project_id = os.environ.get("GCP_PROJECT_ID")
-        lake_id = os.environ.get("LAKE_ID")
+        location = os.environ.get("LOCATION", "europe-central2")
 
         scan_ids = [
-            "matches_processed_scan",
-            "weather_processed_scan",
-            "reddit_processed_scan",
-            "standings_processed_scan",
+            "matches-processed-scan",
+            "weather-processed-scan",
+            "reddit-processed-scan",
+            "standings-processed-scan",
         ]
 
         triggered_scans = []
 
         for scan_id in scan_ids:
-            scan_name = f"projects/{project_id}/locations/europe-central2/lakes/{lake_id}/dataScanJobs/{scan_id}"
+            scan_name = (
+                f"projects/{project_id}/locations/{location}/dataScans/{scan_id}"
+            )
 
             request = dataplex_v1.RunDataScanRequest(name=scan_name)
-
             operation = client.run_data_scan(request=request)
             triggered_scans.append(operation.result())
 

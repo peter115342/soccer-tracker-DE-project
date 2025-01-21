@@ -54,7 +54,3 @@ variable "dataform_workspace" {
   type        = string
 }
 
-variable "lake_id" {
-  description = "Dataplex Lake ID"
-  type        = string
-}
