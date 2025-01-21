@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import io
 
 
-def get_scan_results(project_id: str, table_suffix: str) -> dict:
+def get_scan_results(table_prefix: str) -> dict:
     """Fetches scan results from BigQuery for a specific table."""
     client = bigquery.Client()
 
@@ -18,7 +18,7 @@ def get_scan_results(project_id: str, table_suffix: str) -> dict:
         CAST(job_start_time AS DATE) as scan_date,
         AVG(rule_rows_passed_percent) as avg_pass_rate,
         SUM(rule_rows_evaluated) as total_rows_evaluated
-    FROM `{project_id}.processed_data_zone.{table_suffix}_processed_quality`
+    FROM `processed_data_zone.{table_prefix}_processed_quality`
     WHERE job_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
     GROUP BY scan_date
     ORDER BY scan_date
@@ -157,7 +157,7 @@ def trigger_dataplex_scans(event, context):
         scan_results = {}
 
         for table in tables:
-            scan_results[table] = get_scan_results(project_id, table)
+            scan_results[table] = get_scan_results(table)
 
         status_message = (
             f"Successfully triggered {len(triggered_scans)} Dataplex quality scans\n"
