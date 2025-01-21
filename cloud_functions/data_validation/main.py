@@ -4,10 +4,117 @@ import os
 import logging
 import requests
 from google.cloud import dataplex_v1
+from google.cloud import bigquery
+import matplotlib.pyplot as plt
+import io
+
+
+def get_scan_results(project_id: str, table_suffix: str) -> dict:
+    """Fetches scan results from BigQuery for a specific table."""
+    client = bigquery.Client()
+
+    query = f"""
+    SELECT 
+        CAST(job_start_time AS DATE) as scan_date,
+        AVG(rule_rows_passed_percent) as avg_pass_rate,
+        SUM(rule_rows_evaluated) as total_rows_evaluated
+    FROM `{project_id}.processed_data_zone.{table_suffix}_processed_quality`
+    WHERE job_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+    GROUP BY scan_date
+    ORDER BY scan_date
+    """  # nosec B608
+
+    results = client.query(query).result()
+
+    dates = []
+    pass_rates = []
+    rows_evaluated = []
+
+    for row in results:
+        dates.append(row.scan_date)
+        pass_rates.append(row.avg_pass_rate)
+        rows_evaluated.append(row.total_rows_evaluated)
+
+    return {"dates": dates, "pass_rates": pass_rates, "rows_evaluated": rows_evaluated}
+
+
+def create_quality_plot(scan_results: dict) -> bytes:
+    """Creates a plot of scan results over time."""
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(
+        scan_results["dates"],
+        scan_results["pass_rates"],
+        marker="o",
+        label="Pass Rate %",
+    )
+
+    plt.title("Data Quality Scan Results - Last 7 Days")
+    plt.xlabel("Date")
+    plt.ylabel("Pass Rate %")
+    plt.grid(True)
+    plt.legend()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    plt.close()
+
+    return buf.getvalue()
+
+
+def send_discord_notification(title: str, message: str, color: int, scan_results=None):
+    """Sends a notification to Discord with scan results and plot."""
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not webhook_url:
+        logging.warning("Discord webhook URL not set.")
+        return
+
+    files = {}
+    embeds = [{"title": title, "description": message, "color": color}]
+
+    if scan_results:
+        for table, results in scan_results.items():
+            if results["pass_rates"]:
+                latest_rate = results["pass_rates"][-1]
+                latest_rows = results["rows_evaluated"][-1]
+
+                summary = (
+                    "\n**{}**\nLatest Pass Rate: {:.2f}%\nRows Evaluated: {:,}".format(
+                        table, latest_rate, latest_rows
+                    )
+                )
+                embeds[0]["description"] = f"{embeds[0]['description']}{summary}"
+
+        for table, results in scan_results.items():
+            plot_data = create_quality_plot(results)
+            files[f"{table}_plot.png"] = ("plot.png", plot_data, "image/png")
+
+    payload = {"embeds": embeds}
+
+    if files:
+        response = requests.post(
+            webhook_url,
+            data={"payload_json": json.dumps(payload)},
+            files=files,
+            timeout=90,
+        )
+    else:
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=90,
+        )
+
+    if response.status_code != 204:
+        logging.error(
+            f"Failed to send Discord notification: {response.status_code}, {response.text}"
+        )
 
 
 def trigger_dataplex_scans(event, context):
-    """Triggers Dataplex data quality scans for all tables
+    """Triggers Dataplex data quality scans for all tables and reports historical results
     Args:
          event (dict): The dictionary with data specific to this type of event.
          context (google.cloud.functions.Context): The Cloud Functions event metadata.
@@ -46,11 +153,21 @@ def trigger_dataplex_scans(event, context):
             operation = client.run_data_scan(request=request)
             triggered_scans.append(operation)
 
+        tables = ["matches", "weather", "reddit", "standings"]
+        scan_results = {}
+
+        for table in tables:
+            scan_results[table] = get_scan_results(project_id, table)
+
         status_message = (
-            f"Successfully triggered {len(triggered_scans)} Dataplex quality scans"
+            f"Successfully triggered {len(triggered_scans)} Dataplex quality scans\n"
+            f"Historical results for the last 7 days attached below."
         )
+
         logging.info(status_message)
-        send_discord_notification("✅ Dataplex Scans: Triggered", status_message, 65280)
+        send_discord_notification(
+            "✅ Dataplex Scans: Triggered", status_message, 65280, scan_results
+        )
 
         return status_message, 200
 
@@ -59,25 +176,3 @@ def trigger_dataplex_scans(event, context):
         send_discord_notification("❌ Dataplex Scans: Failed", error_message, 16711680)
         logging.exception(error_message)
         return error_message, 500
-
-
-def send_discord_notification(title: str, message: str, color: int):
-    """Sends a notification to Discord with the specified title, message, and color."""
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        logging.warning("Discord webhook URL not set.")
-        return
-
-    discord_data = {
-        "content": None,
-        "embeds": [{"title": title, "description": message, "color": color}],
-    }
-
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
-    )
-    if response.status_code != 204:
-        logging.error(
-            f"Failed to send Discord notification: {response.status_code}, {response.text}"
-        )

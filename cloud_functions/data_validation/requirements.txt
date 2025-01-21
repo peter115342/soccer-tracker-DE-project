@@ -2,3 +2,4 @@ google-cloud-dataplex
 google-cloud-storage
 google-cloud-pubsub
 requests
+matplotlib
