@@ -44,7 +44,7 @@ def trigger_dataplex_scans(event, context):
 
             request = dataplex_v1.RunDataScanRequest(name=scan_name)
             operation = client.run_data_scan(request=request)
-            triggered_scans.append(operation.result())
+            triggered_scans.append(operation)
 
         status_message = (
             f"Successfully triggered {len(triggered_scans)} Dataplex quality scans"
