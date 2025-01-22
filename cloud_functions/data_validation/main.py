@@ -183,36 +183,33 @@ def get_scan_results(table_suffix: str) -> dict:
 
     request = dataplex_v1.ListDataScanJobsRequest(
         parent=parent,
-        page_size=10,
+        filter="state=SUCCEEDED",
+        order_by="start_time desc",
+        page_size=1,
     )
-    response = client.list_data_scan_jobs(request=request)
-    scan_jobs = list(response)
 
-    if not scan_jobs:
-        logging.warning(f"No scan jobs found for data scan {data_scan_id}")
-        return {"pass_rate": 0, "rows_evaluated": 0}
+    try:
+        response = client.list_data_scan_jobs(request=request)
+        latest_job = next(iter(response), None)
 
-    scan_jobs.sort(key=lambda job: job.start_time, reverse=True)
-    latest_job = scan_jobs[0]
+        if not latest_job:
+            logging.warning(
+                f"No successful scan jobs found for data scan {data_scan_id}"
+            )
+            return {"pass_rate": 0, "rows_evaluated": 0}
 
-    if latest_job.state == dataplex_v1.DataScanJob.State.SUCCEEDED:
         result = latest_job.data_quality_result
-        if result:
-            if result.row_count_scanned == 0:
-                pass_ratio = 0.0
-            else:
-                pass_ratio = (result.row_count_passed / result.row_count_scanned) * 100
+        if result and result.row_count_scanned > 0:
+            pass_ratio = (result.row_count_passed / result.row_count_scanned) * 100
             return {
                 "pass_rate": pass_ratio,
                 "rows_evaluated": result.row_count_scanned,
             }
-        else:
-            logging.warning(f"No data quality result found for job {latest_job.name}")
-            return {"pass_rate": 0, "rows_evaluated": 0}
-    else:
-        logging.warning(
-            f"Latest scan job {latest_job.name} did not succeed. State: {latest_job.state}"
-        )
+
+        return {"pass_rate": 0, "rows_evaluated": 0}
+
+    except Exception as e:
+        logging.error(f"Error getting scan results for {data_scan_id}: {str(e)}")
         return {"pass_rate": 0, "rows_evaluated": 0}
 
 
