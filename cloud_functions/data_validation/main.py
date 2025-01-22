@@ -67,60 +67,87 @@ def get_table_record_counts() -> dict:
 
 
 def get_table_total_counts() -> dict:
-    """Fetches cumulative record counts from BigQuery tables over the last 20 days."""
+    """Fetches total record counts from BigQuery tables up to each date in the last 20 days."""
     client = bigquery.Client()
 
     query = """
-    WITH matches_counts AS (
+    -- Generate a date range covering all dates from the earliest data point to today
+    WITH all_dates AS (
+        SELECT
+            GENERATE_DATE_ARRAY(
+                (SELECT MIN(DATE(utcDate)) FROM `sports_data_eu.matches_processed`),
+                CURRENT_DATE()
+            ) AS date_array
+    ),
+    dates AS (
+        SELECT date
+        FROM UNNEST((SELECT date_array FROM all_dates)) AS date
+    ),
+    matches_daily_counts AS (
         SELECT
             DATE(utcDate) AS date,
             COUNT(*) AS daily_count
         FROM `sports_data_eu.matches_processed`
-        WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
         GROUP BY date
     ),
-    matches_running_total AS (
+    matches_cumulative AS (
         SELECT
-            date,
-            SUM(daily_count) OVER (ORDER BY date) AS count
-        FROM matches_counts
+            d.date,
+            SUM(m.daily_count) OVER (ORDER BY d.date) AS cumulative_count
+        FROM dates d
+        LEFT JOIN matches_daily_counts m ON d.date = m.date
+        WHERE d.date <= CURRENT_DATE()
     ),
-    weather_counts AS (
+    weather_daily_counts AS (
         SELECT
             DATE(timestamp) AS date,
             COUNT(*) AS daily_count
         FROM `sports_data_eu.weather_processed`
-        WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
         GROUP BY date
     ),
-    weather_running_total AS (
+    weather_cumulative AS (
         SELECT
-            date,
-            SUM(daily_count) OVER (ORDER BY date) AS count
-        FROM weather_counts
+            d.date,
+            SUM(w.daily_count) OVER (ORDER BY d.date) AS cumulative_count
+        FROM dates d
+        LEFT JOIN weather_daily_counts w ON d.date = w.date
+        WHERE d.date <= CURRENT_DATE()
     ),
-    reddit_counts AS (
+    reddit_daily_counts AS (
         SELECT
             match_date AS date,
             COUNT(*) AS daily_count
         FROM `sports_data_eu.reddit_processed`
-        WHERE match_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 20 DAY)
         GROUP BY date
     ),
-    reddit_running_total AS (
+    reddit_cumulative AS (
         SELECT
-            date,
-            SUM(daily_count) OVER (ORDER BY date) AS count
-        FROM reddit_counts
+            d.date,
+            SUM(r.daily_count) OVER (ORDER BY d.date) AS cumulative_count
+        FROM dates d
+        LEFT JOIN reddit_daily_counts r ON d.date = r.date
+        WHERE d.date <= CURRENT_DATE()
+    ),
+    -- Combine cumulative counts
+    combined_counts AS (
+        SELECT
+            d.date,
+            mc.cumulative_count AS matches_count,
+            wc.cumulative_count AS weather_count,
+            rc.cumulative_count AS reddit_count
+        FROM dates d
+        LEFT JOIN matches_cumulative mc ON d.date = mc.date
+        LEFT JOIN weather_cumulative wc ON d.date = wc.date
+        LEFT JOIN reddit_cumulative rc ON d.date = rc.date
+        WHERE d.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 19 DAY)  -- Last 20 days
+        ORDER BY d.date
     )
     SELECT
-        COALESCE(m.date, w.date, r.date) AS date,
-        m.count AS matches_count,
-        w.count AS weather_count,
-        r.count AS reddit_count
-    FROM matches_running_total m
-    FULL OUTER JOIN weather_running_total w ON m.date = w.date
-    FULL OUTER JOIN reddit_running_total r ON m.date = r.date
+        date,
+        matches_count,
+        weather_count,
+        reddit_count
+    FROM combined_counts
     ORDER BY date
     """  # nosec B608
 
@@ -150,29 +177,27 @@ def get_scan_results(project_id: str, table_suffix: str) -> dict:
     client = bigquery.Client()
 
     query = f"""
-    WITH recent_scans AS (
-        SELECT job_start_time, rule_rows_passed_percent, rule_rows_evaluated
-        FROM `{project_id}.processed_data_zone.{table_suffix}_processed_quality`
-        WHERE job_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 5 MINUTE)
-    )
     SELECT
-        AVG(rule_rows_passed_percent) as avg_pass_rate,
-        SUM(rule_rows_evaluated) as total_rows_evaluated
-    FROM recent_scans
-    WHERE job_start_time = (SELECT MAX(job_start_time) FROM recent_scans)
+        job_start_time,
+        CAST(overall_passed_percent AS FLOAT64) AS pass_rate
+    FROM `{project_id}.processed_data_zone.{table_suffix}_processed_quality`
+    WHERE job_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)
+    ORDER BY job_start_time DESC
+    LIMIT 1
     """  # nosec B608
 
     results = client.query(query).result()
+    rows = list(results)
 
-    for row in results:
-        return {
-            "pass_rate": row.avg_pass_rate if row.avg_pass_rate else 0,
-            "rows_evaluated": row.total_rows_evaluated
-            if row.total_rows_evaluated
-            else 0,
-        }
+    if not rows:
+        logging.warning(f"No scan results found for table {table_suffix}")
+        return {"pass_rate": 0, "rows_evaluated": 0}
 
-    return {"pass_rate": 0, "rows_evaluated": 0}
+    row = rows[0]
+    return {
+        "pass_rate": row.pass_rate if row.pass_rate is not None else 0,
+        "rows_evaluated": None,
+    }
 
 
 def create_records_plot(record_counts: dict) -> bytes:
