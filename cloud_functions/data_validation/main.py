@@ -183,16 +183,16 @@ def get_scan_results(table_suffix: str) -> dict:
 
     request = dataplex_v1.ListDataScanJobsRequest(
         parent=parent,
-        page_size=1,
-        order_by="start_time desc",
+        page_size=10,
     )
     response = client.list_data_scan_jobs(request=request)
-
     scan_jobs = list(response)
+
     if not scan_jobs:
         logging.warning(f"No scan jobs found for data scan {data_scan_id}")
         return {"pass_rate": 0, "rows_evaluated": 0}
 
+    scan_jobs.sort(key=lambda job: job.start_time, reverse=True)
     latest_job = scan_jobs[0]
 
     if latest_job.state == dataplex_v1.DataScanJob.State.SUCCEEDED:
