@@ -16,21 +16,21 @@ def get_table_record_counts() -> dict:
     WITH matches_counts AS (
         SELECT DATE(utcDate) as date, COUNT(*) as count
         FROM `sports_data_eu.matches_processed`
-        WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
+        WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
         GROUP BY date
         ORDER BY date
     ),
     weather_counts AS (
         SELECT DATE(timestamp) as date, COUNT(*) as count
         FROM `sports_data_eu.weather_processed`
-        WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
+        WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
         GROUP BY date
         ORDER BY date
     ),
     reddit_counts AS (
         SELECT match_date as date, COUNT(*) as count
         FROM `sports_data_eu.reddit_processed`
-        WHERE match_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 20 DAY)
+        WHERE match_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
         GROUP BY date
         ORDER BY date
     )
@@ -139,7 +139,7 @@ def get_table_total_counts() -> dict:
         LEFT JOIN matches_cumulative mc ON d.date = mc.date
         LEFT JOIN weather_cumulative wc ON d.date = wc.date
         LEFT JOIN reddit_cumulative rc ON d.date = rc.date
-        WHERE d.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 19 DAY)  -- Last 20 days
+        WHERE d.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 29 DAY)  -- Last 30 days
         ORDER BY d.date
     )
     SELECT
@@ -182,27 +182,24 @@ def get_scan_results(table_suffix: str) -> dict:
     parent = f"projects/{project_id}/locations/{location}/dataScans/{data_scan_id}"
 
     request = dataplex_v1.ListDataScanJobsRequest(
-        parent=parent, filter="state = SUCCEEDED", page_size=10
+        parent=parent, filter="state = SUCCEEDED", page_size=1
     )
 
     try:
-        response = list(client.list_data_scan_jobs(request=request))
+        response = client.list_data_scan_jobs(request=request)
+        latest_job = next(iter(response), None)
 
-        if not response:
-            logging.warning(
-                f"No successful scan jobs found for data scan {data_scan_id}"
-            )
-            return {"pass_rate": 0, "rows_evaluated": 0}
+        if latest_job:
+            job_name = latest_job.name
+            job_details = client.get_data_scan_job(name=job_name)
 
-        latest_job = max(response, key=lambda x: x.start_time)
-
-        result = latest_job.data_quality_result
-        if result and result.row_count_scanned > 0:
-            pass_ratio = (result.row_count_passed / result.row_count_scanned) * 100
-            return {
-                "pass_rate": pass_ratio,
-                "rows_evaluated": result.row_count_scanned,
-            }
+            result = job_details.data_quality_result
+            if result and result.row_count_scanned > 0:
+                pass_ratio = (result.row_count_passed / result.row_count_scanned) * 100
+                return {
+                    "pass_rate": pass_ratio,
+                    "rows_evaluated": result.row_count_scanned,
+                }
 
         return {"pass_rate": 0, "rows_evaluated": 0}
 
@@ -365,7 +362,7 @@ def trigger_dataplex_scans(event, context):
 
         import time
 
-        time.sleep(30)
+        time.sleep(60)
 
         tables = ["matches", "weather", "reddit", "standings"]
         scan_results = {}
@@ -385,7 +382,7 @@ def trigger_dataplex_scans(event, context):
 
         status_message = (
             f"Successfully triggered {len(triggered_scans)} Dataplex quality scans\n"
-            f"Record count trends for the last 20 days shown in the graphs below."
+            f"Record count trends for the last 30 days shown in the graphs above."
             f"{scan_summary}"
         )
 
