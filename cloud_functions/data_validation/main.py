@@ -172,32 +172,48 @@ def get_table_total_counts() -> dict:
     }
 
 
-def get_scan_results(project_id: str, table_suffix: str) -> dict:
-    """Fetches scan results from BigQuery for a specific table."""
-    client = bigquery.Client()
+def get_scan_results(table_suffix: str) -> dict:
+    """Fetches the latest scan results for a specific DataScan."""
+    client = dataplex_v1.DataScanServiceClient()
+    project_id = os.environ.get("GCP_PROJECT_ID")
+    location = os.environ.get("LOCATION", "europe-central2")
+    data_scan_id = f"{table_suffix}-processed-scan"
 
-    query = f"""
-    SELECT
-        job_start_time,
-        CAST(overall_passed_percent AS FLOAT64) AS pass_rate
-    FROM `{project_id}.processed_data_zone.{table_suffix}_processed_quality`
-    WHERE job_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)
-    ORDER BY job_start_time DESC
-    LIMIT 1
-    """  # nosec B608
+    parent = f"projects/{project_id}/locations/{location}/dataScans/{data_scan_id}"
 
-    results = client.query(query).result()
-    rows = list(results)
+    request = dataplex_v1.ListDataScanJobsRequest(
+        parent=parent,
+        page_size=1,
+        order_by="start_time desc",
+    )
+    response = client.list_data_scan_jobs(request=request)
 
-    if not rows:
-        logging.warning(f"No scan results found for table {table_suffix}")
+    scan_jobs = list(response)
+    if not scan_jobs:
+        logging.warning(f"No scan jobs found for data scan {data_scan_id}")
         return {"pass_rate": 0, "rows_evaluated": 0}
 
-    row = rows[0]
-    return {
-        "pass_rate": row.pass_rate if row.pass_rate is not None else 0,
-        "rows_evaluated": None,
-    }
+    latest_job = scan_jobs[0]
+
+    if latest_job.state == dataplex_v1.DataScanJob.State.SUCCEEDED:
+        result = latest_job.data_quality_result
+        if result:
+            if result.row_count_scanned == 0:
+                pass_ratio = 0.0
+            else:
+                pass_ratio = (result.row_count_passed / result.row_count_scanned) * 100
+            return {
+                "pass_rate": pass_ratio,
+                "rows_evaluated": result.row_count_scanned,
+            }
+        else:
+            logging.warning(f"No data quality result found for job {latest_job.name}")
+            return {"pass_rate": 0, "rows_evaluated": 0}
+    else:
+        logging.warning(
+            f"Latest scan job {latest_job.name} did not succeed. State: {latest_job.state}"
+        )
+        return {"pass_rate": 0, "rows_evaluated": 0}
 
 
 def create_records_plot(record_counts: dict) -> bytes:
@@ -356,10 +372,10 @@ def trigger_dataplex_scans(event, context):
 
         time.sleep(30)
 
-        tables = ["matches", "weather", "reddit"]
+        tables = ["matches", "weather", "reddit", "standings"]
         scan_results = {}
         for table in tables:
-            scan_results[table] = get_scan_results(project_id, table)
+            scan_results[table] = get_scan_results(table)
 
         record_counts = get_table_record_counts()
         total_counts = get_table_total_counts()
