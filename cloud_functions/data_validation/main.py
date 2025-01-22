@@ -5,92 +5,150 @@ import logging
 import requests
 from google.cloud import dataplex_v1
 from google.cloud import bigquery
-import matplotlib.pyplot as plt
-import io
+import plotly.graph_objects as go
 
 
-def get_scan_results(table_prefix: str) -> dict:
-    """Fetches scan results from BigQuery for a specific table."""
+def get_table_record_counts() -> dict:
+    """Fetches daily record counts from BigQuery tables."""
     client = bigquery.Client()
 
-    query = f"""
+    query = """
+    WITH matches_counts AS (
+        SELECT DATE(utcDate) as date, COUNT(*) as count
+        FROM `.sports_data_eu.matches_processed`
+        WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
+        GROUP BY date
+        ORDER BY date
+    ),
+    weather_counts AS (
+        SELECT DATE(timestamp) as date, COUNT(*) as count
+        FROM `.sports_data_eu.weather_processed`
+        WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
+        GROUP BY date
+        ORDER BY date
+    ),
+    reddit_counts AS (
+        SELECT match_date as date, COUNT(*) as count
+        FROM `.sports_data_eu.reddit_processed`
+        WHERE match_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 20 DAY)
+        GROUP BY date
+        ORDER BY date
+    )
     SELECT 
-        CAST(job_start_time AS DATE) as scan_date,
-        AVG(rule_rows_passed_percent) as avg_pass_rate,
-        SUM(rule_rows_evaluated) as total_rows_evaluated
-    FROM `processed_data_zone.{table_prefix}_processed_quality`
-    WHERE job_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
-    GROUP BY scan_date
-    ORDER BY scan_date
+        COALESCE(m.date, w.date, r.date) as date,
+        m.count as matches_count,
+        w.count as weather_count,
+        r.count as reddit_count
+    FROM matches_counts m
+    FULL OUTER JOIN weather_counts w ON m.date = w.date
+    FULL OUTER JOIN reddit_counts r ON m.date = r.date
+    ORDER BY date
     """  # nosec B608
 
     results = client.query(query).result()
 
     dates = []
-    pass_rates = []
-    rows_evaluated = []
+    matches_counts = []
+    weather_counts = []
+    reddit_counts = []
 
     for row in results:
-        dates.append(row.scan_date)
-        pass_rates.append(row.avg_pass_rate)
-        rows_evaluated.append(row.total_rows_evaluated)
+        dates.append(row.date)
+        matches_counts.append(row.matches_count or 0)
+        weather_counts.append(row.weather_count or 0)
+        reddit_counts.append(row.reddit_count or 0)
 
-    return {"dates": dates, "pass_rates": pass_rates, "rows_evaluated": rows_evaluated}
+    return {
+        "dates": dates,
+        "matches": matches_counts,
+        "weather": weather_counts,
+        "reddit": reddit_counts,
+    }
 
 
-def create_quality_plot(scan_results: dict) -> bytes:
-    """Creates a plot of scan results over time."""
-    plt.figure(figsize=(10, 6))
+def get_scan_results(table_suffix: str) -> dict:
+    """Fetches scan results from BigQuery for a specific table."""
+    client = bigquery.Client()
 
-    plt.plot(
-        scan_results["dates"],
-        scan_results["pass_rates"],
-        marker="o",
-        label="Pass Rate %",
+    query = f"""
+    SELECT 
+        AVG(rule_rows_passed_percent) as avg_pass_rate,
+        SUM(rule_rows_evaluated) as total_rows_evaluated
+    FROM `processed_data_zone.{table_suffix}_processed_quality`
+    WHERE job_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 MINUTE)
+    """  # nosec B608
+
+    results = client.query(query).result()
+
+    for row in results:
+        return {
+            "pass_rate": row.avg_pass_rate if row.avg_pass_rate else 0,
+            "rows_evaluated": row.total_rows_evaluated
+            if row.total_rows_evaluated
+            else 0,
+        }
+
+    return {"pass_rate": 0, "rows_evaluated": 0}
+
+
+def create_records_plot(record_counts: dict) -> bytes:
+    """Creates a line plot of record counts over time."""
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=record_counts["dates"],
+            y=record_counts["matches"],
+            name="Matches",
+            mode="lines+markers",
+        )
     )
 
-    plt.title("Data Quality Scan Results - Last 7 Days")
-    plt.xlabel("Date")
-    plt.ylabel("Pass Rate %")
-    plt.grid(True)
-    plt.legend()
+    fig.add_trace(
+        go.Scatter(
+            x=record_counts["dates"],
+            y=record_counts["weather"],
+            name="Weather",
+            mode="lines+markers",
+        )
+    )
 
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    plt.close()
+    fig.add_trace(
+        go.Scatter(
+            x=record_counts["dates"],
+            y=record_counts["reddit"],
+            name="Reddit",
+            mode="lines+markers",
+        )
+    )
 
-    return buf.getvalue()
+    fig.update_layout(
+        title="Daily Record Counts - Last 20 Days",
+        xaxis_title="Date",
+        yaxis_title="Number of Records",
+        height=600,
+        width=1000,
+        showlegend=True,
+    )
+
+    img_bytes = fig.to_image(format="png")
+    return img_bytes
 
 
-def send_discord_notification(title: str, message: str, color: int, scan_results=None):
-    """Sends a notification to Discord with scan results and plot."""
+def send_discord_notification(
+    title: str, message: str, color: int, plot_data: bytes | None = None
+):
+    """Sends a notification to Discord with the specified title, message, color and optional plot."""
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
         logging.warning("Discord webhook URL not set.")
         return
 
     files = {}
-    embeds = [{"title": title, "description": message, "color": color}]
+    if plot_data:
+        files = {"record_counts.png": ("plot.png", plot_data, "image/png")}
 
-    if scan_results:
-        for table, results in scan_results.items():
-            if results["pass_rates"]:
-                latest_rate = results["pass_rates"][-1]
-                latest_rows = results["rows_evaluated"][-1]
-
-                summary = (
-                    "\n**{}**\nLatest Pass Rate: {:.2f}%\nRows Evaluated: {:,}".format(
-                        table, latest_rate, latest_rows
-                    )
-                )
-                embeds[0]["description"] = f"{embeds[0]['description']}{summary}"
-
-        for table, results in scan_results.items():
-            plot_data = create_quality_plot(results)
-            files[f"{table}_plot.png"] = ("plot.png", plot_data, "image/png")
-
-    payload = {"embeds": embeds}
+    payload = {"embeds": [{"title": title, "description": message, "color": color}]}
 
     if files:
         response = requests.post(
@@ -114,7 +172,7 @@ def send_discord_notification(title: str, message: str, color: int, scan_results
 
 
 def trigger_dataplex_scans(event, context):
-    """Triggers Dataplex data quality scans for all tables and reports historical results
+    """Triggers Dataplex data quality scans for all tables
     Args:
          event (dict): The dictionary with data specific to this type of event.
          context (google.cloud.functions.Context): The Cloud Functions event metadata.
@@ -153,20 +211,32 @@ def trigger_dataplex_scans(event, context):
             operation = client.run_data_scan(request=request)
             triggered_scans.append(operation)
 
-        tables = ["matches", "weather", "reddit", "standings"]
-        scan_results = {}
+        import time
 
+        time.sleep(30)
+
+        tables = ["matches", "weather", "reddit"]
+        scan_results = {}
         for table in tables:
             scan_results[table] = get_scan_results(table)
 
+        record_counts = get_table_record_counts()
+        plot_data = create_records_plot(record_counts)
+
+        scan_summary = "\n\n**Recent Scan Results:**"
+        for table, results in scan_results.items():
+            scan_summary += f"\n\n**{table}**:\n"
+            scan_summary += f"Pass Rate: {results['pass_rate']:.2f}%\n"
+
         status_message = (
             f"Successfully triggered {len(triggered_scans)} Dataplex quality scans\n"
-            f"Historical results for the last 7 days attached below."
+            f"Record count trends for the last 20 days shown in the graph below."
+            f"{scan_summary}"
         )
 
         logging.info(status_message)
         send_discord_notification(
-            "✅ Dataplex Scans: Triggered", status_message, 65280, scan_results
+            "✅ Dataplex Scans: Triggered", status_message, 65280, plot_data
         )
 
         return status_message, 200
