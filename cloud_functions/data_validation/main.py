@@ -15,21 +15,21 @@ def get_table_record_counts() -> dict:
     query = """
     WITH matches_counts AS (
         SELECT DATE(utcDate) as date, COUNT(*) as count
-        FROM `.sports_data_eu.matches_processed`
+        FROM `sports_data_eu.matches_processed`
         WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
         GROUP BY date
         ORDER BY date
     ),
     weather_counts AS (
         SELECT DATE(timestamp) as date, COUNT(*) as count
-        FROM `.sports_data_eu.weather_processed`
+        FROM `sports_data_eu.weather_processed`
         WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
         GROUP BY date
         ORDER BY date
     ),
     reddit_counts AS (
         SELECT match_date as date, COUNT(*) as count
-        FROM `.sports_data_eu.reddit_processed`
+        FROM `sports_data_eu.reddit_processed`
         WHERE match_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 20 DAY)
         GROUP BY date
         ORDER BY date
@@ -67,39 +67,60 @@ def get_table_record_counts() -> dict:
 
 
 def get_table_total_counts() -> dict:
-    """Fetches total record counts from BigQuery tables."""
+    """Fetches cumulative record counts from BigQuery tables over the last 20 days."""
     client = bigquery.Client()
 
     query = """
     WITH matches_counts AS (
-        SELECT DATE(utcDate) as date, COUNT(*) OVER(ORDER BY DATE(utcDate)) as count
-        FROM `.sports_data_eu.matches_processed`
+        SELECT
+            DATE(utcDate) AS date,
+            COUNT(*) AS daily_count
+        FROM `sports_data_eu.matches_processed`
         WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
         GROUP BY date
-        ORDER BY date
+    ),
+    matches_running_total AS (
+        SELECT
+            date,
+            SUM(daily_count) OVER (ORDER BY date) AS count
+        FROM matches_counts
     ),
     weather_counts AS (
-        SELECT DATE(timestamp) as date, COUNT(*) OVER(ORDER BY DATE(timestamp)) as count
-        FROM `.sports_data_eu.weather_processed`
+        SELECT
+            DATE(timestamp) AS date,
+            COUNT(*) AS daily_count
+        FROM `sports_data_eu.weather_processed`
         WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
         GROUP BY date
-        ORDER BY date
+    ),
+    weather_running_total AS (
+        SELECT
+            date,
+            SUM(daily_count) OVER (ORDER BY date) AS count
+        FROM weather_counts
     ),
     reddit_counts AS (
-        SELECT match_date as date, COUNT(*) OVER(ORDER BY match_date) as count
-        FROM `.sports_data_eu.reddit_processed`
+        SELECT
+            match_date AS date,
+            COUNT(*) AS daily_count
+        FROM `sports_data_eu.reddit_processed`
         WHERE match_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 20 DAY)
         GROUP BY date
-        ORDER BY date
+    ),
+    reddit_running_total AS (
+        SELECT
+            date,
+            SUM(daily_count) OVER (ORDER BY date) AS count
+        FROM reddit_counts
     )
-    SELECT 
-        COALESCE(m.date, w.date, r.date) as date,
-        m.count as matches_count,
-        w.count as weather_count,
-        r.count as reddit_count
-    FROM matches_counts m
-    FULL OUTER JOIN weather_counts w ON m.date = w.date
-    FULL OUTER JOIN reddit_counts r ON m.date = r.date
+    SELECT
+        COALESCE(m.date, w.date, r.date) AS date,
+        m.count AS matches_count,
+        w.count AS weather_count,
+        r.count AS reddit_count
+    FROM matches_running_total m
+    FULL OUTER JOIN weather_running_total w ON m.date = w.date
+    FULL OUTER JOIN reddit_running_total r ON m.date = r.date
     ORDER BY date
     """  # nosec B608
 
