@@ -173,39 +173,33 @@ def get_table_total_counts() -> dict:
 
 
 def get_scan_results(table_suffix: str) -> dict:
-    """Fetches the latest scan results for a specific DataScan."""
-    client = dataplex_v1.DataScanServiceClient()
+    """Fetches the latest scan results from BigQuery quality tables."""
+    client = bigquery.Client()
     project_id = os.environ.get("GCP_PROJECT_ID")
-    location = os.environ.get("LOCATION", "europe-central2")
-    data_scan_id = f"{table_suffix}-processed-scan"
 
-    parent = f"projects/{project_id}/locations/{location}/dataScans/{data_scan_id}"
+    record_limits = {"reddit": 4, "matches": 4, "standings": 5, "weather": 9}
 
-    request = dataplex_v1.ListDataScanJobsRequest(
-        parent=parent, filter="state = SUCCEEDED", page_size=1
+    query = f"""
+    WITH latest_records AS (
+        SELECT 
+            rule_rows_passed_percent as pass_rate
+        FROM `{project_id}.processed_data_zone.{table_suffix}_processed_quality`
+        ORDER BY job_start_time DESC
+        LIMIT {record_limits.get(table_suffix, 4)}
     )
+    SELECT AVG(pass_rate) as avg_pass_rate
+    FROM latest_records
+    """  # nosec B608
 
     try:
-        response = client.list_data_scan_jobs(request=request)
-        latest_job = next(iter(response), None)
-
-        if latest_job:
-            job_name = latest_job.name
-            job_details = client.get_data_scan_job(name=job_name)
-
-            result = job_details.data_quality_result
-            if result and result.row_count_scanned > 0:
-                pass_ratio = (result.row_count_passed / result.row_count_scanned) * 100
-                return {
-                    "pass_rate": pass_ratio,
-                    "rows_evaluated": result.row_count_scanned,
-                }
-
-        return {"pass_rate": 0, "rows_evaluated": 0}
-
+        results = client.query(query).result()
+        row = next(iter(results))
+        return {
+            "pass_rate": row.avg_pass_rate if row.avg_pass_rate is not None else 0.0
+        }
     except Exception as e:
-        logging.error(f"Error getting scan results for {data_scan_id}: {str(e)}")
-        return {"pass_rate": 0, "rows_evaluated": 0}
+        logging.error(f"Error getting scan results for {table_suffix}: {str(e)}")
+        return {"pass_rate": 0.0}
 
 
 def create_records_plot(record_counts: dict) -> bytes:
