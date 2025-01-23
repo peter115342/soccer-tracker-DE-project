@@ -181,13 +181,14 @@ def get_scan_results(table_suffix: str) -> dict:
 
     query = f"""
     WITH latest_records AS (
-        SELECT 
-            rule_rows_passed_percent as pass_rate
+        SELECT
+            job_quality_result.score as pass_rate
         FROM `{project_id}.processed_data_zone.{table_suffix}_processed_quality`
+        WHERE job_quality_result.score IS NOT NULL
         ORDER BY job_start_time DESC
         LIMIT {record_limits.get(table_suffix, 4)}
     )
-    SELECT AVG(pass_rate) as avg_pass_rate
+    SELECT AVG(pass_rate) * 100 as avg_pass_rate
     FROM latest_records
     """  # nosec B608
 
