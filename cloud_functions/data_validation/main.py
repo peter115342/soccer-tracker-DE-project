@@ -356,7 +356,7 @@ def trigger_dataplex_scans(event, context):
 
         import time
 
-        time.sleep(180)
+        time.sleep(60)
 
         tables = ["matches", "weather", "reddit", "standings"]
         scan_results = {}
