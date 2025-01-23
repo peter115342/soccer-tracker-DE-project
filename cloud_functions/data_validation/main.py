@@ -188,7 +188,7 @@ def get_scan_results(table_suffix: str) -> dict:
         ORDER BY job_start_time DESC
         LIMIT {record_limits.get(table_suffix, 4)}
     )
-    SELECT AVG(pass_rate) * 100 as avg_pass_rate
+    SELECT AVG(pass_rate) as avg_pass_rate
     FROM latest_records
     """  # nosec B608
 

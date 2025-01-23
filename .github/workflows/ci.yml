@@ -61,9 +61,9 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
 
-      # - name: Create Pub/Sub Topics
-      #   run: |
-      #     uv run gcloud pubsub topics create fetch_league_data_topic || true
+      - name: Create Pub/Sub Topics
+        run: |
+          uv run gcloud pubsub topics create fetch_league_data_topic || true
       #     uv run gcloud pubsub topics create fetch_football_data_topic || true
       #     uv run gcloud pubsub topics create fetch_weather_data_topic || true
       #     uv run gcloud pubsub topics create convert_to_parquet_topic || true
