@@ -102,6 +102,7 @@ jobs:
           cd cloud_functions/league_data/fetch_league_data_function
           uv run gcloud functions deploy fetch_league_data \
             --runtime python312 \
+            --trigger-type eventarc \
             --trigger-topic fetch_league_data_topic \
             --entry-point fetch_league_data \
             --timeout 540s \
@@ -271,6 +272,7 @@ jobs:
           cd cloud_functions/reddit_data/fetch_reddit_data_function
           uv run gcloud functions deploy fetch_reddit_data \
           --runtime python312 \
+          --trigger-type eventarc \
           --trigger-topic fetch_reddit_data_topic \
           --entry-point fetch_reddit_data \
           --timeout 540s \
