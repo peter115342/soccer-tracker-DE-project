@@ -64,6 +64,7 @@ jobs:
       - name: Create Pub/Sub Topics
         run: |
           uv run gcloud pubsub topics create fetch_league_data_topic || true
+          uv run gcloud pubsub topics create fetch_reddit_data_topic || true
       #     uv run gcloud pubsub topics create fetch_football_data_topic || true
       #     uv run gcloud pubsub topics create fetch_weather_data_topic || true
       #     uv run gcloud pubsub topics create convert_to_parquet_topic || true
@@ -77,12 +78,24 @@ jobs:
       #     uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
       #     uv run gcloud pubsub topics create standings_to_bigquery_topic || true
       #     uv run gcloud pubsub topics create transform_standings_topic || true
-      #     uv run gcloud pubsub topics create fetch_reddit_data_topic || true
       #     uv run gcloud pubsub topics create convert_reddit_to_parquet_topic || true
       #     uv run gcloud pubsub topics create reddit_to_bigquery_topic || true
       #     uv run gcloud pubsub topics create process_reddit_data_topic || true
       #     uv run gcloud pubsub topics create transform_reddit_topic || true
       #     uv run gcloud pubsub topics create trigger_quality_scans_topic || true
+
+      # - name: Deploy Data Validation Function
+      #   run: |
+      #     cd cloud_functions/data_validation
+      #     uv run gcloud functions deploy trigger_dataplex_scans \
+      #       --runtime python312 \
+      #       --trigger-topic trigger_quality_scans_topic \
+      #       --entry-point trigger_dataplex_scans \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
 
       - name: Deploy fetch_league_data Function
         run: |
@@ -253,18 +266,18 @@ jobs:
       #     --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
-      # - name: Deploy fetch_reddit_data Function
-      #   run: |
-      #     cd cloud_functions/reddit_data/fetch_reddit_data_function
-      #     uv run gcloud functions deploy fetch_reddit_data \
-      #     --runtime python312 \
-      #     --trigger-topic fetch_reddit_data_topic \
-      #     --entry-point fetch_reddit_data \
-      #     --timeout 540s \
-      #     --memory 1GiB \
-      #     --region europe-central2 \
-      #     --set-env-vars "REDDIT_CLIENT_ID=${{secrets.REDDIT_CLIENT_ID}},REDDIT_CLIENT_SECRET=${{secrets.REDDIT_CLIENT_SECRET}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-      #     cd ../..
+      - name: Deploy fetch_reddit_data Function
+        run: |
+          cd cloud_functions/reddit_data/fetch_reddit_data_function
+          uv run gcloud functions deploy fetch_reddit_data \
+          --runtime python312 \
+          --trigger-topic fetch_reddit_data_topic \
+          --entry-point fetch_reddit_data \
+          --timeout 540s \
+          --memory 1GiB \
+          --region europe-central2 \
+          --set-env-vars "REDDIT_CLIENT_ID=${{secrets.REDDIT_CLIENT_ID}},REDDIT_CLIENT_SECRET=${{secrets.REDDIT_CLIENT_SECRET}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+          cd ../..
 
       # - name: Deploy convert_reddit_data Function
       #   run: |
@@ -316,17 +329,4 @@ jobs:
       #       --memory 1GiB \
       #       --region europe-central2 \
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
-      #     cd ../..
-
-      # - name: Deploy Data Validation Function
-      #   run: |
-      #     cd cloud_functions/data_validation
-      #     uv run gcloud functions deploy trigger_dataplex_scans \
-      #       --runtime python312 \
-      #       --trigger-topic trigger_quality_scans_topic \
-      #       --entry-point trigger_dataplex_scans \
-      #       --timeout 540s \
-      #       --memory 1GiB \
-      #       --region europe-central2 \
-      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
       #     cd ../..
