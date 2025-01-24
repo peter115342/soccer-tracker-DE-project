@@ -133,3 +133,9 @@ data "archive_file" "transform_reddit" {
   source_dir  = "../cloud_functions/reddit_data/reddit_transform_function"
   output_path = "../cloud_functions/reddit_data/reddit_transform_function.zip"
 }
+
+data "archive_file" "trigger_dataplex_scans" {
+  type        = "zip"
+  source_dir  = "../cloud_functions/dataplex/trigger_dataplex_scans_function"
+  output_path = "../cloud_functions/dataplex/trigger_dataplex_scans_function.zip"
+}
