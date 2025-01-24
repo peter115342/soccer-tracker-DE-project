@@ -1,0 +1,25 @@
+[{
+  "column_name": "match_id",
+  "data_type": "STRING",
+  "is_nullable": "NO"
+}, {
+  "column_name": "match_date",
+  "data_type": "DATE",
+  "is_nullable": "NO"
+}, {
+  "column_name": "home_team",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "away_team",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "competition",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "threads",
+  "data_type": "ARRAY\u003cSTRUCT\u003cthread_type STRING, thread_id STRING, title STRING, body STRING, created_at TIMESTAMP, score INT64, num_comments INT64, comments ARRAY\u003cSTRUCT\u003cid STRING, body STRING, score INT64, author STRING, created_at TIMESTAMP\u003e\u003e\u003e\u003e",
+  "is_nullable": "NO"
+}]

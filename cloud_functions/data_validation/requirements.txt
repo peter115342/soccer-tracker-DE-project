@@ -1,0 +1,7 @@
+google-cloud-dataplex
+google-cloud-storage
+google-cloud-pubsub
+google-cloud-bigquery
+requests
+plotly
+kaleido

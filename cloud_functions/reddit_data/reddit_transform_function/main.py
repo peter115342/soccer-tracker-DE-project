@@ -59,12 +59,8 @@ def trigger_dataform_workflow():
 def send_discord_notification(title: str, message: str, color: int):
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
-        logging.error("Discord webhook URL not configured")
+        logging.warning("Discord webhook URL not set.")
         return
-
-    if len(message) > 2000:
-        message = message[:1997] + "..."
-
     discord_data = {
         "content": None,
         "embeds": [
@@ -75,19 +71,14 @@ def send_discord_notification(title: str, message: str, color: int):
             }
         ],
     }
-
-    try:
-        headers = {"Content-Type": "application/json"}
-        response = requests.post(
-            webhook_url, data=json.dumps(discord_data), headers=headers, timeout=10
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(
+        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
+    )
+    if response.status_code != 204:
+        logging.error(
+            f"Failed to send Discord notification: {response.status_code}, {response.text}"
         )
-        response.raise_for_status()
-        if response.status_code != 204:
-            logging.error(
-                f"Discord notification failed with status code: {response.status_code}"
-            )
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Discord notification failed: {str(e)}")
 
 
 def transform_reddit(event, context):

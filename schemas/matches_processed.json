@@ -1,0 +1,45 @@
+[{
+  "column_name": "id",
+  "data_type": "INT64",
+  "is_nullable": "NO"
+}, {
+  "column_name": "utcDate",
+  "data_type": "TIMESTAMP",
+  "is_nullable": "NO"
+}, {
+  "column_name": "status",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "matchday",
+  "data_type": "INT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "stage",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "lastUpdated",
+  "data_type": "TIMESTAMP",
+  "is_nullable": "YES"
+}, {
+  "column_name": "homeTeam",
+  "data_type": "STRUCT\u003cid INT64, name STRING\u003e",
+  "is_nullable": "YES"
+}, {
+  "column_name": "awayTeam",
+  "data_type": "STRUCT\u003cid INT64, name STRING\u003e",
+  "is_nullable": "YES"
+}, {
+  "column_name": "competition",
+  "data_type": "STRUCT\u003cid INT64, name STRING\u003e",
+  "is_nullable": "YES"
+}, {
+  "column_name": "score",
+  "data_type": "STRUCT\u003cwinner STRING, duration STRING, fullTime STRUCT\u003chomeTeam INT64, awayTeam INT64\u003e, halfTime STRUCT\u003chomeTeam INT64, awayTeam INT64\u003e\u003e",
+  "is_nullable": "YES"
+}, {
+  "column_name": "referees",
+  "data_type": "ARRAY\u003cSTRUCT\u003cid INT64, name STRING, type STRING, nationality STRING\u003e\u003e",
+  "is_nullable": "NO"
+}]

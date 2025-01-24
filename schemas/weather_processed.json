@@ -1,0 +1,73 @@
+[{
+  "column_name": "match_id",
+  "data_type": "INT64",
+  "is_nullable": "NO"
+}, {
+  "column_name": "lat",
+  "data_type": "FLOAT64",
+  "is_nullable": "NO"
+}, {
+  "column_name": "lon",
+  "data_type": "FLOAT64",
+  "is_nullable": "NO"
+}, {
+  "column_name": "timestamp",
+  "data_type": "TIMESTAMP",
+  "is_nullable": "NO"
+}, {
+  "column_name": "temperature_2m",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "relativehumidity_2m",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "dewpoint_2m",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "apparent_temperature",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "precipitation",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "rain",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "snowfall",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "snow_depth",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "weathercode",
+  "data_type": "INT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "pressure_msl",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "cloudcover",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "windspeed_10m",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "winddirection_10m",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "windgusts_10m",
+  "data_type": "FLOAT64",
+  "is_nullable": "YES"
+}]

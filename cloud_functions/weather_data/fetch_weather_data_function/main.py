@@ -160,17 +160,20 @@ def fetch_weather_data(data, context):
 
 
 def send_discord_notification(title: str, message: str, color: int):
-    """Sends a notification to Discord with the specified title, message, and color."""
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
         logging.warning("Discord webhook URL not set.")
         return
-
     discord_data = {
         "content": None,
-        "embeds": [{"title": title, "description": message, "color": color}],
+        "embeds": [
+            {
+                "title": title,
+                "description": message,
+                "color": color,
+            }
+        ],
     }
-
     headers = {"Content-Type": "application/json"}
     response = requests.post(
         webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90

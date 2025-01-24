@@ -1,0 +1,37 @@
+[{
+  "column_name": "fetchDate",
+  "data_type": "DATE",
+  "is_nullable": "YES"
+}, {
+  "column_name": "competitionId",
+  "data_type": "INT64",
+  "is_nullable": "NO"
+}, {
+  "column_name": "seasonId",
+  "data_type": "INT64",
+  "is_nullable": "NO"
+}, {
+  "column_name": "seasonStartDate",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "seasonEndDate",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "currentMatchday",
+  "data_type": "INT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "seasonWinner",
+  "data_type": "INT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "standingType",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "standings",
+  "data_type": "ARRAY\u003cSTRUCT\u003cposition INT64, teamId INT64, teamName STRING, teamShortName STRING, teamTLA STRING, teamCrest STRING, playedGames INT64, form STRING, won INT64, draw INT64, lost INT64, points INT64, goalsFor INT64, goalsAgainst INT64, goalDifference INT64\u003e\u003e",
+  "is_nullable": "NO"
+}]
