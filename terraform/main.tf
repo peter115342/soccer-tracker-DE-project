@@ -136,6 +136,6 @@ data "archive_file" "transform_reddit" {
 
 data "archive_file" "trigger_dataplex_scans" {
   type        = "zip"
-  source_dir  = "../cloud_functions/dataplex/trigger_dataplex_scans_function"
-  output_path = "../cloud_functions/dataplex/trigger_dataplex_scans_function.zip"
+  source_dir  = "../cloud_functions/data_validation"
+  output_path = "../cloud_functions/data_validation.zip"
 }
