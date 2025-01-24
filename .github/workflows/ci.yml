@@ -61,10 +61,10 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
 
-      - name: Create Pub/Sub Topics
-        run: |
-          uv run gcloud pubsub topics create fetch_league_data_topic || true
-          uv run gcloud pubsub topics create fetch_reddit_data_topic || true
+      # - name: Create Pub/Sub Topics
+      #   run: |
+      #     uv run gcloud pubsub topics create fetch_league_data_topic || true
+      #     uv run gcloud pubsub topics create fetch_reddit_data_topic || true
       #     uv run gcloud pubsub topics create fetch_football_data_topic || true
       #     uv run gcloud pubsub topics create fetch_weather_data_topic || true
       #     uv run gcloud pubsub topics create convert_to_parquet_topic || true
@@ -97,18 +97,18 @@ jobs:
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
       #     cd ../..
 
-      - name: Deploy fetch_league_data Function
-        run: |
-          cd cloud_functions/league_data/fetch_league_data_function
-          uv run gcloud functions deploy fetch_league_data \
-            --runtime python312 \
-            --trigger-topic fetch_league_data_topic \
-            --entry-point fetch_league_data \
-            --timeout 540s \
-            --memory 1GiB \
-            --region europe-central2 \
-            --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-          cd ../..
+      # - name: Deploy fetch_league_data Function
+      #   run: |
+      #     cd cloud_functions/league_data/fetch_league_data_function
+      #     uv run gcloud functions deploy fetch_league_data \
+      #       --runtime python312 \
+      #       --trigger-topic fetch_league_data_topic \
+      #       --entry-point fetch_league_data \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
 
       # - name: Deploy fetch_football_data Function
       #   run: |
@@ -266,18 +266,18 @@ jobs:
       #     --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
 
-      - name: Deploy fetch_reddit_data Function
-        run: |
-          cd cloud_functions/reddit_data/fetch_reddit_data_function
-          uv run gcloud functions deploy fetch_reddit_data \
-          --runtime python312 \
-          --trigger-topic fetch_reddit_data_topic \
-          --entry-point fetch_reddit_data \
-          --timeout 540s \
-          --memory 1GiB \
-          --region europe-central2 \
-          --set-env-vars "REDDIT_CLIENT_ID=${{secrets.REDDIT_CLIENT_ID}},REDDIT_CLIENT_SECRET=${{secrets.REDDIT_CLIENT_SECRET}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-          cd ../..
+      # - name: Deploy fetch_reddit_data Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/fetch_reddit_data_function
+      #     uv run gcloud functions deploy fetch_reddit_data \
+      #     --runtime python312 \
+      #     --trigger-topic fetch_reddit_data_topic \
+      #     --entry-point fetch_reddit_data \
+      #     --timeout 540s \
+      #     --memory 1GiB \
+      #     --region europe-central2 \
+      #     --set-env-vars "REDDIT_CLIENT_ID=${{secrets.REDDIT_CLIENT_ID}},REDDIT_CLIENT_SECRET=${{secrets.REDDIT_CLIENT_SECRET}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
 
       # - name: Deploy convert_reddit_data Function
       #   run: |
