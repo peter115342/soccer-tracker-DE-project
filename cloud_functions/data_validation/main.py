@@ -139,7 +139,7 @@ def get_table_total_counts() -> dict:
         LEFT JOIN matches_cumulative mc ON d.date = mc.date
         LEFT JOIN weather_cumulative wc ON d.date = wc.date
         LEFT JOIN reddit_cumulative rc ON d.date = rc.date
-        WHERE d.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 29 DAY)  -- Last 30 days
+        WHERE d.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
         ORDER BY d.date
     )
     SELECT
@@ -226,7 +226,7 @@ def create_records_plot(record_counts: dict) -> bytes:
     )
 
     fig.update_layout(
-        title="Daily Record Counts - Last 20 Days",
+        title="Daily Record Counts - Last 30 Days",
         xaxis_title="Date",
         yaxis_title="Number of Records",
         height=600,
@@ -261,7 +261,7 @@ def create_total_records_plot(record_counts: dict) -> bytes:
     )
 
     fig.update_layout(
-        title="Total Records Over Time - Last 20 Days",
+        title="Total Records Over Time - Last 30 Days",
         xaxis_title="Date",
         yaxis_title="Total Number of Records",
         height=600,

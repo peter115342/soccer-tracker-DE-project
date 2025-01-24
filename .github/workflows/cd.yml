@@ -107,6 +107,7 @@ jobs:
             "reddit_to_bigquery"
             "process_reddit_data"
             "transform_reddit"
+            "trigger-dataplex-scans"
           )
 
           for topic_name in "${topics[@]}"; do
@@ -147,6 +148,7 @@ jobs:
             "load_reddit_to_bigquery"
             "process_reddit_data"
             "transform_reddit"
+            "trigger-dataplex-scans"
           )
 
           for function_name in "${functions[@]}"; do
