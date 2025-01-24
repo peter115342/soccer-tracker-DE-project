@@ -2,8 +2,7 @@ name: CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: -dev
 
 jobs:
   terraform:
