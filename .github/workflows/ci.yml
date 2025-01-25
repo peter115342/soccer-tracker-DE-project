@@ -1,9 +1,8 @@
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
     branches:
-      - main
       - dev
 jobs:
   build-and-deploy:
@@ -36,6 +35,10 @@ jobs:
         run: |
           uv run ruff check .
 
+      - name: Run Bandit
+        run: |
+          uv run bandit -r . -c pyproject.toml
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
@@ -46,19 +49,22 @@ jobs:
         with:
           project_id: ${{secrets.GCP_PROJECT_ID}}
 
-      # - name: Run Tests
-      #   env:
-      #     API_FOOTBALL_KEY: "dummy_key"
-      #     GOOGLE_MAPS_API_KEY: "dummy_key"
-      #     GCP_PROJECT_ID: "dummy_id"
+      - name: Run Tests
+        env:
+          API_FOOTBALL_KEY: "dummy_key"
+          GOOGLE_MAPS_API_KEY: "dummy_key"
+          GCP_PROJECT_ID: "dummy_id"
+          REDDIT_CLIENT_ID: "dummy_id"
+          REDDIT_CLIENT_SECRET: "dummy_key"
 
-      #   run: |
-      #     export PYTHONPATH=$PYTHONPATH:$(pwd)
-      #     uv run pytest tests/
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          uv run pytest tests/
 
       - name: Create Pub/Sub Topics
         run: |
           uv run gcloud pubsub topics create fetch_league_data_topic || true
+          uv run gcloud pubsub topics create fetch_reddit_data_topic || true
           uv run gcloud pubsub topics create fetch_football_data_topic || true
           uv run gcloud pubsub topics create fetch_weather_data_topic || true
           uv run gcloud pubsub topics create convert_to_parquet_topic || true
@@ -72,22 +78,37 @@ jobs:
           uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
           uv run gcloud pubsub topics create standings_to_bigquery_topic || true
           uv run gcloud pubsub topics create transform_standings_topic || true
-          uv run gcloud pubsub topics create fetch_reddit_data_topic || true
           uv run gcloud pubsub topics create convert_reddit_to_parquet_topic || true
           uv run gcloud pubsub topics create reddit_to_bigquery_topic || true
+          uv run gcloud pubsub topics create process_reddit_data_topic || true
+          uv run gcloud pubsub topics create transform_reddit_topic || true
+          uv run gcloud pubsub topics create trigger_quality_scans_topic || true
 
-      - name: Deploy fetch_league_data Function
-        run: |
-          cd cloud_functions/league_data/fetch_league_data_function
-          uv run gcloud functions deploy fetch_league_data \
-            --runtime python312 \
-            --trigger-topic fetch_league_data_topic \
-            --entry-point fetch_league_data \
-            --timeout 540s \
-            --memory 1GiB \
-            --region europe-central2 \
-            --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-          cd ../..
+      # - name: Deploy Data Validation Function
+      #   run: |
+      #     cd cloud_functions/data_validation
+      #     uv run gcloud functions deploy trigger_dataplex_scans_test \
+      #       --runtime python312 \
+      #       --trigger-topic trigger_quality_scans_topic \
+      #       --entry-point trigger_dataplex_scans \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
+
+      # - name: Deploy fetch_league_data Function
+      #   run: |
+      #     cd cloud_functions/league_data/fetch_league_data_function
+      #     uv run gcloud functions deploy fetch_league_data \
+      #       --runtime python312 \
+      #       --trigger-topic fetch_league_data_topic \
+      #       --entry-point fetch_league_data \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "API_FOOTBALL_KEY=${{secrets.API_FOOTBALL_KEY}},DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GOOGLE_MAPS_API_KEY=${{secrets.GOOGLE_MAPS_API_KEY}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
 
       # - name: Deploy fetch_football_data Function
       #   run: |
@@ -282,4 +303,30 @@ jobs:
       #       --memory 1GiB \
       #       --region europe-central2 \
       #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
+
+      # - name: Deploy process_reddit_data Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/process_reddit_data_function
+      #     uv run gcloud functions deploy process_reddit_data \
+      #       --runtime python312 \
+      #       --trigger-topic process_reddit_data_topic \
+      #       --entry-point process_reddit_threads \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},BUCKET_NAME=${{secrets.BUCKET_NAME}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+      #     cd ../..
+
+      # - name: Deploy reddit_transform Function
+      #   run: |
+      #     cd cloud_functions/reddit_data/reddit_transform_function
+      #     uv run gcloud functions deploy transform_reddit \
+      #       --runtime python312 \
+      #       --trigger-topic transform_reddit_topic \
+      #       --entry-point transform_reddit \
+      #       --timeout 540s \
+      #       --memory 1GiB \
+      #       --region europe-central2 \
+      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}},DATAFORM_REPOSITORY=${{secrets.DATAFORM_REPOSITORY}},DATAFORM_WORKSPACE=${{secrets.DATAFORM_WORKSPACE}}"
       #     cd ../..
