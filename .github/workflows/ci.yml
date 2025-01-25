@@ -84,6 +84,35 @@ jobs:
           uv run gcloud pubsub topics create transform_reddit_topic || true
           uv run gcloud pubsub topics create trigger_quality_scans_topic || true
 
+      - name: Create Pub/Sub Subscriptions
+        run: |
+          TOPICS=(
+            fetch_league_data_topic
+            fetch_reddit_data_topic
+            fetch_football_data_topic
+            fetch_weather_data_topic
+            convert_to_parquet_topic
+            convert_weather_to_parquet_topic
+            match_to_bigquery_topic
+            weather_to_bigquery_topic
+            transform_matches_topic
+            transform_weather_topic
+            fetch_standings_data_topic
+            convert_standings_to_parquet_topic
+            standings_to_bigquery_topic
+            transform_standings_topic
+            convert_reddit_to_parquet_topic
+            reddit_to_bigquery_topic
+            process_reddit_data_topic
+            transform_reddit_topic
+            trigger_quality_scans_topic
+          )
+
+          for TOPIC in "${TOPICS[@]}"; do
+            SUBSCRIPTION="${TOPIC}_subscription"
+            uv run gcloud pubsub subscriptions create "$SUBSCRIPTION" --topic "$TOPIC" --ack-deadline=30 || true
+          done
+
       # - name: Deploy Data Validation Function
       #   run: |
       #     cd cloud_functions/data_validation
