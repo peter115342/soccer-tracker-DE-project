@@ -1,4 +1,75 @@
 data "google_compute_default_service_account" "default" {}
+data "google_pubsub_topic" "fetch_league_data" {
+  name = "fetch_league_data_topic"
+}
+
+data "google_pubsub_topic" "fetch_football_data" {
+  name = "fetch_football_data_topic"
+}
+
+data "google_pubsub_topic" "fetch_weather_data" {
+  name = "fetch_weather_data_topic"
+}
+
+data "google_pubsub_topic" "convert_to_parquet" {
+  name = "convert_to_parquet_topic"
+}
+
+data "google_pubsub_topic" "convert_weather_to_parquet" {
+  name = "convert_weather_to_parquet_topic"
+}
+
+data "google_pubsub_topic" "match_to_bigquery" {
+  name = "match_to_bigquery_topic"
+}
+
+data "google_pubsub_topic" "weather_to_bigquery" {
+  name = "weather_to_bigquery_topic"
+}
+
+data "google_pubsub_topic" "transform_matches" {
+  name = "transform_matches_topic"
+}
+
+data "google_pubsub_topic" "transform_weather" {
+  name = "transform_weather_topic"
+}
+
+data "google_pubsub_topic" "fetch_standings_data" {
+  name = "fetch_standings_data_topic"
+}
+
+data "google_pubsub_topic" "convert_standings_to_parquet" {
+  name = "convert_standings_to_parquet_topic"
+}
+
+data "google_pubsub_topic" "standings_to_bigquery" {
+  name = "standings_to_bigquery_topic"
+}
+
+data "google_pubsub_topic" "transform_standings" {
+  name = "transform_standings_topic"
+}
+
+data "google_pubsub_topic" "fetch_reddit_data" {
+  name = "fetch_reddit_data_topic"
+}
+
+data "google_pubsub_topic" "convert_reddit_to_parquet" {
+  name = "convert_reddit_to_parquet_topic"
+}
+
+data "google_pubsub_topic" "reddit_to_bigquery" {
+  name = "reddit_to_bigquery_topic"
+}
+
+data "google_pubsub_topic" "process_reddit_data" {
+  name = "process_reddit_data_topic"
+}
+
+data "google_pubsub_topic" "transform_reddit" {
+  name = "transform_reddit_topic"
+}
 
 resource "google_storage_bucket_object" "fetch_league_data" {
   name   = "functions/fetch_league_data_${data.archive_file.fetch_league_data.output_sha256}.zip"
@@ -107,17 +178,10 @@ resource "google_storage_bucket_object" "transform_reddit" {
   bucket = google_storage_bucket.function_bucket.name
   source = data.archive_file.transform_reddit.output_path
 }
-
-resource "google_storage_bucket_object" "trigger_dataplex_scans" {
-  name   = "functions/trigger_dataplex_scans_${data.archive_file.trigger_dataplex_scans.output_sha256}.zip"
-  bucket = google_storage_bucket.function_bucket.name
-  source = data.archive_file.trigger_dataplex_scans.output_path
-}
-
-
 resource "google_cloudfunctions2_function" "fetch_league_data" {
   name     = "fetch_league_data"
   location = var.region
+#test
   build_config {
     runtime     = "python312"
     entry_point = "fetch_league_data"
@@ -751,39 +815,4 @@ resource "google_cloudfunctions2_function" "transform_reddit" {
     pubsub_topic   = data.google_pubsub_topic.transform_reddit.id
   }
   depends_on = [google_storage_bucket_object.transform_reddit]
-}
-
-resource "google_cloudfunctions2_function" "trigger_dataplex_scans" {
-  name     = "trigger_dataplex_scans"
-  location = var.region
-
-  build_config {
-    runtime     = "python312"
-    entry_point = "trigger_dataplex_scans"
-    source {
-      storage_source {
-        bucket = google_storage_bucket.function_bucket.name
-        object = google_storage_bucket_object.trigger_dataplex_scans.name
-      }
-    }
-  }
-
-  service_config {
-    max_instance_count    = 1
-    available_memory      = "1024M"
-    timeout_seconds      = 540
-    service_account_email = data.google_compute_default_service_account.default.email
-    environment_variables = {
-      DISCORD_WEBHOOK_URL = var.discord_webhook_url
-      GCP_PROJECT_ID      = var.project_id
-      LOCATION           = var.region
-    }
-  }
-
-  event_trigger {
-    trigger_region = var.region
-    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = data.google_pubsub_topic.trigger_quality_scans.id
-  }
-  depends_on = [google_storage_bucket_object.trigger_dataplex_scans]
 }

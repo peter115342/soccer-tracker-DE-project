@@ -69,7 +69,3 @@ resource "google_pubsub_topic" "process_reddit_data" {
 resource "google_pubsub_topic" "transform_reddit" {
   name = "transform_reddit_topic"
 }
-
-data "google_pubsub_topic" "trigger_quality_scans" {
-  name = "trigger_quality_scans_topic"
-}
