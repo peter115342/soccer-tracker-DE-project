@@ -3,7 +3,7 @@ name: CI Pipeline
 on:
   push:
     branches:
-      - main
+      - dev
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -61,28 +61,28 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
 
-      # - name: Create Pub/Sub Topics
-      #   run: |
-      #     uv run gcloud pubsub topics create fetch_league_data_topic || true
-      #     uv run gcloud pubsub topics create fetch_reddit_data_topic || true
-      #     uv run gcloud pubsub topics create fetch_football_data_topic || true
-      #     uv run gcloud pubsub topics create fetch_weather_data_topic || true
-      #     uv run gcloud pubsub topics create convert_to_parquet_topic || true
-      #     uv run gcloud pubsub topics create convert_weather_to_parquet_topic || true
-      #     uv run gcloud pubsub topics create match_to_bigquery_topic || true
-      #     uv run gcloud pubsub topics create weather_to_bigquery_topic || true
-      #     uv run gcloud pubsub topics create transform_matches_topic || true
-      #     uv run gcloud pubsub topics create transform_weather_topic || true
-      #     uv run gcloud pubsub topics create fetch_standings_data_topic || true
-      #     uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
-      #     uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
-      #     uv run gcloud pubsub topics create standings_to_bigquery_topic || true
-      #     uv run gcloud pubsub topics create transform_standings_topic || true
-      #     uv run gcloud pubsub topics create convert_reddit_to_parquet_topic || true
-      #     uv run gcloud pubsub topics create reddit_to_bigquery_topic || true
-      #     uv run gcloud pubsub topics create process_reddit_data_topic || true
-      #     uv run gcloud pubsub topics create transform_reddit_topic || true
-      #     uv run gcloud pubsub topics create trigger_quality_scans_topic || true
+       - name: Create Pub/Sub Topics
+         run: |
+           uv run gcloud pubsub topics create fetch_league_data_topic || true
+           uv run gcloud pubsub topics create fetch_reddit_data_topic || true
+           uv run gcloud pubsub topics create fetch_football_data_topic || true
+           uv run gcloud pubsub topics create fetch_weather_data_topic || true
+           uv run gcloud pubsub topics create convert_to_parquet_topic || true
+           uv run gcloud pubsub topics create convert_weather_to_parquet_topic || true
+           uv run gcloud pubsub topics create match_to_bigquery_topic || true
+           uv run gcloud pubsub topics create weather_to_bigquery_topic || true
+           uv run gcloud pubsub topics create transform_matches_topic || true
+           uv run gcloud pubsub topics create transform_weather_topic || true
+           uv run gcloud pubsub topics create fetch_standings_data_topic || true
+           uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
+           uv run gcloud pubsub topics create convert_standings_to_parquet_topic || true
+           uv run gcloud pubsub topics create standings_to_bigquery_topic || true
+           uv run gcloud pubsub topics create transform_standings_topic || true
+           uv run gcloud pubsub topics create convert_reddit_to_parquet_topic || true
+           uv run gcloud pubsub topics create reddit_to_bigquery_topic || true
+           uv run gcloud pubsub topics create process_reddit_data_topic || true
+           uv run gcloud pubsub topics create transform_reddit_topic || true
+           uv run gcloud pubsub topics create trigger_quality_scans_topic || true
 
       # - name: Deploy Data Validation Function
       #   run: |
