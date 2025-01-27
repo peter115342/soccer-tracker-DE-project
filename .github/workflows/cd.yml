@@ -71,6 +71,7 @@ jobs:
 
       - name: Import Pub/Sub Topics
         env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
         working-directory: ./terraform
         run: |
