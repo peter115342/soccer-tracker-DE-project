@@ -101,7 +101,7 @@ jobs:
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
         working-directory: ./terraform
         run: |
-          terraform import google_pubsub_subscription.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_league_data_subscription
+          terraform import google_pubsub_subscription.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-fetch-league-data-337113-sub
           terraform import google_pubsub_subscription.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_reddit_data_subscription
           terraform import google_pubsub_subscription.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_football_data_subscription
           terraform import google_pubsub_subscription.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_weather_data_subscription
