@@ -102,24 +102,24 @@ jobs:
         working-directory: ./terraform
         run: |
           terraform import google_pubsub_subscription.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-fetch-league-data-337113-sub
-          terraform import google_pubsub_subscription.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_reddit_data_subscription
-          terraform import google_pubsub_subscription.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_football_data_subscription
-          terraform import google_pubsub_subscription.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_weather_data_subscription
-          terraform import google_pubsub_subscription.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_to_parquet_subscription
-          terraform import google_pubsub_subscription.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_weather_to_parquet_subscription
-          terraform import google_pubsub_subscription.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/match_to_bigquery_subscription
-          terraform import google_pubsub_subscription.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/weather_to_bigquery_subscription
-          terraform import google_pubsub_subscription.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_matches_subscription
-          terraform import google_pubsub_subscription.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_weather_subscription
-          terraform import google_pubsub_subscription.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_standings_data_subscription
-          terraform import google_pubsub_subscription.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_standings_to_parquet_subscription
-          terraform import google_pubsub_subscription.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/standings_to_bigquery_subscription
-          terraform import google_pubsub_subscription.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_standings_subscription
-          terraform import google_pubsub_subscription.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_reddit_to_parquet_subscription
-          terraform import google_pubsub_subscription.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/reddit_to_bigquery_subscription
-          terraform import google_pubsub_subscription.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/process_reddit_data_subscription
-          terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_reddit_subscription
-          terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/trigger_quality_scans_subscription
+          terraform import google_pubsub_subscription.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-fetch-reddit-data-337113-sub
+          terraform import google_pubsub_subscription.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-fetch-football-data-337113-sub
+          terraform import google_pubsub_subscription.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-fetch-weather-data-337113-sub
+          terraform import google_pubsub_subscription.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-transform-match-to-parquet-337113-sub
+          terraform import google_pubsub_subscription.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-transform-weather-to-parquet-337113-sub
+          terraform import google_pubsub_subscription.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-load-matches-to-bigquery-337113-sub
+          terraform import google_pubsub_subscription.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-load-weather-to-bigquery-337113
+          terraform import google_pubsub_subscription.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-transform-matches-337113-sub
+          terraform import google_pubsub_subscription.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-transform-weather-337113-sub
+          terraform import google_pubsub_subscription.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-fetch-standings-data-337113-sub
+          terraform import google_pubsub_subscription.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-transform-standings-to-parquet-337113-sub
+          terraform import google_pubsub_subscription.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-load-standings-to-bigquery-337113-sub
+          terraform import google_pubsub_subscription.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-transform-standings-337113-sub
+          terraform import google_pubsub_subscription.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-transform-reddit-to-parquet-337113-sub
+          terraform import google_pubsub_subscription.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-load-reddit-to-bigquery-337113-sub
+          terraform import google_pubsub_subscription.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-process-reddit-data-337113-sub
+          terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-transform-reddit-337113-sub
+          terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/eventarc-europe-central2-trigger-dataplex-scans-337113-sub
 
       - name: Terraform Plan
         env:
