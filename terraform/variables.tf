@@ -54,3 +54,8 @@ variable "dataform_workspace" {
   type        = string
 }
 
+variable "service_account_email" {
+  description = "Service Account Email for Pub/Sub push authentication"
+  type        = string
+}
+
