@@ -1,4 +1,4 @@
-name: CD Pipeline
+name: CI Pipeline
 
 on:
   push:
@@ -66,11 +66,13 @@ jobs:
       - name: Terraform Init
         env:
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+        working-directory: ./terraform
         run: terraform init
 
       - name: Import Pub/Sub Topics
         env:
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+        working-directory: ./terraform
         run: |
           terraform import google_pubsub_topic.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_league_data_topic
           terraform import google_pubsub_topic.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_reddit_data_topic
@@ -95,6 +97,7 @@ jobs:
       - name: Import Pub/Sub Subscriptions
         env:
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+        working-directory: ./terraform
         run: |
           terraform import google_pubsub_subscription.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_league_data_subscription
           terraform import google_pubsub_subscription.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_reddit_data_subscription
@@ -119,9 +122,11 @@ jobs:
       - name: Terraform Plan
         env:
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+        working-directory: ./terraform
         run: terraform plan
 
       - name: Terraform Apply
         env:
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+        working-directory: ./terraform
         run: terraform apply -auto-approve
