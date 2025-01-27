@@ -97,6 +97,7 @@ jobs:
 
       - name: Import Pub/Sub Subscriptions
         env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
         working-directory: ./terraform
         run: |
@@ -122,12 +123,14 @@ jobs:
 
       - name: Terraform Plan
         env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
         working-directory: ./terraform
         run: terraform plan
 
       - name: Terraform Apply
         env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
         working-directory: ./terraform
         run: terraform apply -auto-approve
