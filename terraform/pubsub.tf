@@ -94,19 +94,19 @@ resource "google_pubsub_topic" "trigger_quality_scans" {
   project = var.project_id
 }
 
-# Pub/Sub Subscriptions
 resource "google_pubsub_subscription" "fetch_league_data" {
   name    = "fetch_league_data_subscription"
   topic   = google_pubsub_topic.fetch_league_data.id
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://fetch-football-data-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2Fvigilant-shell-435820-r2%2Ftopics%2Ffetch_football_data_topic"
+    push_endpoint = "https://fetch-league-data-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ffetch_league_data_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
-      audience = "https://fetch-football-data-a2h6lbpipq-lm.a.run.app"
+      audience = "https://fetch-league-data-a2h6lbpipq-lm.a.run.app"
     }
+
   }
 }
 
@@ -116,12 +116,13 @@ resource "google_pubsub_subscription" "fetch_reddit_data" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://fetch-reddit-data-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://fetch-reddit-data-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ffetch_reddit_data_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://fetch-reddit-data-a2h6lbpipq-lm.a.run.app"
     }
+
   }
 }
 
@@ -131,12 +132,14 @@ resource "google_pubsub_subscription" "fetch_football_data" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://fetch-football-data-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://fetch-football-data-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ffetch_football_data_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://fetch-football-data-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -146,12 +149,14 @@ resource "google_pubsub_subscription" "fetch_weather_data" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://fetch-weather-data-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://fetch-weather-data-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ffetch_weather_data_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://fetch-weather-data-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -161,12 +166,14 @@ resource "google_pubsub_subscription" "convert_to_parquet" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://transform-match-to-parquet-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://transform-match-to-parquet-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fconvert_to_parquet_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://transform-match-to-parquet-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -176,12 +183,14 @@ resource "google_pubsub_subscription" "convert_weather_to_parquet" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://transform-weather-to-parquet-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://transform-weather-to-parquet-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fconvert_weather_to_parquet_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://transform-weather-to-parquet-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -191,12 +200,14 @@ resource "google_pubsub_subscription" "match_to_bigquery" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://load-matches-to-bigquery-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://load-matches-to-bigquery-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fmatch_to_bigquery_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://load-matches-to-bigquery-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -206,12 +217,13 @@ resource "google_pubsub_subscription" "weather_to_bigquery" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://load-weather-to-bigquery-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://load-weather-to-bigquery-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fweather_to_bigquery_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://load-weather-to-bigquery-a2h6lbpipq-lm.a.run.app"
     }
+
   }
 }
 
@@ -221,12 +233,13 @@ resource "google_pubsub_subscription" "transform_matches" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://transform-matches-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://transform-matches-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ftransform_matches_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://transform-matches-a2h6lbpipq-lm.a.run.app"
     }
+
   }
 }
 
@@ -236,12 +249,13 @@ resource "google_pubsub_subscription" "transform_weather" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://transform-weather-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://transform-weather-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ftransform_weather_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://transform-weather-a2h6lbpipq-lm.a.run.app"
     }
+
   }
 }
 
@@ -251,12 +265,14 @@ resource "google_pubsub_subscription" "fetch_standings_data" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://fetch-standings-data-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://fetch-standings-data-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ffetch_standings_data_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://fetch-standings-data-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -266,12 +282,14 @@ resource "google_pubsub_subscription" "convert_standings_to_parquet" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://transform-standings-to-parquet-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://transform-standings-to-parquet-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fconvert_standings_to_parquet_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://transform-standings-to-parquet-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -281,12 +299,14 @@ resource "google_pubsub_subscription" "standings_to_bigquery" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://load-standings-to-bigquery-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://load-standings-to-bigquery-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fstandings_to_bigquery_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://load-standings-to-bigquery-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -296,12 +316,14 @@ resource "google_pubsub_subscription" "transform_standings" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://transform-standings-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://transform-standings-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ftransform_standings_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://transform-standings-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -311,12 +333,14 @@ resource "google_pubsub_subscription" "convert_reddit_to_parquet" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://transform-reddit-to-parquet-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://transform-reddit-to-parquet-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fconvert_reddit_to_parquet_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://transform-reddit-to-parquet-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
 
@@ -326,14 +350,17 @@ resource "google_pubsub_subscription" "reddit_to_bigquery" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://load-reddit-to-bigquery-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://load-reddit-to-bigquery-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Freddit_to_bigquery_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://load-reddit-to-bigquery-a2h6lbpipq-lm.a.run.app"
     }
+
+
   }
 }
+
 
 resource "google_pubsub_subscription" "process_reddit_data" {
   name    = "process_reddit_data_subscription"
@@ -341,12 +368,13 @@ resource "google_pubsub_subscription" "process_reddit_data" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://process-reddit-data-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://process-reddit-data-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fprocess_reddit_data_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://process-reddit-data-a2h6lbpipq-lm.a.run.app"
     }
+
   }
 }
 
@@ -356,12 +384,13 @@ resource "google_pubsub_subscription" "transform_reddit" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://transform-reddit-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://transform-reddit-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ftransform_reddit_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://transform-reddit-a2h6lbpipq-lm.a.run.app"
     }
+
   }
 }
 
@@ -371,12 +400,12 @@ resource "google_pubsub_subscription" "trigger_quality_scans" {
   project = var.project_id
 
   push_config {
-    push_endpoint = "https://trigger-dataplex-scans-test-a2h6lbpipq-lm.a.run.app"
+    push_endpoint = "https://trigger-dataplex-scans-test-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Ftrigger_quality_scans_topic"
     
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://trigger-dataplex-scans-test-a2h6lbpipq-lm.a.run.app"
     }
+
   }
 }
-
