@@ -102,6 +102,9 @@ resource "google_pubsub_subscription" "fetch_league_data" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -121,6 +124,9 @@ resource "google_pubsub_subscription" "fetch_reddit_data" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
@@ -142,6 +148,9 @@ resource "google_pubsub_subscription" "fetch_football_data" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -161,6 +170,9 @@ resource "google_pubsub_subscription" "fetch_weather_data" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
@@ -182,6 +194,9 @@ resource "google_pubsub_subscription" "convert_to_parquet" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -201,6 +216,9 @@ resource "google_pubsub_subscription" "convert_weather_to_parquet" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
@@ -222,6 +240,9 @@ resource "google_pubsub_subscription" "match_to_bigquery" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -241,6 +262,9 @@ resource "google_pubsub_subscription" "weather_to_bigquery" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
@@ -262,6 +286,9 @@ resource "google_pubsub_subscription" "transform_matches" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -281,6 +308,9 @@ resource "google_pubsub_subscription" "transform_weather" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
@@ -302,6 +332,9 @@ resource "google_pubsub_subscription" "fetch_standings_data" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -321,6 +354,9 @@ resource "google_pubsub_subscription" "convert_standings_to_parquet" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
@@ -342,6 +378,9 @@ resource "google_pubsub_subscription" "standings_to_bigquery" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -361,6 +400,9 @@ resource "google_pubsub_subscription" "transform_standings" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
@@ -382,6 +424,9 @@ resource "google_pubsub_subscription" "convert_reddit_to_parquet" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -401,6 +446,9 @@ resource "google_pubsub_subscription" "reddit_to_bigquery" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
@@ -422,6 +470,9 @@ resource "google_pubsub_subscription" "process_reddit_data" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -442,6 +493,9 @@ resource "google_pubsub_subscription" "transform_reddit" {
   expiration_policy {
     ttl = ""
   }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
   ack_deadline_seconds = 600
 
   push_config {
@@ -461,6 +515,9 @@ resource "google_pubsub_subscription" "trigger_quality_scans" {
   message_retention_duration = "2678400s"
   expiration_policy {
     ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
   }
   ack_deadline_seconds = 600
 
