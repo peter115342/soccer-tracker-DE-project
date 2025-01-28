@@ -87,7 +87,7 @@ jobs:
       - name: Deploy Data Validation Function
         run: |
           cd cloud_functions/data_validation
-          uv run gcloud functions deploy trigger_dataplex_scans_test \
+          uv run gcloud functions deploy trigger_dataplex_scans \
             --runtime python312 \
             --trigger-topic trigger_quality_scans_topic \
             --entry-point trigger_dataplex_scans \
