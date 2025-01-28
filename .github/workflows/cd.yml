@@ -63,74 +63,74 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # - name: Terraform Init
-      #   env:
-      #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
-      #   working-directory: ./terraform
-      #   run: terraform init
+      - name: Terraform Init
+        env:
+          TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+        working-directory: ./terraform
+        run: terraform init
 
-      # # - name: Import Pub/Sub Topics
-      # #   env:
-      # #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-      # #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
-      # #   working-directory: ./terraform
-      # #   run: |
-      # #     terraform import google_pubsub_topic.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_league_data_topic
-      # #     terraform import google_pubsub_topic.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_reddit_data_topic
-      # #     terraform import google_pubsub_topic.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_football_data_topic
-      # #     terraform import google_pubsub_topic.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_weather_data_topic
-      # #     terraform import google_pubsub_topic.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_to_parquet_topic
-      # #     terraform import google_pubsub_topic.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_weather_to_parquet_topic
-      # #     terraform import google_pubsub_topic.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/match_to_bigquery_topic
-      # #     terraform import google_pubsub_topic.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/weather_to_bigquery_topic
-      # #     terraform import google_pubsub_topic.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_matches_topic
-      # #     terraform import google_pubsub_topic.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_weather_topic
-      # #     terraform import google_pubsub_topic.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_standings_data_topic
-      # #     terraform import google_pubsub_topic.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_standings_to_parquet_topic
-      # #     terraform import google_pubsub_topic.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/standings_to_bigquery_topic
-      # #     terraform import google_pubsub_topic.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_standings_topic
-      # #     terraform import google_pubsub_topic.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_reddit_to_parquet_topic
-      # #     terraform import google_pubsub_topic.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/reddit_to_bigquery_topic
-      # #     terraform import google_pubsub_topic.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/process_reddit_data_topic
-      # #     terraform import google_pubsub_topic.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_reddit_topic
-      # #     terraform import google_pubsub_topic.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/topics/trigger_quality_scans_topic
-
-      # # - name: Import Pub/Sub Subscriptions
-      # #   env:
-      # #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-      # #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
-      # #   working-directory: ./terraform
-      # #   run: |
-      # #     terraform import google_pubsub_subscription.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_league_data_subscription
-      # #     terraform import google_pubsub_subscription.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_reddit_data_subscription
-      # #     terraform import google_pubsub_subscription.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_football_data_subscription
-      # #     terraform import google_pubsub_subscription.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_weather_data_subscription
-      # #     terraform import google_pubsub_subscription.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_to_parquet_subscription
-      # #     terraform import google_pubsub_subscription.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_weather_to_parquet_subscription
-      # #     terraform import google_pubsub_subscription.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/match_to_bigquery_subscription
-      # #     terraform import google_pubsub_subscription.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/weather_to_bigquery_subscription
-      # #     terraform import google_pubsub_subscription.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_matches_subscription
-      # #     terraform import google_pubsub_subscription.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_weather_subscription
-      # #     terraform import google_pubsub_subscription.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_standings_data_subscription
-      # #     terraform import google_pubsub_subscription.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_standings_to_parquet_subscription
-      # #     terraform import google_pubsub_subscription.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/standings_to_bigquery_subscription
-      # #     terraform import google_pubsub_subscription.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_standings_subscription
-      # #     terraform import google_pubsub_subscription.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_reddit_to_parquet_subscription
-      # #     terraform import google_pubsub_subscription.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/reddit_to_bigquery_subscription
-      # #     terraform import google_pubsub_subscription.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/process_reddit_data_subscription
-      # #     terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_reddit_subscription
-      # #     terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/trigger_quality_scans_subscription
-
-      # - name: Terraform Plan
+      # - name: Import Pub/Sub Topics
       #   env:
       #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
       #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
       #   working-directory: ./terraform
-      #   run: terraform plan
+      #   run: |
+      #     terraform import google_pubsub_topic.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_league_data_topic
+      #     terraform import google_pubsub_topic.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_reddit_data_topic
+      #     terraform import google_pubsub_topic.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_football_data_topic
+      #     terraform import google_pubsub_topic.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_weather_data_topic
+      #     terraform import google_pubsub_topic.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_to_parquet_topic
+      #     terraform import google_pubsub_topic.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_weather_to_parquet_topic
+      #     terraform import google_pubsub_topic.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/match_to_bigquery_topic
+      #     terraform import google_pubsub_topic.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/weather_to_bigquery_topic
+      #     terraform import google_pubsub_topic.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_matches_topic
+      #     terraform import google_pubsub_topic.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_weather_topic
+      #     terraform import google_pubsub_topic.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_standings_data_topic
+      #     terraform import google_pubsub_topic.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_standings_to_parquet_topic
+      #     terraform import google_pubsub_topic.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/standings_to_bigquery_topic
+      #     terraform import google_pubsub_topic.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_standings_topic
+      #     terraform import google_pubsub_topic.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_reddit_to_parquet_topic
+      #     terraform import google_pubsub_topic.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/reddit_to_bigquery_topic
+      #     terraform import google_pubsub_topic.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/process_reddit_data_topic
+      #     terraform import google_pubsub_topic.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_reddit_topic
+      #     terraform import google_pubsub_topic.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/topics/trigger_quality_scans_topic
 
-      # - name: Terraform Apply
+      # - name: Import Pub/Sub Subscriptions
       #   env:
       #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
       #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
       #   working-directory: ./terraform
-      #   run: terraform apply -auto-approve
+      #   run: |
+      #     terraform import google_pubsub_subscription.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_league_data_subscription
+      #     terraform import google_pubsub_subscription.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_reddit_data_subscription
+      #     terraform import google_pubsub_subscription.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_football_data_subscription
+      #     terraform import google_pubsub_subscription.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_weather_data_subscription
+      #     terraform import google_pubsub_subscription.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_to_parquet_subscription
+      #     terraform import google_pubsub_subscription.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_weather_to_parquet_subscription
+      #     terraform import google_pubsub_subscription.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/match_to_bigquery_subscription
+      #     terraform import google_pubsub_subscription.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/weather_to_bigquery_subscription
+      #     terraform import google_pubsub_subscription.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_matches_subscription
+      #     terraform import google_pubsub_subscription.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_weather_subscription
+      #     terraform import google_pubsub_subscription.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_standings_data_subscription
+      #     terraform import google_pubsub_subscription.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_standings_to_parquet_subscription
+      #     terraform import google_pubsub_subscription.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/standings_to_bigquery_subscription
+      #     terraform import google_pubsub_subscription.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_standings_subscription
+      #     terraform import google_pubsub_subscription.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_reddit_to_parquet_subscription
+      #     terraform import google_pubsub_subscription.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/reddit_to_bigquery_subscription
+      #     terraform import google_pubsub_subscription.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/process_reddit_data_subscription
+      #     terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_reddit_subscription
+      #     terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/trigger_quality_scans_subscription
+
+      - name: Terraform Plan
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+        working-directory: ./terraform
+        run: terraform plan
+
+      - name: Terraform Apply
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+        working-directory: ./terraform
+        run: terraform apply -auto-approve
