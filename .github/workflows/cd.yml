@@ -62,107 +62,107 @@ jobs:
 
       - name: Prepare and Upload Cloud Functions
         env:
-          BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+          BUCKET_NAME: ${{secrets.BUCKET_NAME}}
         run: |
           # Data Validation
           cd cloud_functions/data_validation
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/data_validation/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/data_validation/
           cd ../..
 
           # League Data
           cd cloud_functions/league_data/fetch_league_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/league_data/fetch_league_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/league_data/fetch_league_data_function/
           cd ../../..
 
           # Match Data Functions
           cd cloud_functions/match_data/fetch_match_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/match_data/fetch_match_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/fetch_match_data_function/
           cd ../../..
 
           cd cloud_functions/match_data/convert_match_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/match_data/convert_match_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/convert_match_data_function/
           cd ../../..
 
           cd cloud_functions/match_data/match_to_bigquery_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/match_data/match_to_bigquery_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/match_to_bigquery_function/
           cd ../../..
 
           cd cloud_functions/match_data/match_transform_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/match_data/match_transform_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/match_transform_function/
           cd ../../..
 
           # Weather Data Functions
           cd cloud_functions/weather_data/fetch_weather_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/weather_data/fetch_weather_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/fetch_weather_data_function/
           cd ../../..
 
           cd cloud_functions/weather_data/convert_weather_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/weather_data/convert_weather_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/convert_weather_data_function/
           cd ../../..
 
           cd cloud_functions/weather_data/weather_to_bigquery_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/weather_data/weather_to_bigquery_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/weather_to_bigquery_function/
           cd ../../..
 
           cd cloud_functions/weather_data/weather_transform_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/weather_data/weather_transform_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/weather_transform_function/
           cd ../../..
 
           # Standings Data Functions
           cd cloud_functions/standings_data/fetch_standings_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/standings_data/fetch_standings_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/fetch_standings_data_function/
           cd ../../..
 
           cd cloud_functions/standings_data/convert_standings_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/standings_data/convert_standings_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/convert_standings_data_function/
           cd ../../..
 
           cd cloud_functions/standings_data/standings_to_bigquery_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/standings_data/standings_to_bigquery_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/standings_to_bigquery_function/
           cd ../../..
 
           cd cloud_functions/standings_data/standings_transform_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/standings_data/standings_transform_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/standings_transform_function/
           cd ../../..
 
           # Reddit Data Functions
           cd cloud_functions/reddit_data/fetch_reddit_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/reddit_data/fetch_reddit_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/fetch_reddit_data_function/
           cd ../../..
 
           cd cloud_functions/reddit_data/convert_reddit_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/reddit_data/convert_reddit_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/convert_reddit_data_function/
           cd ../../..
 
           cd cloud_functions/reddit_data/reddit_to_bigquery_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/reddit_data/reddit_to_bigquery_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/reddit_to_bigquery_function/
           cd ../../..
 
           cd cloud_functions/reddit_data/process_reddit_data_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/reddit_data/process_reddit_data_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/process_reddit_data_function/
           cd ../../..
 
           cd cloud_functions/reddit_data/reddit_transform_function
           zip -r source.zip *
-          gsutil cp source.zip gs://${{secrets.BUCKET_NAME}}/cloud_functions/reddit_data/reddit_transform_function/
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/reddit_transform_function/
           cd ../../..
 
       - name: Setup Terraform
