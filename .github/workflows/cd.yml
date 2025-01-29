@@ -67,7 +67,7 @@ jobs:
           # Data Validation
           cd cloud_functions/data_validation
           zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/data_validation/
+          gsutil cp source.zip gs://soccer-tracker-bucket/cloud_functions/data_validation/
           cd ../..
 
           # League Data
