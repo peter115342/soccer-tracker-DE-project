@@ -26,6 +26,8 @@ resource "google_cloudfunctions2_function" "trigger_dataplex_scans" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
+
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       GCP_PROJECT_ID     = var.project_id
@@ -60,6 +62,7 @@ resource "google_cloudfunctions2_function" "fetch_league_data" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       API_FOOTBALL_KEY    = var.api_football_key
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
@@ -96,6 +99,7 @@ resource "google_cloudfunctions2_function" "fetch_football_data" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       API_FOOTBALL_KEY    = var.api_football_key
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
@@ -132,6 +136,7 @@ resource "google_cloudfunctions2_function" "fetch_weather_data" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -167,6 +172,7 @@ resource "google_cloudfunctions2_function" "transform_match_to_parquet" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -202,6 +208,7 @@ resource "google_cloudfunctions2_function" "transform_weather_to_parquet" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -237,6 +244,7 @@ resource "google_cloudfunctions2_function" "load_matches_to_bigquery" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -272,6 +280,7 @@ resource "google_cloudfunctions2_function" "load_weather_to_bigquery" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -307,6 +316,7 @@ resource "google_cloudfunctions2_function" "transform_matches" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL   = var.discord_webhook_url
       GCP_PROJECT_ID       = var.project_id
@@ -343,6 +353,7 @@ resource "google_cloudfunctions2_function" "transform_weather" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL   = var.discord_webhook_url
       GCP_PROJECT_ID       = var.project_id
@@ -379,6 +390,7 @@ resource "google_cloudfunctions2_function" "fetch_standings_data" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       API_FOOTBALL_KEY    = var.api_football_key
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
@@ -415,6 +427,7 @@ resource "google_cloudfunctions2_function" "transform_standings_to_parquet" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -450,6 +463,7 @@ resource "google_cloudfunctions2_function" "load_standings_to_bigquery" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -485,6 +499,7 @@ resource "google_cloudfunctions2_function" "transform_standings" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL   = var.discord_webhook_url
       GCP_PROJECT_ID       = var.project_id
@@ -521,6 +536,7 @@ resource "google_cloudfunctions2_function" "fetch_reddit_data" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       REDDIT_CLIENT_ID     = var.reddit_client_id
       REDDIT_CLIENT_SECRET = var.reddit_client_secret
@@ -558,6 +574,7 @@ resource "google_cloudfunctions2_function" "transform_reddit_to_parquet" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -593,6 +610,7 @@ resource "google_cloudfunctions2_function" "load_reddit_to_bigquery" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -628,6 +646,7 @@ resource "google_cloudfunctions2_function" "process_reddit_data" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       BUCKET_NAME        = var.bucket_name
@@ -663,6 +682,7 @@ resource "google_cloudfunctions2_function" "transform_reddit" {
     max_instance_count = 1
     available_memory   = "1024M"
     timeout_seconds    = 540
+    service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL   = var.discord_webhook_url
       GCP_PROJECT_ID       = var.project_id

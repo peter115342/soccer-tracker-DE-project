@@ -20,7 +20,7 @@ variable "bucket_name" {
 }
 
 variable "functions_bucket_name" {
-  description = "Functions Bucket Name"
+  description = "Func Bucket Name"
   type        = string
   default     = ""
 
