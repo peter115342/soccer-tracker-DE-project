@@ -19,6 +19,13 @@ variable "bucket_name" {
 
 }
 
+variable "functions_bucket_name" {
+  description = "Functions Bucket Name"
+  type        = string
+  default     = ""
+
+}
+
 variable "api_football_key" {
   description = "API Football Key"
   type        = string

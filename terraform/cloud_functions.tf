@@ -1,5 +1,5 @@
 resource "google_storage_bucket" "function_bucket" {
-  name     = var.bucket_name
+  name     = var.functions_bucket_name
   location = "europe-central2"
   uniform_bucket_level_access = true
 }
