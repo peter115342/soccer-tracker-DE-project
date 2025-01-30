@@ -337,7 +337,12 @@ def trigger_dataplex_scans(event, context):
         project_id = os.environ.get("GCP_PROJECT_ID")
         location = os.environ.get("LOCATION", "europe-central2")
 
-        scan_ids = ["test-scan"]
+        scan_ids = [
+            "matches-processed-scan",
+            "weather-processed-scan",
+            "reddit-processed-scan",
+            "standings-processed-scan",
+        ]
 
         triggered_scans = []
 
