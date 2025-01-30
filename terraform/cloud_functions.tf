@@ -1,14 +1,22 @@
+resource "google_storage_bucket" "function_bucket" {
+  name     = var.bucket_name
+  location = "europe-central2"
+  uniform_bucket_level_access = true
+}
+
+
+
 resource "google_cloudfunctions2_function" "trigger_dataplex_scans" {
   name        = "trigger_dataplex_scans"
-  location    = var.region
-  description = "Triggers Dataplex quality scans"
+  location    = "europe-central2"
+  description = "Function to trigger Dataplex quality scans"
 
   build_config {
     runtime     = "python312"
     entry_point = "trigger_dataplex_scans"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/data_validation/source.zip"
       }
     }
@@ -23,19 +31,26 @@ resource "google_cloudfunctions2_function" "trigger_dataplex_scans" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.trigger_quality_scans.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "fetch_league_data" {
   name        = "fetch_league_data"
-  location    = var.region
-  description = "Fetches league data"
+  location    = "europe-central2"
+  description = "Function to fetch league data"
 
   build_config {
     runtime     = "python312"
     entry_point = "fetch_league_data"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/league_data/fetch_league_data_function/source.zip"
       }
     }
@@ -52,19 +67,26 @@ resource "google_cloudfunctions2_function" "fetch_league_data" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.fetch_league_data.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "fetch_football_data" {
   name        = "fetch_football_data"
-  location    = var.region
-  description = "Fetches football match data"
+  location    = "europe-central2"
+  description = "Function to fetch football match data"
 
   build_config {
     runtime     = "python312"
     entry_point = "fetch_football_data"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/match_data/fetch_match_data_function/source.zip"
       }
     }
@@ -81,19 +103,26 @@ resource "google_cloudfunctions2_function" "fetch_football_data" {
       BUCKET_NAME        = var.bucket_name
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.fetch_football_data.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "fetch_weather_data" {
   name        = "fetch_weather_data"
-  location    = var.region
-  description = "Fetches weather data"
+  location    = "europe-central2"
+  description = "Function to fetch weather data"
 
   build_config {
     runtime     = "python312"
     entry_point = "fetch_weather_data"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/weather_data/fetch_weather_data_function/source.zip"
       }
     }
@@ -109,19 +138,26 @@ resource "google_cloudfunctions2_function" "fetch_weather_data" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.fetch_weather_data.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "transform_match_to_parquet" {
   name        = "transform_match_to_parquet"
-  location    = var.region
-  description = "Converts match data to parquet format"
+  location    = "europe-central2"
+  description = "Function to transform match data to parquet"
 
   build_config {
     runtime     = "python312"
     entry_point = "transform_to_parquet"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/match_data/convert_match_data_function/source.zip"
       }
     }
@@ -137,19 +173,26 @@ resource "google_cloudfunctions2_function" "transform_match_to_parquet" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.convert_to_parquet.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "transform_weather_to_parquet" {
   name        = "transform_weather_to_parquet"
-  location    = var.region
-  description = "Converts weather data to parquet format"
+  location    = "europe-central2"
+  description = "Function to transform weather data to parquet"
 
   build_config {
     runtime     = "python312"
     entry_point = "transform_to_parquet"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/weather_data/convert_weather_data_function/source.zip"
       }
     }
@@ -165,19 +208,26 @@ resource "google_cloudfunctions2_function" "transform_weather_to_parquet" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.convert_weather_to_parquet.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "load_matches_to_bigquery" {
   name        = "load_matches_to_bigquery"
-  location    = var.region
-  description = "Loads match data to BigQuery"
+  location    = "europe-central2"
+  description = "Function to load matches to BigQuery"
 
   build_config {
     runtime     = "python312"
     entry_point = "load_matches_to_bigquery"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/match_data/match_to_bigquery_function/source.zip"
       }
     }
@@ -193,19 +243,26 @@ resource "google_cloudfunctions2_function" "load_matches_to_bigquery" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.match_to_bigquery.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "load_weather_to_bigquery" {
   name        = "load_weather_to_bigquery"
-  location    = var.region
-  description = "Loads weather data to BigQuery"
+  location    = "europe-central2"
+  description = "Function to load weather data to BigQuery"
 
   build_config {
     runtime     = "python312"
     entry_point = "load_weather_to_bigquery"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/weather_data/weather_to_bigquery_function/source.zip"
       }
     }
@@ -221,19 +278,26 @@ resource "google_cloudfunctions2_function" "load_weather_to_bigquery" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.weather_to_bigquery.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "transform_matches" {
   name        = "transform_matches"
-  location    = var.region
-  description = "Transforms match data"
+  location    = "europe-central2"
+  description = "Function to transform matches"
 
   build_config {
     runtime     = "python312"
     entry_point = "transform_matches"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/match_data/match_transform_function/source.zip"
       }
     }
@@ -250,19 +314,26 @@ resource "google_cloudfunctions2_function" "transform_matches" {
       DATAFORM_WORKSPACE   = var.dataform_workspace
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.transform_matches.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "transform_weather" {
   name        = "transform_weather"
-  location    = var.region
-  description = "Transforms weather data"
+  location    = "europe-central2"
+  description = "Function to transform weather data"
 
   build_config {
     runtime     = "python312"
     entry_point = "transform_weather"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/weather_data/weather_transform_function/source.zip"
       }
     }
@@ -279,19 +350,26 @@ resource "google_cloudfunctions2_function" "transform_weather" {
       DATAFORM_WORKSPACE   = var.dataform_workspace
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.transform_weather.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "fetch_standings_data" {
   name        = "fetch_standings_data"
-  location    = var.region
-  description = "Fetches standings data"
+  location    = "europe-central2"
+  description = "Function to fetch standings data"
 
   build_config {
     runtime     = "python312"
     entry_point = "fetch_standings_data"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/standings_data/fetch_standings_data_function/source.zip"
       }
     }
@@ -308,19 +386,26 @@ resource "google_cloudfunctions2_function" "fetch_standings_data" {
       BUCKET_NAME        = var.bucket_name
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.fetch_standings_data.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "transform_standings_to_parquet" {
   name        = "transform_standings_to_parquet"
-  location    = var.region
-  description = "Converts standings data to parquet format"
+  location    = "europe-central2"
+  description = "Function to transform standings to parquet"
 
   build_config {
     runtime     = "python312"
     entry_point = "transform_to_parquet"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/standings_data/convert_standings_data_function/source.zip"
       }
     }
@@ -336,19 +421,26 @@ resource "google_cloudfunctions2_function" "transform_standings_to_parquet" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.convert_standings_to_parquet.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "load_standings_to_bigquery" {
   name        = "load_standings_to_bigquery"
-  location    = var.region
-  description = "Loads standings data to BigQuery"
+  location    = "europe-central2"
+  description = "Function to load standings to BigQuery"
 
   build_config {
     runtime     = "python312"
     entry_point = "load_standings_to_bigquery"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/standings_data/standings_to_bigquery_function/source.zip"
       }
     }
@@ -364,19 +456,26 @@ resource "google_cloudfunctions2_function" "load_standings_to_bigquery" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.standings_to_bigquery.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "transform_standings" {
   name        = "transform_standings"
-  location    = var.region
-  description = "Transforms standings data"
+  location    = "europe-central2"
+  description = "Function to transform standings"
 
   build_config {
     runtime     = "python312"
     entry_point = "transform_standings"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/standings_data/standings_transform_function/source.zip"
       }
     }
@@ -393,19 +492,26 @@ resource "google_cloudfunctions2_function" "transform_standings" {
       DATAFORM_WORKSPACE   = var.dataform_workspace
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.transform_standings.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "fetch_reddit_data" {
   name        = "fetch_reddit_data"
-  location    = var.region
-  description = "Fetches Reddit data"
+  location    = "europe-central2"
+  description = "Function to fetch reddit data"
 
   build_config {
     runtime     = "python312"
     entry_point = "fetch_reddit_data"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/reddit_data/fetch_reddit_data_function/source.zip"
       }
     }
@@ -423,19 +529,26 @@ resource "google_cloudfunctions2_function" "fetch_reddit_data" {
       GCP_PROJECT_ID      = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.fetch_reddit_data.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "transform_reddit_to_parquet" {
   name        = "transform_reddit_to_parquet"
-  location    = var.region
-  description = "Converts Reddit data to parquet format"
+  location    = "europe-central2"
+  description = "Function to transform reddit data to parquet"
 
   build_config {
     runtime     = "python312"
     entry_point = "transform_to_parquet"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/reddit_data/convert_reddit_data_function/source.zip"
       }
     }
@@ -451,19 +564,26 @@ resource "google_cloudfunctions2_function" "transform_reddit_to_parquet" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.convert_reddit_to_parquet.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "load_reddit_to_bigquery" {
   name        = "load_reddit_to_bigquery"
-  location    = var.region
-  description = "Loads Reddit data to BigQuery"
+  location    = "europe-central2"
+  description = "Function to load reddit data to BigQuery"
 
   build_config {
     runtime     = "python312"
     entry_point = "load_reddit_to_bigquery"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/reddit_data/reddit_to_bigquery_function/source.zip"
       }
     }
@@ -479,19 +599,26 @@ resource "google_cloudfunctions2_function" "load_reddit_to_bigquery" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.reddit_to_bigquery.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "process_reddit_data" {
   name        = "process_reddit_data"
-  location    = var.region
-  description = "Processes Reddit data"
+  location    = "europe-central2"
+  description = "Function to process reddit data"
 
   build_config {
     runtime     = "python312"
     entry_point = "process_reddit_threads"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/reddit_data/process_reddit_data_function/source.zip"
       }
     }
@@ -507,19 +634,26 @@ resource "google_cloudfunctions2_function" "process_reddit_data" {
       GCP_PROJECT_ID     = var.project_id
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.process_reddit_data.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
 
 resource "google_cloudfunctions2_function" "transform_reddit" {
   name        = "transform_reddit"
-  location    = var.region
-  description = "Transforms Reddit data"
+  location    = "europe-central2"
+  description = "Function to transform reddit data"
 
   build_config {
     runtime     = "python312"
     entry_point = "transform_reddit"
     source {
       storage_source {
-        bucket = var.bucket_name
+        bucket = google_storage_bucket.function_bucket.name
         object = "cloud_functions/reddit_data/reddit_transform_function/source.zip"
       }
     }
@@ -536,4 +670,12 @@ resource "google_cloudfunctions2_function" "transform_reddit" {
       DATAFORM_WORKSPACE   = var.dataform_workspace
     }
   }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.transform_reddit.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
 }
+
