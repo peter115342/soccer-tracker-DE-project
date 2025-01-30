@@ -683,6 +683,7 @@ resource "google_cloudfunctions2_function" "transform_reddit" {
     available_memory   = "1024M"
     timeout_seconds    = 540
     service_account_email = var.service_account_email
+
     environment_variables = {
       DISCORD_WEBHOOK_URL   = var.discord_webhook_url
       GCP_PROJECT_ID       = var.project_id
