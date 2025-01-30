@@ -27,7 +27,8 @@ resource "google_cloudfunctions2_function" "trigger_dataplex_scans" {
     available_memory   = "1024M"
     timeout_seconds    = 540
     service_account_email = var.service_account_email
-
+    ingress_settings = "ALLOW_ALL"
+    all_traffic_on_latest_revision = true
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       GCP_PROJECT_ID     = var.project_id
