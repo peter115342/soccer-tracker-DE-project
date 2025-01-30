@@ -60,217 +60,229 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
 
-      - name: Prepare and Upload Cloud Functions
-        env:
-          BUCKET_NAME: ${{secrets.FUNCTIONS_BUCKET_NAME}}
+      - name: Deploy Data Validation Function
         run: |
-          # Data Validation
           cd cloud_functions/data_validation
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/data_validation/
+          uv run gcloud functions deploy trigger_dataplex_scans \
+            --runtime python312 \
+            --trigger-topic trigger_quality_scans_topic \
+            --entry-point trigger_dataplex_scans \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
           cd ../..
+      # - name: Prepare and Upload Cloud Functions
+      #   env:
+      #     BUCKET_NAME: ${{secrets.FUNCTIONS_BUCKET_NAME}}
+      #   run: |
+      #     # Data Validation
+      #     cd cloud_functions/data_validation
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/data_validation/
+      #     cd ../..
 
-          # League Data
-          cd cloud_functions/league_data/fetch_league_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/league_data/fetch_league_data_function/
-          cd ../../..
+      #     # League Data
+      #     cd cloud_functions/league_data/fetch_league_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/league_data/fetch_league_data_function/
+      #     cd ../../..
 
-          # Match Data Functions
-          cd cloud_functions/match_data/fetch_match_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/fetch_match_data_function/
-          cd ../../..
+      #     # Match Data Functions
+      #     cd cloud_functions/match_data/fetch_match_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/fetch_match_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/match_data/convert_match_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/convert_match_data_function/
-          cd ../../..
+      #     cd cloud_functions/match_data/convert_match_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/convert_match_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/match_data/match_to_bigquery_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/match_to_bigquery_function/
-          cd ../../..
+      #     cd cloud_functions/match_data/match_to_bigquery_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/match_to_bigquery_function/
+      #     cd ../../..
 
-          cd cloud_functions/match_data/match_transform_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/match_transform_function/
-          cd ../../..
+      #     cd cloud_functions/match_data/match_transform_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/match_transform_function/
+      #     cd ../../..
 
-          # Weather Data Functions
-          cd cloud_functions/weather_data/fetch_weather_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/fetch_weather_data_function/
-          cd ../../..
+      #     # Weather Data Functions
+      #     cd cloud_functions/weather_data/fetch_weather_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/fetch_weather_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/weather_data/convert_weather_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/convert_weather_data_function/
-          cd ../../..
+      #     cd cloud_functions/weather_data/convert_weather_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/convert_weather_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/weather_data/weather_to_bigquery_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/weather_to_bigquery_function/
-          cd ../../..
+      #     cd cloud_functions/weather_data/weather_to_bigquery_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/weather_to_bigquery_function/
+      #     cd ../../..
 
-          cd cloud_functions/weather_data/weather_transform_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/weather_transform_function/
-          cd ../../..
+      #     cd cloud_functions/weather_data/weather_transform_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/weather_transform_function/
+      #     cd ../../..
 
-          # Standings Data Functions
-          cd cloud_functions/standings_data/fetch_standings_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/fetch_standings_data_function/
-          cd ../../..
+      #     # Standings Data Functions
+      #     cd cloud_functions/standings_data/fetch_standings_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/fetch_standings_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/standings_data/convert_standings_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/convert_standings_data_function/
-          cd ../../..
+      #     cd cloud_functions/standings_data/convert_standings_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/convert_standings_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/standings_data/standings_to_bigquery_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/standings_to_bigquery_function/
-          cd ../../..
+      #     cd cloud_functions/standings_data/standings_to_bigquery_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/standings_to_bigquery_function/
+      #     cd ../../..
 
-          cd cloud_functions/standings_data/standings_transform_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/standings_transform_function/
-          cd ../../..
+      #     cd cloud_functions/standings_data/standings_transform_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/standings_transform_function/
+      #     cd ../../..
 
-          # Reddit Data Functions
-          cd cloud_functions/reddit_data/fetch_reddit_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/fetch_reddit_data_function/
-          cd ../../..
+      #     # Reddit Data Functions
+      #     cd cloud_functions/reddit_data/fetch_reddit_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/fetch_reddit_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/reddit_data/convert_reddit_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/convert_reddit_data_function/
-          cd ../../..
+      #     cd cloud_functions/reddit_data/convert_reddit_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/convert_reddit_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/reddit_data/reddit_to_bigquery_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/reddit_to_bigquery_function/
-          cd ../../..
+      #     cd cloud_functions/reddit_data/reddit_to_bigquery_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/reddit_to_bigquery_function/
+      #     cd ../../..
 
-          cd cloud_functions/reddit_data/process_reddit_data_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/process_reddit_data_function/
-          cd ../../..
+      #     cd cloud_functions/reddit_data/process_reddit_data_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/process_reddit_data_function/
+      #     cd ../../..
 
-          cd cloud_functions/reddit_data/reddit_transform_function
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/reddit_transform_function/
-          cd ../../..
+      #     cd cloud_functions/reddit_data/reddit_transform_function
+      #     zip -r source.zip *
+      #     gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/reddit_transform_function/
+      #     cd ../../..
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+      # - name: Setup Terraform
+      #   uses: hashicorp/setup-terraform@v2
 
-      - name: Terraform Init
-        env:
-          TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
-        working-directory: ./terraform
-        run: terraform init
+      # - name: Terraform Init
+      #   env:
+      #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+      #   working-directory: ./terraform
+      #   run: terraform init
 
-      - name: Import Storage Bucket
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-          TF_VAR_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
-        working-directory: ./terraform
-        run: |
-          terraform import google_storage_bucket.function_bucket ${{secrets.FUNCTIONS_BUCKET_NAME}}
+      # - name: Import Storage Bucket
+      #   env:
+      #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+      #     TF_VAR_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
+      #   working-directory: ./terraform
+      #   run: |
+      #     terraform import google_storage_bucket.function_bucket ${{secrets.FUNCTIONS_BUCKET_NAME}}
 
-      - name: Import Pub/Sub Topics
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-          TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
-        working-directory: ./terraform
-        run: |
-          terraform import google_pubsub_topic.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_league_data_topic
-          terraform import google_pubsub_topic.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_reddit_data_topic
-          terraform import google_pubsub_topic.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_football_data_topic
-          terraform import google_pubsub_topic.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_weather_data_topic
-          terraform import google_pubsub_topic.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_to_parquet_topic
-          terraform import google_pubsub_topic.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_weather_to_parquet_topic
-          terraform import google_pubsub_topic.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/match_to_bigquery_topic
-          terraform import google_pubsub_topic.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/weather_to_bigquery_topic
-          terraform import google_pubsub_topic.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_matches_topic
-          terraform import google_pubsub_topic.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_weather_topic
-          terraform import google_pubsub_topic.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_standings_data_topic
-          terraform import google_pubsub_topic.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_standings_to_parquet_topic
-          terraform import google_pubsub_topic.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/standings_to_bigquery_topic
-          terraform import google_pubsub_topic.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_standings_topic
-          terraform import google_pubsub_topic.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_reddit_to_parquet_topic
-          terraform import google_pubsub_topic.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/reddit_to_bigquery_topic
-          terraform import google_pubsub_topic.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/process_reddit_data_topic
-          terraform import google_pubsub_topic.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_reddit_topic
-          terraform import google_pubsub_topic.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/topics/trigger_quality_scans_topic
+      # - name: Import Pub/Sub Topics
+      #   env:
+      #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+      #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+      #   working-directory: ./terraform
+      #   run: |
+      #     terraform import google_pubsub_topic.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_league_data_topic
+      #     terraform import google_pubsub_topic.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_reddit_data_topic
+      #     terraform import google_pubsub_topic.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_football_data_topic
+      #     terraform import google_pubsub_topic.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_weather_data_topic
+      #     terraform import google_pubsub_topic.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_to_parquet_topic
+      #     terraform import google_pubsub_topic.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_weather_to_parquet_topic
+      #     terraform import google_pubsub_topic.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/match_to_bigquery_topic
+      #     terraform import google_pubsub_topic.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/weather_to_bigquery_topic
+      #     terraform import google_pubsub_topic.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_matches_topic
+      #     terraform import google_pubsub_topic.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_weather_topic
+      #     terraform import google_pubsub_topic.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/topics/fetch_standings_data_topic
+      #     terraform import google_pubsub_topic.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_standings_to_parquet_topic
+      #     terraform import google_pubsub_topic.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/standings_to_bigquery_topic
+      #     terraform import google_pubsub_topic.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_standings_topic
+      #     terraform import google_pubsub_topic.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_reddit_to_parquet_topic
+      #     terraform import google_pubsub_topic.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/reddit_to_bigquery_topic
+      #     terraform import google_pubsub_topic.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/process_reddit_data_topic
+      #     terraform import google_pubsub_topic.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_reddit_topic
+      #     terraform import google_pubsub_topic.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/topics/trigger_quality_scans_topic
 
-      - name: Import Pub/Sub Subscriptions
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-          TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
-        working-directory: ./terraform
-        run: |
-          terraform import google_pubsub_subscription.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_league_data_subscription
-          terraform import google_pubsub_subscription.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_reddit_data_subscription
-          terraform import google_pubsub_subscription.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_football_data_subscription
-          terraform import google_pubsub_subscription.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_weather_data_subscription
-          terraform import google_pubsub_subscription.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_to_parquet_subscription
-          terraform import google_pubsub_subscription.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_weather_to_parquet_subscription
-          terraform import google_pubsub_subscription.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/match_to_bigquery_subscription
-          terraform import google_pubsub_subscription.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/weather_to_bigquery_subscription
-          terraform import google_pubsub_subscription.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_matches_subscription
-          terraform import google_pubsub_subscription.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_weather_subscription
-          terraform import google_pubsub_subscription.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_standings_data_subscription
-          terraform import google_pubsub_subscription.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_standings_to_parquet_subscription
-          terraform import google_pubsub_subscription.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/standings_to_bigquery_subscription
-          terraform import google_pubsub_subscription.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_standings_subscription
-          terraform import google_pubsub_subscription.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_reddit_to_parquet_subscription
-          terraform import google_pubsub_subscription.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/reddit_to_bigquery_subscription
-          terraform import google_pubsub_subscription.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/process_reddit_data_subscription
-          terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_reddit_subscription
-          terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/trigger_quality_scans_subscription
+      # - name: Import Pub/Sub Subscriptions
+      #   env:
+      #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+      #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+      #   working-directory: ./terraform
+      #   run: |
+      #     terraform import google_pubsub_subscription.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_league_data_subscription
+      #     terraform import google_pubsub_subscription.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_reddit_data_subscription
+      #     terraform import google_pubsub_subscription.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_football_data_subscription
+      #     terraform import google_pubsub_subscription.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_weather_data_subscription
+      #     terraform import google_pubsub_subscription.convert_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_to_parquet_subscription
+      #     terraform import google_pubsub_subscription.convert_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_weather_to_parquet_subscription
+      #     terraform import google_pubsub_subscription.match_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/match_to_bigquery_subscription
+      #     terraform import google_pubsub_subscription.weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/weather_to_bigquery_subscription
+      #     terraform import google_pubsub_subscription.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_matches_subscription
+      #     terraform import google_pubsub_subscription.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_weather_subscription
+      #     terraform import google_pubsub_subscription.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/fetch_standings_data_subscription
+      #     terraform import google_pubsub_subscription.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_standings_to_parquet_subscription
+      #     terraform import google_pubsub_subscription.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/standings_to_bigquery_subscription
+      #     terraform import google_pubsub_subscription.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_standings_subscription
+      #     terraform import google_pubsub_subscription.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_reddit_to_parquet_subscription
+      #     terraform import google_pubsub_subscription.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/reddit_to_bigquery_subscription
+      #     terraform import google_pubsub_subscription.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/process_reddit_data_subscription
+      #     terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_reddit_subscription
+      #     terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/trigger_quality_scans_subscription
 
-      - name: Import Cloud Functions
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-        working-directory: ./terraform
-        run: |
-          terraform import google_cloudfunctions2_function.trigger_dataplex_scans projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/trigger_dataplex_scans
-          terraform import google_cloudfunctions2_function.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_league_data
-          terraform import google_cloudfunctions2_function.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_football_data
-          terraform import google_cloudfunctions2_function.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_weather_data
-          terraform import google_cloudfunctions2_function.transform_match_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_match_to_parquet
-          terraform import google_cloudfunctions2_function.transform_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_weather_to_parquet
-          terraform import google_cloudfunctions2_function.load_matches_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_matches_to_bigquery
-          terraform import google_cloudfunctions2_function.load_weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_weather_to_bigquery
-          terraform import google_cloudfunctions2_function.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_matches
-          terraform import google_cloudfunctions2_function.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_weather
-          terraform import google_cloudfunctions2_function.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_standings_data
-          terraform import google_cloudfunctions2_function.transform_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_standings_to_parquet
-          terraform import google_cloudfunctions2_function.load_standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_standings_to_bigquery
-          terraform import google_cloudfunctions2_function.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_standings
-          terraform import google_cloudfunctions2_function.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_reddit_data
-          terraform import google_cloudfunctions2_function.transform_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_reddit_to_parquet
-          terraform import google_cloudfunctions2_function.load_reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_reddit_to_bigquery
-          terraform import google_cloudfunctions2_function.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/process_reddit_data
-          terraform import google_cloudfunctions2_function.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_reddit
+      # - name: Import Cloud Functions
+      #   env:
+      #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+      #   working-directory: ./terraform
+      #   run: |
+      #     terraform import google_cloudfunctions2_function.trigger_dataplex_scans projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/trigger_dataplex_scans
+      #     terraform import google_cloudfunctions2_function.fetch_league_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_league_data
+      #     terraform import google_cloudfunctions2_function.fetch_football_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_football_data
+      #     terraform import google_cloudfunctions2_function.fetch_weather_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_weather_data
+      #     terraform import google_cloudfunctions2_function.transform_match_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_match_to_parquet
+      #     terraform import google_cloudfunctions2_function.transform_weather_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_weather_to_parquet
+      #     terraform import google_cloudfunctions2_function.load_matches_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_matches_to_bigquery
+      #     terraform import google_cloudfunctions2_function.load_weather_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_weather_to_bigquery
+      #     terraform import google_cloudfunctions2_function.transform_matches projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_matches
+      #     terraform import google_cloudfunctions2_function.transform_weather projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_weather
+      #     terraform import google_cloudfunctions2_function.fetch_standings_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_standings_data
+      #     terraform import google_cloudfunctions2_function.transform_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_standings_to_parquet
+      #     terraform import google_cloudfunctions2_function.load_standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_standings_to_bigquery
+      #     terraform import google_cloudfunctions2_function.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_standings
+      #     terraform import google_cloudfunctions2_function.fetch_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/fetch_reddit_data
+      #     terraform import google_cloudfunctions2_function.transform_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_reddit_to_parquet
+      #     terraform import google_cloudfunctions2_function.load_reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_reddit_to_bigquery
+      #     terraform import google_cloudfunctions2_function.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/process_reddit_data
+      #     terraform import google_cloudfunctions2_function.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_reddit
 
-      - name: Terraform Plan
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-          TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
-          TF_VAR_functions_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
-        working-directory: ./terraform
-        run: terraform plan
+      # - name: Terraform Plan
+      #   env:
+      #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+      #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+      #     TF_VAR_functions_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
+      #   working-directory: ./terraform
+      #   run: terraform plan
 
-      - name: Terraform Apply
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-          TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
-          TF_VAR_functions_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
-        working-directory: ./terraform
-        run: terraform apply -auto-approve
+      # - name: Terraform Apply
+      #   env:
+      #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+      #     TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
+      #     TF_VAR_functions_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
+      #   working-directory: ./terraform
+      #   run: terraform apply -auto-approve
