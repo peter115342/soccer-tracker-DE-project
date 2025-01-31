@@ -26,9 +26,3 @@ resource "google_project_service" "artifactregistry_api" {
   service = "artifactregistry.googleapis.com"
   disable_on_destroy = false
 }
-
-data "archive_file" "trigger_dataplex_scans" {
-  type        = "zip"
-  source_dir  = "../cloud_functions/dataplex/trigger_dataplex_scans_function"
-  output_path = "../cloud_functions/dataplex/trigger_dataplex_scans_function.zip"
-}
