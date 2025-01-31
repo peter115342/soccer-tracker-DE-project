@@ -530,3 +530,7 @@ resource "google_pubsub_subscription" "trigger_quality_scans" {
     }
   }
 }
+
+data "google_pubsub_topic" "trigger_quality_scans" {
+  name = "trigger_quality_scans_topic"
+}
