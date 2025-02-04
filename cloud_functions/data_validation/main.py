@@ -333,6 +333,21 @@ def trigger_dataplex_scans(event, context):
             )
             return error_message, 500
 
+        bq_client = bigquery.Client()
+        recent_matches_query = """
+            SELECT COUNT(*) as cnt 
+            FROM `sports_data_eu.matches_processed`
+            WHERE DATE(utcDate) IN (CURRENT_DATE(), DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY))
+        """  # nosec B608
+
+        result = bq_client.query(recent_matches_query).result()
+        count = next(iter(result)).cnt
+
+        if count == 0:
+            msg = "No matches from today or yesterday found; skipping scans."
+            logging.info(msg)
+            return msg, 200
+
         client = dataplex_v1.DataScanServiceClient()
         project_id = os.environ.get("GCP_PROJECT_ID")
         location = os.environ.get("LOCATION", "europe-central2")

@@ -84,18 +84,18 @@ jobs:
       #     uv run gcloud pubsub topics create transform_reddit_topic || true
       #     uv run gcloud pubsub topics create trigger_quality_scans_topic || true
 
-      # - name: Deploy Data Validation Function
-      #   run: |
-      #     cd cloud_functions/data_validation
-      #     uv run gcloud functions deploy trigger_dataplex_scans \
-      #       --runtime python312 \
-      #       --trigger-topic trigger_quality_scans_topic \
-      #       --entry-point trigger_dataplex_scans \
-      #       --timeout 540s \
-      #       --memory 1GiB \
-      #       --region europe-central2 \
-      #       --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
-      #     cd ../..
+      - name: Deploy Data Validation Function
+        run: |
+          cd cloud_functions/data_validation
+          uv run gcloud functions deploy trigger_dataplex_scans \
+            --runtime python312 \
+            --trigger-topic trigger_quality_scans_topic \
+            --entry-point trigger_dataplex_scans \
+            --timeout 540s \
+            --memory 1GiB \
+            --region europe-central2 \
+            --set-env-vars "DISCORD_WEBHOOK_URL=${{secrets.DISCORD_WEBHOOK_URL}},GCP_PROJECT_ID=${{secrets.GCP_PROJECT_ID}}"
+          cd ../..
 
       # - name: Deploy fetch_league_data Function
       #   run: |
