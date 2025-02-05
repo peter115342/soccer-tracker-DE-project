@@ -139,7 +139,6 @@ jobs:
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/standings_transform_function/
           cd ../../..
 
-          # Reddit Data Functions
           cd cloud_functions/reddit_data/fetch_reddit_data_function
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/fetch_reddit_data_function/
@@ -163,6 +162,16 @@ jobs:
           cd cloud_functions/reddit_data/reddit_transform_function
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/reddit_transform_function/
+          cd ../../..
+
+          cd cloud_functions/serving_layer/sync_to_firestore_function
+          zip -r source.zip *
+          gsutil cp source.zip gs://$BUCKET_NAME/serving_layer/cloud_functions/sync_to_firestore_function/
+          cd ../../..
+
+          cd cloud_functions/serving_layer/sync_standings_to_firestore_function
+          zip -r source.zip *
+          gsutil cp source.zip gs://$BUCKET_NAME/serving_layer/cloud_functions/sync_standings_to_firestore_function/
           cd ../../..
 
       - name: Setup Terraform

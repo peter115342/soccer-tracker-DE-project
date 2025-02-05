@@ -1,0 +1,7 @@
+requests
+google-cloud-bigquery
+datetime
+google-cloud-storage
+polars
+google-cloud-pubsub
+google-api-core
