@@ -74,7 +74,7 @@ def sync_standings_to_firestore(event, context):
                         "goals_for": team["goalsFor"],
                         "goals_against": team["goalsAgainst"],
                         "goal_difference": team["goalDifference"],
-                        "form": team["form"],
+                        "form": team["form"] if team["form"] is not None else "",
                     }
                     for team in total_standings
                 ],

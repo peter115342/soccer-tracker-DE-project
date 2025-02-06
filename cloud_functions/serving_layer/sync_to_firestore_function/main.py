@@ -35,15 +35,23 @@ def sync_matches_to_firestore(event, context):
             m.score.fullTime.awayTeam as away_score,
             w.apparent_temperature,
             w.weathercode,
+            w.temperature_2m,
+            w.precipitation,
+            w.windspeed_10m,
+            w.cloudcover,
+            w.relativehumidity_2m,
             t.address,
             t.venue,
             CAST(SPLIT(t.address, ',')[OFFSET(0)] AS FLOAT64) as lat,
-            CAST(SPLIT(t.address, ',')[OFFSET(1)] AS FLOAT64) as lon
+            CAST(SPLIT(t.address, ',')[OFFSET(1)] AS FLOAT64) as lon,
+            r.threads
         FROM `sports_data_eu.matches_processed` m
         LEFT JOIN `sports_data_eu.weather_processed` w
             ON m.id = w.match_id
         LEFT JOIN `sports_data_eu.teams` t 
             ON m.homeTeam.id = t.id
+        LEFT JOIN `sports_data_eu.reddit_processed` r
+            ON m.id = r.match_id
         """
 
         query_job = bq_client.query(query)
@@ -60,11 +68,37 @@ def sync_matches_to_firestore(event, context):
                 "away_team": row.away_team,
                 "home_score": row.home_score,
                 "away_score": row.away_score,
-                "apparent_temperature": row.apparent_temperature,
-                "weathercode": row.weathercode,
+                "weather": {
+                    "apparent_temperature": row.apparent_temperature,
+                    "temperature": row.temperature_2m,
+                    "precipitation": row.precipitation,
+                    "wind_speed": row.windspeed_10m,
+                    "cloud_cover": row.cloudcover,
+                    "humidity": row.relativehumidity_2m,
+                    "weathercode": row.weathercode,
+                },
                 "venue": row.venue,
-                "lat": row.lat,
-                "lon": row.lon,
+                "location": {"lat": row.lat, "lon": row.lon},
+                "reddit_data": {
+                    "threads": [
+                        {
+                            "thread_type": thread.thread_type,
+                            "num_comments": thread.num_comments,
+                            "comments": [
+                                {
+                                    "body": comment.body,
+                                    "score": comment.score,
+                                    "author": comment.author,
+                                    "created_at": comment.created_at.isoformat(),
+                                }
+                                for comment in thread.comments
+                            ],
+                        }
+                        for thread in (row.threads or [])
+                    ]
+                }
+                if row.threads
+                else None,
                 "last_updated": datetime.now().isoformat(),
             }
             match_ref.set(match_data)
