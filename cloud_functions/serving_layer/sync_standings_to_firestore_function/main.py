@@ -4,7 +4,7 @@ import os
 import logging
 import requests
 from datetime import datetime
-from google.cloud import bigquery, firestore
+from google.cloud import bigquery, firestore, pubsub_v1
 
 
 def sync_standings_to_firestore(event, context):
@@ -90,6 +90,25 @@ def sync_standings_to_firestore(event, context):
         logging.info(status_message)
         send_discord_notification(
             "✅ Standings Firestore Sync: Success", status_message, 65280
+        )
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(
+            os.environ["GCP_PROJECT_ID"], "sync_upcoming_matches_to_firestore_topic"
+        )
+
+        publish_data = {
+            "action": "sync_upcoming_matches_to_firestore",
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        future = publisher.publish(
+            topic_path, data=json.dumps(publish_data).encode("utf-8")
+        )
+
+        publish_result = future.result()
+        logging.info(
+            f"Published message to sync-upcoming-matches-to-firestore-topic with ID: {publish_result}"
         )
 
         return status_message, 200
