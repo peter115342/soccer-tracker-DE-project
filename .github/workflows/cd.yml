@@ -279,8 +279,8 @@ jobs:
           terraform import google_cloudfunctions2_function.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/process_reddit_data
           terraform import google_cloudfunctions2_function.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_reddit
           terraform import google_cloudfunctions2_function.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_upcoming_matches_to_firestore
-        # terraform import google_cloudfunctions2_function.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_matches_to_firestore
-        # terraform import google_cloudfunctions2_function.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_standings_to_firestore
+          terraform import google_cloudfunctions2_function.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_matches_to_firestore
+          terraform import google_cloudfunctions2_function.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_standings_to_firestore
 
       - name: Terraform Plan
         env:
