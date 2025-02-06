@@ -287,6 +287,7 @@ jobs:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
           TF_VAR_functions_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
         working-directory: ./terraform
         run: terraform plan
 
@@ -295,5 +296,6 @@ jobs:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
           TF_VAR_functions_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
         working-directory: ./terraform
         run: terraform apply -auto-approve
