@@ -25,7 +25,7 @@ def sync_standings_to_firestore(event, context):
 
         LEAGUE_IDS = [2002, 2014, 2015, 2019, 2021]  # BL1, SA, FL1, SA, PL
 
-        API_KEY = os.environ.get("FOOTBALL_DATA_API_KEY")
+        API_KEY = os.environ.get("API_FOOTBALL_KEY")
         headers = {"X-Auth-Token": API_KEY}
         base_url = "http://api.football-data.org/v4/competitions"
 

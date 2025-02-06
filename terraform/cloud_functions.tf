@@ -761,6 +761,7 @@ resource "google_cloudfunctions2_function" "sync_standings_to_firestore" {
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       GCP_PROJECT_ID     = var.project_id
+      API_FOOTBALL_KEY    = var.api_football_key
     }
   }
 
@@ -798,6 +799,7 @@ resource "google_cloudfunctions2_function" "sync_upcoming_matches_to_firestore" 
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       GCP_PROJECT_ID     = var.project_id
+      API_FOOTBALL_KEY    = var.api_football_key
     }
   }
 
