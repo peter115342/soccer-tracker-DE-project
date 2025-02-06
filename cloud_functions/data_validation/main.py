@@ -3,8 +3,10 @@ import json
 import os
 import logging
 import requests
+from datetime import datetime
 from google.cloud import dataplex_v1
 from google.cloud import bigquery
+from google.cloud import pubsub_v1
 import plotly.graph_objects as go
 
 
@@ -316,11 +318,7 @@ def send_discord_notification(
 
 
 def trigger_dataplex_scans(event, context):
-    """Triggers Dataplex data quality scans for all tables
-    Args:
-         event (dict): The dictionary with data specific to this type of event.
-         context (google.cloud.functions.Context): The Cloud Functions event metadata.
-    """
+    """Triggers Dataplex data quality scans for all tables"""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -332,21 +330,6 @@ def trigger_dataplex_scans(event, context):
                 "❌ Dataplex Scans: Invalid Trigger", error_message, 16711680
             )
             return error_message, 500
-
-        bq_client = bigquery.Client()
-        recent_matches_query = """
-            SELECT COUNT(*) as cnt 
-            FROM `sports_data_eu.matches_processed`
-            WHERE DATE(utcDate) IN (CURRENT_DATE(), DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY))
-        """  # nosec B608
-
-        result = bq_client.query(recent_matches_query).result()
-        count = next(iter(result)).cnt
-
-        if count == 0:
-            msg = "No matches from today or yesterday found; skipping scans."
-            logging.info(msg)
-            return msg, 200
 
         client = dataplex_v1.DataScanServiceClient()
         project_id = os.environ.get("GCP_PROJECT_ID")
@@ -365,7 +348,6 @@ def trigger_dataplex_scans(event, context):
             scan_name = (
                 f"projects/{project_id}/locations/{location}/dataScans/{scan_id}"
             )
-
             request = dataplex_v1.RunDataScanRequest(name=scan_name)
             operation = client.run_data_scan(request=request)
             triggered_scans.append(operation)
@@ -403,6 +385,25 @@ def trigger_dataplex_scans(event, context):
             65280,
             daily_plot,
             total_plot,
+        )
+
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(
+            os.environ["GCP_PROJECT_ID"], "sync_matches_to_firestore_topic"
+        )
+
+        publish_data = {
+            "action": "sync_matches_to_firestore",
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        future = publisher.publish(
+            topic_path, data=json.dumps(publish_data).encode("utf-8")
+        )
+
+        publish_result = future.result()
+        logging.info(
+            f"Published message to sync-matches-to-firestore-topic with ID: {publish_result}"
         )
 
         return status_message, 200
