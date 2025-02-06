@@ -55,30 +55,28 @@ def sync_standings_to_firestore(event, context):
         sync_count = 0
 
         for row in query_job:
-            total_standings = [s for s in row.standings if s.type == "TOTAL"][0]
-
             standings_doc = standings_collection.document(str(row.competitionId))
             standings_data = {
                 "competition_id": row.competitionId,
                 "table": [
                     {
-                        "position": team.position,
-                        "team_id": team.teamId,
-                        "team_name": team.teamName,
-                        "team_short_name": team.teamShortName,
-                        "team_tla": team.teamTLA,
-                        "team_crest": team.teamCrest,
-                        "played_games": team.playedGames,
-                        "points": team.points,
-                        "won": team.won,
-                        "draw": team.draw,
-                        "lost": team.lost,
-                        "goals_for": team.goalsFor,
-                        "goals_against": team.goalsAgainst,
-                        "goal_difference": team.goalDifference,
-                        "form": team.form,
+                        "position": team["position"],
+                        "team_id": team["teamId"],
+                        "team_name": team["teamName"],
+                        "team_short_name": team["teamShortName"],
+                        "team_tla": team["teamTLA"],
+                        "team_crest": team["teamCrest"],
+                        "played_games": team["playedGames"],
+                        "points": team["points"],
+                        "won": team["won"],
+                        "draw": team["draw"],
+                        "lost": team["lost"],
+                        "goals_for": team["goalsFor"],
+                        "goals_against": team["goalsAgainst"],
+                        "goal_difference": team["goalDifference"],
+                        "form": team["form"],
                     }
-                    for team in total_standings.table
+                    for team in row.standings
                 ],
                 "last_updated": datetime.now().isoformat(),
             }
