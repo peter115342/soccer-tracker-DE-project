@@ -4,11 +4,11 @@ import os
 import logging
 import requests
 from datetime import datetime, timedelta
-from google.cloud import bigquery, firestore
+from google.cloud import firestore
 
 
 def sync_upcoming_matches_to_firestore(event, context):
-    """Cloud Function to sync tomorrow's matches from BigQuery to Firestore."""
+    """Cloud Function to sync tomorrow's matches from football-data API to Firestore."""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -23,59 +23,53 @@ def sync_upcoming_matches_to_firestore(event, context):
             )
             return error_message, 500
 
-        bq_client = bigquery.Client()
         db = firestore.Client()
-
         tomorrow = (datetime.now() + timedelta(days=1)).date()
 
-        query = """
-        SELECT 
-            m.id,
-            m.utcDate,
-            m.status,
-            m.homeTeam.name as home_team,
-            m.awayTeam.name as away_team,
-            m.competition.id as competition_id,
-            m.competition.name as competition_name
-        FROM `sports_data_eu.matches_processed` m
-        WHERE DATE(m.utcDate) = @tomorrow_date
-        AND m.competition.id IN (2002, 2014, 2015, 2019, 2021)  -- Top 5 leagues
-        ORDER BY m.utcDate
-        """
+        api_key = os.environ.get("API_FOOTBALL_KEY")
+        if not api_key:
+            raise ValueError("Football Data API key not configured")
 
-        job_config = bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("tomorrow_date", "DATE", tomorrow),
-            ]
-        )
+        headers = {"X-Auth-Token": api_key}
 
-        query_job = bq_client.query(query, job_config=job_config)
-
-        upcoming_collection = db.collection("upcoming_matches")
-        date_doc = upcoming_collection.document(tomorrow.isoformat())
-
+        competitions = [2002, 2014, 2015, 2019, 2021]  # BL1, SA, FL1, SA, PL
         matches_data = {
             "date": tomorrow.isoformat(),
             "matches": [],
             "last_updated": datetime.now().isoformat(),
         }
 
-        match_count = 0
-        for row in query_job:
-            match_data = {
-                "match_id": row.id,
-                "kickoff": row.utcDate.isoformat(),
-                "status": row.status,
-                "home_team": row.home_team,
-                "away_team": row.away_team,
-                "competition_id": row.competition_id,
-                "competition_name": row.competition_name,
-            }
-            matches_data["matches"].append(match_data)
-            match_count += 1
+        for competition_id in competitions:
+            url = (
+                f"http://api.football-data.org/v4/competitions/{competition_id}/matches"
+            )
+            params = {"dateFrom": tomorrow.isoformat(), "dateTo": tomorrow.isoformat()}
 
+            response = requests.get(url, headers=headers, params=params, timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                for match in data.get("matches", []):
+                    match_data = {
+                        "match_id": match["id"],
+                        "kickoff": match["utcDate"],
+                        "status": match["status"],
+                        "home_team": match["homeTeam"]["name"],
+                        "away_team": match["awayTeam"]["name"],
+                        "competition_id": match["competition"]["id"],
+                        "competition_name": match["competition"]["name"],
+                    }
+                    matches_data["matches"].append(match_data)
+            else:
+                logging.warning(
+                    f"Failed to fetch matches for competition {competition_id}: {response.status_code}"
+                )
+
+        # Save to Firestore
+        upcoming_collection = db.collection("upcoming_matches")
+        date_doc = upcoming_collection.document(tomorrow.isoformat())
         date_doc.set(matches_data, merge=False)
 
+        match_count = len(matches_data["matches"])
         status_message = f"Successfully synced {match_count} upcoming matches for {tomorrow.isoformat()}"
         logging.info(status_message)
         send_discord_notification(
