@@ -34,10 +34,16 @@ def sync_matches_to_firestore(event, context):
             m.score.fullTime.homeTeam as home_score,
             m.score.fullTime.awayTeam as away_score,
             w.apparent_temperature,
-            w.weathercode
+            w.weathercode,
+            t.address,
+            t.venue,
+            CAST(SPLIT(t.address, ',')[OFFSET(0)] AS FLOAT64) as lat,
+            CAST(SPLIT(t.address, ',')[OFFSET(1)] AS FLOAT64) as lon
         FROM `sports_data_eu.matches_processed` m
         LEFT JOIN `sports_data_eu.weather_processed` w
-        ON m.id = w.match_id
+            ON m.id = w.match_id
+        LEFT JOIN `sports_data_eu.teams` t 
+            ON m.homeTeam.id = t.id
         """
 
         query_job = bq_client.query(query)
@@ -56,6 +62,9 @@ def sync_matches_to_firestore(event, context):
                 "away_score": row.away_score,
                 "apparent_temperature": row.apparent_temperature,
                 "weathercode": row.weathercode,
+                "venue": row.venue,
+                "lat": row.lat,
+                "lon": row.lon,
                 "last_updated": datetime.now().isoformat(),
             }
             match_ref.set(match_data)

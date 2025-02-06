@@ -1,0 +1,29 @@
+[{
+  "column_name": "league_id",
+  "data_type": "INT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "address",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "logo",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "venue",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "tla",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "name",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "id",
+  "data_type": "INT64",
+  "is_nullable": "YES"
+}]
