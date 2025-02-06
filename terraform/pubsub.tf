@@ -104,6 +104,11 @@ resource "google_pubsub_topic" "sync_standings_to_firestore" {
   project = var.project_id
 }
 
+resource "google_pubsub_topic" "sync_upcoming_matches_to_firestore" {
+  name    = "sync_upcoming_matches_to_firestore_topic"
+  project = var.project_id
+}
+
 resource "google_pubsub_subscription" "fetch_league_data" {
   name                      = "fetch_league_data_subscription"
   topic                     = google_pubsub_topic.fetch_league_data.id
@@ -589,6 +594,30 @@ resource "google_pubsub_subscription" "sync_standings_to_firestore" {
     oidc_token {
       service_account_email = var.service_account_email
       audience = "https://sync-standings-to-firestore-a2h6lbpipq-lm.a.run.app"
+    }
+  }
+}
+
+
+resource "google_pubsub_subscription" "sync_upcoming_matches_to_firestore" {
+  name                      = "sync_upcoming_matches_to_firestore_subscription"
+  topic                     = google_pubsub_topic.sync_upcoming_matches_to_firestore.id
+  project                   = var.project_id
+  message_retention_duration = "2678400s"
+  expiration_policy {
+    ttl = ""
+  }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+  ack_deadline_seconds = 600
+
+  push_config {
+    push_endpoint = "https://sync-upcoming-matches-to-firestore-a2h6lbpipq-lm.a.run.app?__GCP_CloudEventsMode=CUSTOM_PUBSUB_projects%2F${var.project_id}%2Ftopics%2Fsync_upcoming_matches_to_firestore_topic"
+    
+    oidc_token {
+      service_account_email = var.service_account_email
+      audience = "https://sync-upcoming-matches-to-firestore-a2h6lbpipq-lm.a.run.app"
     }
   }
 }
