@@ -38,7 +38,6 @@ def sync_matches_to_firestore(event, context):
         FROM `sports_data_eu.matches_processed` m
         LEFT JOIN `sports_data_eu.weather_processed` w
         ON m.id = w.match_id
-        WHERE DATE(m.utcDate) >= CURRENT_DATE() - 1
         """
 
         query_job = bq_client.query(query)
