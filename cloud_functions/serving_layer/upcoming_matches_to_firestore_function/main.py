@@ -37,7 +37,7 @@ def sync_upcoming_matches_to_firestore(event, context):
             m.awayTeam.name as away_team,
             m.competition.id as competition_id,
             m.competition.name as competition_name
-        FROM `sports_data_processed.matches_processed` m
+        FROM `sports_data_eu.matches_processed` m
         WHERE DATE(m.utcDate) = @tomorrow_date
         AND m.competition.id IN (2002, 2014, 2015, 2019, 2021)  -- Top 5 leagues
         ORDER BY m.utcDate

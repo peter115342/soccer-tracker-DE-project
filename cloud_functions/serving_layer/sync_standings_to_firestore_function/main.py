@@ -33,7 +33,7 @@ def sync_standings_to_firestore(event, context):
                 standings,
                 fetchDate,
                 ROW_NUMBER() OVER(PARTITION BY competitionId ORDER BY fetchDate DESC) as rn
-            FROM `sports_data_processed.standings_processed`
+            FROM `sports_data_eu.standings_processed`
             WHERE competitionId IN UNNEST(@league_ids)
         )
         SELECT 

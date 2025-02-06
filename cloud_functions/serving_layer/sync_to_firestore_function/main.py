@@ -35,8 +35,8 @@ def sync_matches_to_firestore(event, context):
             m.score.fullTime.awayTeam as away_score,
             w.apparent_temperature,
             w.weathercode
-        FROM `sports_data_processed.matches_processed` m
-        LEFT JOIN `sports_data_processed.weather_processed` w
+        FROM `sports_data_eu.matches_processed` m
+        LEFT JOIN `sports_data_eu.weather_processed` w
         ON m.id = w.match_id
         WHERE DATE(m.utcDate) >= CURRENT_DATE() - 1
         """
