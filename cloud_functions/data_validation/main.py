@@ -3,10 +3,8 @@ import json
 import os
 import logging
 import requests
-from datetime import datetime
 from google.cloud import dataplex_v1
 from google.cloud import bigquery
-from google.cloud import pubsub_v1
 import plotly.graph_objects as go
 
 
