@@ -8,7 +8,6 @@ from google.cloud import bigquery, firestore, pubsub_v1
 
 
 def sync_matches_to_firestore(event, context):
-    """Cloud Function to sync match data from BigQuery to Firestore."""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -59,7 +58,33 @@ def sync_matches_to_firestore(event, context):
 
         sync_count = 0
         for row in query_job:
-            match_ref = matches_collection.document(str(row.id))
+            reddit_data = None
+            if row.threads:
+                reddit_data = {
+                    "threads": [
+                        {
+                            "thread_type": thread.get("thread_type"),
+                            "thread_id": thread.get("thread_id"),
+                            "title": thread.get("title"),
+                            "body": thread.get("body"),
+                            "created_at": thread.get("created_at"),
+                            "score": thread.get("score"),
+                            "num_comments": thread.get("num_comments"),
+                            "comments": [
+                                {
+                                    "id": c.get("id"),
+                                    "body": c.get("body"),
+                                    "score": c.get("score"),
+                                    "author": c.get("author"),
+                                    "created_at": c.get("created_at"),
+                                }
+                                for c in (thread.get("comments") or [])
+                            ],
+                        }
+                        for thread in row.threads
+                    ]
+                }
+
             match_data = {
                 "match_id": row.id,
                 "date": row.utcDate.isoformat(),
@@ -79,28 +104,11 @@ def sync_matches_to_firestore(event, context):
                 },
                 "venue": row.venue,
                 "location": {"lat": row.lat, "lon": row.lon},
-                "reddit_data": {
-                    "threads": [
-                        {
-                            "thread_type": thread.thread_type,
-                            "num_comments": thread.num_comments,
-                            "comments": [
-                                {
-                                    "body": comment.body,
-                                    "score": comment.score,
-                                    "author": comment.author,
-                                    "created_at": comment.created_at.isoformat(),
-                                }
-                                for comment in thread.comments
-                            ],
-                        }
-                        for thread in (row.threads or [])
-                    ]
-                }
-                if row.threads
-                else None,
+                "reddit_data": reddit_data,
                 "last_updated": datetime.now().isoformat(),
             }
+
+            match_ref = matches_collection.document(str(row.id))
             match_ref.set(match_data)
             sync_count += 1
 
@@ -114,16 +122,13 @@ def sync_matches_to_firestore(event, context):
         topic_path = publisher.topic_path(
             os.environ["GCP_PROJECT_ID"], "sync_standings_to_firestore_topic"
         )
-
         publish_data = {
             "action": "sync_standings_to_firestore",
             "timestamp": datetime.now().isoformat(),
         }
-
         future = publisher.publish(
             topic_path, data=json.dumps(publish_data).encode("utf-8")
         )
-
         publish_result = future.result()
         logging.info(
             f"Published message to sync-standings-to-firestore-topic with ID: {publish_result}"
