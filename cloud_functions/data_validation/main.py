@@ -387,25 +387,6 @@ def trigger_dataplex_scans(event, context):
             total_plot,
         )
 
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(
-            os.environ["GCP_PROJECT_ID"], "sync_matches_to_firestore_topic"
-        )
-
-        publish_data = {
-            "action": "sync_matches_to_firestore",
-            "timestamp": datetime.now().isoformat(),
-        }
-
-        future = publisher.publish(
-            topic_path, data=json.dumps(publish_data).encode("utf-8")
-        )
-
-        publish_result = future.result()
-        logging.info(
-            f"Published message to sync-matches-to-firestore-topic with ID: {publish_result}"
-        )
-
         return status_message, 200
 
     except Exception as e:

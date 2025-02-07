@@ -110,7 +110,7 @@ def sync_matches_to_firestore(event, context):
             match_ref.set(match_data)
             sync_count += 1
 
-        status_message = f"Successfully synced {sync_count} matches to Firestore"
+        status_message = f"Successfully synced {sync_count} matches to Firestore at {datetime.now().isoformat()}"
         logging.info(status_message)
         send_discord_notification(
             "✅ Match Firestore Sync: Success", status_message, 65280
