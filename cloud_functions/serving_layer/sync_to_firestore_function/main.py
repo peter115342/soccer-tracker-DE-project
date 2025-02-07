@@ -65,8 +65,6 @@ def sync_matches_to_firestore(event, context):
                         {
                             "thread_type": thread.get("thread_type"),
                             "thread_id": thread.get("thread_id"),
-                            "title": thread.get("title"),
-                            "body": thread.get("body"),
                             "created_at": thread.get("created_at"),
                             "score": thread.get("score"),
                             "num_comments": thread.get("num_comments"),
