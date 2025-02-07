@@ -51,7 +51,7 @@ def sync_matches_to_firestore(event, context):
         LEFT JOIN `sports_data_eu.teams` t 
             ON m.homeTeam.id = t.id
         LEFT JOIN `sports_data_eu.reddit_processed` r
-            ON m.id = r.match_id
+            ON CAST(m.id AS STRING) = r.match_id
         """
 
         query_job = bq_client.query(query)
