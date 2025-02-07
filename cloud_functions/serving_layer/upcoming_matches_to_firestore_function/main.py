@@ -64,7 +64,6 @@ def sync_upcoming_matches_to_firestore(event, context):
                     f"Failed to fetch matches for competition {competition_id}: {response.status_code}"
                 )
 
-        # Save to Firestore
         upcoming_collection = db.collection("upcoming_matches")
         date_doc = upcoming_collection.document(tomorrow.isoformat())
         date_doc.set(matches_data, merge=False)
