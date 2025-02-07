@@ -29,7 +29,7 @@ def sync_standings_to_firestore(event, context):
                 SELECT 
                     competitionId,
                     MAX(fetchDate) as latest_date
-                FROM `your-project.your-dataset.standings_processed`
+                FROM `sports_data_eu.standings_processed`
                 GROUP BY competitionId
             )
             SELECT s.*
