@@ -47,8 +47,8 @@ def sync_matches_to_firestore(event, context):
             r.threads
         FROM `sports_data_eu.matches_processed` m
         LEFT JOIN `sports_data_eu.weather_processed` w
-            ON m.id = w.match_id
-        LEFT JOIN `sports_data_eu.teams` t 
+            ON m.id  = w.match_id
+        LEFT JOIN `sports_data_eu.teams` t
             ON m.homeTeam.id = t.id
         LEFT JOIN `sports_data_eu.reddit_processed` r
             ON CAST(m.id AS STRING) = r.match_id
@@ -82,16 +82,18 @@ def sync_matches_to_firestore(event, context):
                 "reddit_data": {
                     "threads": [
                         {
-                            "thread_type": thread.thread_type,
-                            "num_comments": thread.num_comments,
+                            "thread_type": thread["thread_type"],
+                            "thread_id": thread["thread_id"],
+                            "title": thread["title"],
+                            "num_comments": thread["num_comments"],
                             "comments": [
                                 {
-                                    "body": comment.body,
-                                    "score": comment.score,
-                                    "author": comment.author,
-                                    "created_at": comment.created_at.isoformat(),
+                                    "body": comment["body"],
+                                    "score": comment["score"],
+                                    "author": comment["author"],
+                                    "created_at": comment["created_at"],
                                 }
-                                for comment in thread.comments
+                                for comment in thread["comments"]
                             ],
                         }
                         for thread in (row.threads or [])
