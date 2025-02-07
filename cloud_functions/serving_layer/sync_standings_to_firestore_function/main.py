@@ -1,14 +1,14 @@
-import base64
 import json
 import os
 import logging
-import requests
 from datetime import datetime
-from google.cloud import firestore, pubsub_v1
+from google.cloud import firestore, bigquery, pubsub_v1
+import base64
+import requests
 
 
 def sync_standings_to_firestore(event, context):
-    """Cloud Function to sync current standings from football-data.org API to Firestore."""
+    """Cloud Function to sync latest standings from BigQuery to Firestore."""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -22,73 +22,63 @@ def sync_standings_to_firestore(event, context):
             return error_message, 500
 
         db = firestore.Client()
+        bq_client = bigquery.Client()
 
-        LEAGUE_IDS = [2002, 2014, 2015, 2019, 2021]  # BL1, SA, FL1, SA, PL
+        query = """
+            WITH LatestDates AS (
+                SELECT 
+                    competitionId,
+                    MAX(fetchDate) as latest_date
+                FROM `your-project.your-dataset.standings_processed`
+                GROUP BY competitionId
+            )
+            SELECT s.*
+            FROM `sports_data_eu.standings_processed` s
+            INNER JOIN LatestDates l
+                ON s.competitionId = l.competitionId
+                AND s.fetchDate = l.latest_date
+            WHERE s.standingType = 'TOTAL'
+        """
 
-        API_KEY = os.environ.get("API_FOOTBALL_KEY")
-        headers = {"X-Auth-Token": API_KEY}
-        base_url = "http://api.football-data.org/v4/competitions"
+        query_job = bq_client.query(query)
+        results = query_job.result()
 
         sync_count = 0
         standings_collection = db.collection("current_standings")
 
-        for competition_id in LEAGUE_IDS:
-            url = f"{base_url}/{competition_id}/standings"
-            response = requests.get(url, headers=headers, timeout=30)
-
-            if response.status_code != 200:
-                logging.error(
-                    f"Failed to fetch standings for competition {competition_id}: {response.status_code}"
-                )
-                continue
-
-            standings_data = response.json()
-
-            total_standings = None
-            for standing in standings_data.get("standings", []):
-                if standing.get("type") == "TOTAL":
-                    total_standings = standing.get("table", [])
-                    break
-
-            if not total_standings:
-                logging.error(
-                    f"No total standings found for competition {competition_id}"
-                )
-                continue
-
+        for row in results:
             firestore_data = {
-                "competition_id": competition_id,
+                "competition_id": row.competitionId,
                 "table": [
                     {
-                        "position": team["position"],
-                        "team_id": team["team"]["id"],
-                        "team_name": team["team"]["name"],
-                        "team_short_name": team["team"]["shortName"],
-                        "team_tla": team["team"]["tla"],
-                        "team_crest": team["team"]["crest"],
-                        "played_games": team["playedGames"],
-                        "points": team["points"],
-                        "won": team["won"],
-                        "draw": team["draw"],
-                        "lost": team["lost"],
-                        "goals_for": team["goalsFor"],
-                        "goals_against": team["goalsAgainst"],
-                        "goal_difference": team["goalDifference"],
-                        "form": team["form"] if team["form"] is not None else "",
+                        "position": standing.position,
+                        "team_id": standing.teamId,
+                        "team_name": standing.teamName,
+                        "team_short_name": standing.teamShortName,
+                        "team_tla": standing.teamTLA,
+                        "team_crest": standing.teamCrest,
+                        "played_games": standing.playedGames,
+                        "points": standing.points,
+                        "won": standing.won,
+                        "draw": standing.draw,
+                        "lost": standing.lost,
+                        "goals_for": standing.goalsFor,
+                        "goals_against": standing.goalsAgainst,
+                        "goal_difference": standing.goalDifference,
                     }
-                    for team in total_standings
+                    for standing in row.standings
                 ],
                 "last_updated": datetime.now().isoformat(),
+                "fetch_date": row.fetchDate.isoformat(),
+                "season_id": row.seasonId,
+                "current_matchday": row.currentMatchday,
             }
 
-            # Save to Firestore
-            standings_doc = standings_collection.document(str(competition_id))
+            standings_doc = standings_collection.document(str(row.competitionId))
             standings_doc.set(firestore_data, merge=False)
             sync_count += 1
 
-        status_message = (
-            f"Successfully synced standings for {sync_count} competitions to Firestore"
-        )
+        status_message = f"Successfully synced latest standings for {sync_count} competitions to Firestore"
         logging.info(status_message)
         send_discord_notification(
             "✅ Standings Firestore Sync: Success", status_message, 65280
@@ -107,7 +97,6 @@ def sync_standings_to_firestore(event, context):
         future = publisher.publish(
             topic_path, data=json.dumps(publish_data).encode("utf-8")
         )
-
         publish_result = future.result()
         logging.info(
             f"Published message to sync-upcoming-matches-to-firestore-topic with ID: {publish_result}"
