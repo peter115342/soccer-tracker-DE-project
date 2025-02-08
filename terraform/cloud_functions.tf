@@ -645,7 +645,8 @@ resource "google_cloudfunctions2_function" "process_reddit_data" {
 
   service_config {
     max_instance_count = 1
-    available_memory   = "1024M"
+    available_memory   = "2048M"
+    available_cpu      = 2
     timeout_seconds    = 540
     service_account_email = var.service_account_email
     environment_variables = {
@@ -701,3 +702,112 @@ resource "google_cloudfunctions2_function" "transform_reddit" {
   }
 }
 
+resource "google_cloudfunctions2_function" "sync_matches_to_firestore" {
+  name        = "sync_matches_to_firestore"
+  location    = "europe-central2"
+  description = "Function to sync matches to Firestore"
+
+  build_config {
+    runtime     = "python312"
+    entry_point = "sync_matches_to_firestore"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.function_bucket.name
+        object = "cloud_functions/serving_layer/sync_to_firestore_function/source.zip"
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count = 1
+    available_memory   = "1024M"
+    timeout_seconds    = 540
+    service_account_email = var.service_account_email
+    environment_variables = {
+      DISCORD_WEBHOOK_URL = var.discord_webhook_url
+      GCP_PROJECT_ID     = var.project_id
+    }
+  }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.sync_matches_to_firestore.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
+}
+
+
+resource "google_cloudfunctions2_function" "sync_standings_to_firestore" {
+  name        = "sync_standings_to_firestore"
+  location    = "europe-central2"
+  description = "Function to sync current standings to Firestore"
+
+  build_config {
+    runtime     = "python312"
+    entry_point = "sync_standings_to_firestore"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.function_bucket.name
+        object = "cloud_functions/serving_layer/sync_standings_to_firestore_function/source.zip"
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count = 1
+    available_memory   = "1024M"
+    timeout_seconds    = 540
+    service_account_email = var.service_account_email
+    environment_variables = {
+      DISCORD_WEBHOOK_URL = var.discord_webhook_url
+      GCP_PROJECT_ID     = var.project_id
+      API_FOOTBALL_KEY    = var.api_football_key
+    }
+  }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.sync_standings_to_firestore.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
+}
+
+
+
+resource "google_cloudfunctions2_function" "sync_upcoming_matches_to_firestore" {
+  name        = "sync_upcoming_matches_to_firestore"
+  location    = "europe-central2"
+  description = "Function to sync upcoming matches to Firestore"
+
+  build_config {
+    runtime     = "python312"
+    entry_point = "sync_upcoming_matches_to_firestore"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.function_bucket.name
+        object = "cloud_functions/serving_layer/upcoming_matches_to_firestore_function/source.zip"
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count = 1
+    available_memory   = "1024M"
+    timeout_seconds    = 540
+    service_account_email = var.service_account_email
+    environment_variables = {
+      DISCORD_WEBHOOK_URL = var.discord_webhook_url
+      GCP_PROJECT_ID     = var.project_id
+      API_FOOTBALL_KEY    = var.api_football_key
+    }
+  }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.sync_upcoming_matches_to_firestore.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
+}

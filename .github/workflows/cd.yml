@@ -139,7 +139,6 @@ jobs:
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/standings_transform_function/
           cd ../../..
 
-          # Reddit Data Functions
           cd cloud_functions/reddit_data/fetch_reddit_data_function
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/fetch_reddit_data_function/
@@ -163,6 +162,21 @@ jobs:
           cd cloud_functions/reddit_data/reddit_transform_function
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/reddit_transform_function/
+          cd ../../..
+
+          cd cloud_functions/serving_layer/sync_to_firestore_function
+          zip -r source.zip *
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/serving_layer/sync_to_firestore_function/
+          cd ../../..
+
+          cd cloud_functions/serving_layer/sync_standings_to_firestore_function
+          zip -r source.zip *
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/serving_layer/sync_standings_to_firestore_function/
+          cd ../../..
+
+          cd cloud_functions/serving_layer/upcoming_matches_to_firestore_function
+          zip -r source.zip *
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/serving_layer/upcoming_matches_to_firestore_function/
           cd ../../..
 
       - name: Setup Terraform
@@ -207,6 +221,9 @@ jobs:
           terraform import google_pubsub_topic.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/process_reddit_data_topic
           terraform import google_pubsub_topic.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_reddit_topic
           terraform import google_pubsub_topic.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/topics/trigger_quality_scans_topic
+          terraform import google_pubsub_topic.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_matches_to_firestore_topic
+          terraform import google_pubsub_topic.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_standings_to_firestore_topic
+          terraform import google_pubsub_topic.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_upcoming_matches_to_firestore_topic
 
       - name: Import Pub/Sub Subscriptions
         env:
@@ -233,6 +250,9 @@ jobs:
           terraform import google_pubsub_subscription.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/process_reddit_data_subscription
           terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_reddit_subscription
           terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/trigger_quality_scans_subscription
+          terraform import google_pubsub_subscription.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_matches_to_firestore_subscription
+          terraform import google_pubsub_subscription.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_standings_to_firestore_subscription
+          terraform import google_pubsub_subscription.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_upcoming_matches_to_firestore_subscription
 
       - name: Import Cloud Functions
         env:
@@ -258,12 +278,23 @@ jobs:
           terraform import google_cloudfunctions2_function.load_reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/load_reddit_to_bigquery
           terraform import google_cloudfunctions2_function.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/process_reddit_data
           terraform import google_cloudfunctions2_function.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/transform_reddit
+          terraform import google_cloudfunctions2_function.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_upcoming_matches_to_firestore
+          terraform import google_cloudfunctions2_function.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_matches_to_firestore
+          terraform import google_cloudfunctions2_function.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_standings_to_firestore
 
       - name: Terraform Plan
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
           TF_VAR_functions_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
+          TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+          TF_VAR_google_maps_api_key: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_reddit_client_id: ${{ secrets.REDDIT_CLIENT_ID }}
+          TF_VAR_reddit_client_secret: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          TF_VAR_dataform_repository: ${{ secrets.DATAFORM_REPOSITORY }}
+          TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
         working-directory: ./terraform
         run: terraform plan
 
@@ -272,5 +303,13 @@ jobs:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
           TF_VAR_functions_bucket_name: ${{ secrets.FUNCTIONS_BUCKET_NAME }}
+          TF_VAR_discord_webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
+          TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+          TF_VAR_google_maps_api_key: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TF_VAR_reddit_client_id: ${{ secrets.REDDIT_CLIENT_ID }}
+          TF_VAR_reddit_client_secret: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          TF_VAR_dataform_repository: ${{ secrets.DATAFORM_REPOSITORY }}
+          TF_VAR_dataform_workspace: ${{ secrets.DATAFORM_WORKSPACE }}
         working-directory: ./terraform
         run: terraform apply -auto-approve

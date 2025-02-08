@@ -316,11 +316,7 @@ def send_discord_notification(
 
 
 def trigger_dataplex_scans(event, context):
-    """Triggers Dataplex data quality scans for all tables
-    Args:
-         event (dict): The dictionary with data specific to this type of event.
-         context (google.cloud.functions.Context): The Cloud Functions event metadata.
-    """
+    """Triggers Dataplex data quality scans for all tables"""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -350,7 +346,6 @@ def trigger_dataplex_scans(event, context):
             scan_name = (
                 f"projects/{project_id}/locations/{location}/dataScans/{scan_id}"
             )
-
             request = dataplex_v1.RunDataScanRequest(name=scan_name)
             operation = client.run_data_scan(request=request)
             triggered_scans.append(operation)
