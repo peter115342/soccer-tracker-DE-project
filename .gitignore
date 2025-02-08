@@ -25,3 +25,4 @@ match_ids.json
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+deployment_scripts.txt
