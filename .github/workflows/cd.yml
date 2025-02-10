@@ -179,9 +179,13 @@ jobs:
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/serving_layer/upcoming_matches_to_firestore_function/
           cd ../../..
 
+          cd cloud_functions/summary_generation
+          zip -r source.zip *
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/summary_generation
+          cd ../../..
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-
       - name: Terraform Init
         env:
           TF_VAR_service_account_email: ${{ secrets.DEFAULT_SERVICE_ACCOUNT }}
@@ -224,6 +228,7 @@ jobs:
           terraform import google_pubsub_topic.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_matches_to_firestore_topic
           terraform import google_pubsub_topic.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_standings_to_firestore_topic
           terraform import google_pubsub_topic.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_upcoming_matches_to_firestore_topic
+          terraform import google_pubsub_topic.generate_match_summary projects/${{secrets.GCP_PROJECT_ID}}/topics/generate_match_summary_topic
 
       - name: Import Pub/Sub Subscriptions
         env:
@@ -253,6 +258,7 @@ jobs:
           terraform import google_pubsub_subscription.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_matches_to_firestore_subscription
           terraform import google_pubsub_subscription.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_standings_to_firestore_subscription
           terraform import google_pubsub_subscription.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_upcoming_matches_to_firestore_subscription
+          terraform import google_pubsub_subscription.generate_match_summary projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/generate_match_summary_subscription
 
       - name: Import Cloud Functions
         env:
@@ -281,6 +287,7 @@ jobs:
           terraform import google_cloudfunctions2_function.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_upcoming_matches_to_firestore
           terraform import google_cloudfunctions2_function.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_matches_to_firestore
           terraform import google_cloudfunctions2_function.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_standings_to_firestore
+          terraform import google_cloudfunctions2_function.generate_match_summary projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/generate_match_summary
 
       - name: Terraform Plan
         env:

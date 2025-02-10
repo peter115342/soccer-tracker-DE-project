@@ -26,3 +26,4 @@ match_ids.json
 .ruff_cache/
 .pytest_cache/
 deployment_scripts.txt
+vertex_example.py

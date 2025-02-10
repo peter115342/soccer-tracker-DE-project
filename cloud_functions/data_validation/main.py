@@ -34,7 +34,7 @@ def get_table_record_counts() -> dict:
         GROUP BY date
         ORDER BY date
     )
-    SELECT 
+    SELECT
         COALESCE(m.date, w.date, r.date) as date,
         m.count as matches_count,
         w.count as weather_count,
