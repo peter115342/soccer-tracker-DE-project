@@ -181,7 +181,7 @@ jobs:
 
           cd cloud_functions/summary_generation
           zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/summary_generation
+          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/summary_generation/
           cd ../../..
 
       - name: Setup Terraform
