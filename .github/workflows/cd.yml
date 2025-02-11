@@ -179,10 +179,10 @@ jobs:
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/serving_layer/upcoming_matches_to_firestore_function/
           cd ../../..
 
-          cd cloud_functions/summary_generation
-          zip -r source.zip *
-          gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/summary_generation
-          cd ../../..
+        #  cd cloud_functions/summary_generation
+        #  zip -r source.zip *
+        #  gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/summary_generation
+        #  cd ../../..
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
