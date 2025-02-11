@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import requests
-
+import base64
 from google.cloud import bigquery, storage
 from google import genai
 from google.genai import types
@@ -14,11 +14,20 @@ def generate_match_summary(event, context):
     Only considers matches (from matches_processed) that have any Reddit data (reddit_processed join)
     and at least one Reddit thread with score >= 40.
     Uses Gemini 2.0 Flash via Google Gen AI SDK to generate the final article text.
-    The generated markdown documents are then saved to GCS in the bucket specified by the BUCKET_NAME env var,
-    under the folder "match_summaries" with filename format "{match_date}_{league}.md".
-    No duplicate file is generated; if a file with the same name exists, generation for that date/league is skipped.
+    The generated markdown documents are then saved to GCS.
     """
     try:
+        pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
+        message_data = json.loads(pubsub_message)
+
+        if message_data.get("action") != "generate_match_summary":
+            error_message = "Invalid message format"
+            logging.error(error_message)
+            send_discord_notification(
+                "❌ Match Summary Generation: Invalid Trigger", error_message, 16711680
+            )
+            return error_message, 500
+
         sql_query = f"""
 WITH matches_with_reddit AS (
   SELECT 

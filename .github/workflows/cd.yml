@@ -287,7 +287,7 @@ jobs:
           terraform import google_cloudfunctions2_function.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_upcoming_matches_to_firestore
           terraform import google_cloudfunctions2_function.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_matches_to_firestore
           terraform import google_cloudfunctions2_function.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/sync_standings_to_firestore
-        #  terraform import google_cloudfunctions2_function.generate_match_summary projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/generate_match_summary
+          terraform import google_cloudfunctions2_function.generate_match_summary projects/${{secrets.GCP_PROJECT_ID}}/locations/europe-central2/functions/generate_match_summary
 
       - name: Terraform Plan
         env:
