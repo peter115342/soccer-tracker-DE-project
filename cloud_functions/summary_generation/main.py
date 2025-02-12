@@ -183,7 +183,7 @@ ORDER BY match_date, league
             summary_data = MatchSummaryPrompt(
                 match_date=str(row.match_date), league=row.league, matches=row.matches
             )
-            prompt = summary_data.generate_prompt()
+            prompt = ftfy.fix_text(summary_data.generate_prompt())
             summaries.append((row.match_date, row.league, prompt))
 
         genai_client = genai.Client(
@@ -229,9 +229,8 @@ ORDER BY match_date, league
                 contents=contents,
                 config=generate_content_config,
             ):
-                article_text += chunk.text
+                article_text += ftfy.fix_text(chunk.text)
 
-            article_text = ftfy.fix_text(article_text)
             save_to_gcs(article_text, filename, storage_client, bucket)
             logging.info(f"Saved markdown document to GCS with filename: {filename}")
             generated_count += 1
