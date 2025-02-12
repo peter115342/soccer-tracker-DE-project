@@ -3,6 +3,7 @@ import json
 import logging
 import requests
 import base64
+import ftfy
 from google.cloud import bigquery, storage
 from google import genai
 from google.genai import types
@@ -230,6 +231,7 @@ ORDER BY match_date, league
             ):
                 article_text += chunk.text
 
+            article_text = ftfy.fix_text(article_text)
             save_to_gcs(article_text, filename, storage_client, bucket)
             logging.info(f"Saved markdown document to GCS with filename: {filename}")
             generated_count += 1
@@ -259,7 +261,7 @@ ORDER BY match_date, league
 
 
 def save_to_gcs(content, filename, storage_client, bucket):
-    """Save content to GCS bucket"""
+    """Save content to GCS bucket with cleaned text"""
     blob = bucket.blob(filename)
     blob.upload_from_string(content, content_type="text/markdown")
 

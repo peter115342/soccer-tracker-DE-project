@@ -5,3 +5,4 @@ google-genai
 vertexai
 requests
 pydantic
+ftfy
