@@ -4,3 +4,4 @@ google-cloud-bigquery
 google-genai
 vertexai
 requests
+pydantic

@@ -6,16 +6,76 @@ import base64
 from google.cloud import bigquery, storage
 from google import genai
 from google.genai import types
+from pydantic import BaseModel
+from typing import List, Optional
+
+
+class MatchSummaryPrompt(BaseModel):
+    match_date: str
+    league: str
+    matches: List[dict]
+
+    def generate_prompt(self) -> str:
+        prompt = f"""
+Generate a factual match summary article for {self.league} matches on {self.match_date}. 
+Follow these strict guidelines:
+- Only use information provided in this prompt
+- Do not make assumptions about goals, scorers, or events not mentioned
+- Include weather conditions when available
+- Include team forms when available
+- Include relevant Reddit discussions/comments with 40+ upvotes
+- No hypothetical scenarios or predictions
+
+Available match data:
+"""
+        for match in self.matches:
+            home_team = match["homeTeam"]["name"]
+            away_team = match["awayTeam"]["name"]
+
+            score_info = ""
+            if match["score"] and match["score"]["fullTime"]:
+                home_score = match["score"]["fullTime"]["homeTeam"]
+                away_score = match["score"]["fullTime"]["awayTeam"]
+                score_info = f"Final Score: {home_score}-{away_score}"
+
+            weather = ""
+            if match["temperature_2m"] is not None:
+                weather = f"\nWeather: {match['temperature_2m']}°C, "
+                if match["precipitation"] > 0:
+                    weather += f"Precipitation: {match['precipitation']}mm, "
+                weather += f"Wind: {match['windspeed_10m']} km/h"
+
+            form_info = ""
+            if match["home_team_form"]:
+                form_info += f"\nHome team form: {match['home_team_form']}"
+            if match["away_team_form"]:
+                form_info += f"\nAway team form: {match['away_team_form']}"
+
+            prompt += (
+                f"\n{home_team} vs {away_team}\n{score_info}{weather}{form_info}\n"
+            )
+
+            prompt += "\nRelevant Reddit Discussion:\n"
+            for thread in match["threads"]:
+                if thread["score"] >= 40:
+                    prompt += (
+                        f"- Thread: {thread['title']} (Score: {thread['score']})\n"
+                    )
+                    if thread["body"]:
+                        prompt += f"  Content: {thread['body'][:200]}...\n"
+                    for comment in thread["comments"]:
+                        if comment["score"] >= 40:
+                            prompt += f"  Top Comment: {comment['body'][:200]}... (Score: {comment['score']})\n"
+
+        prompt += """
+Please generate a comprehensive match summary using only the provided information above.
+Focus on factual information and avoid any speculation or assumptions."""
+
+        return prompt
 
 
 def generate_match_summary(event, context):
-    """
-    Cloud Function to generate a markdown summary article per league per match_date for which matches have Reddit data.
-    Only considers matches (from matches_processed) that have any Reddit data (reddit_processed join)
-    and at least one Reddit thread with score >= 40.
-    Uses Gemini 2.0 Flash via Google Gen AI SDK to generate the final article text.
-    The generated markdown documents are then saved to GCS.
-    """
+    """Cloud Function to generate factual match summaries using available match, weather, standings and Reddit data"""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -29,7 +89,7 @@ def generate_match_summary(event, context):
             return error_message, 500
 
         sql_query = """
-WITH matches_with_reddit AS (
+WITH matches_with_data AS (
   SELECT 
     m.id,
     m.utcDate,
@@ -39,34 +99,58 @@ WITH matches_with_reddit AS (
     m.homeTeam,
     m.awayTeam,
     m.competition,
-    r.threads
+    m.score,
+    r.threads,
+    w.temperature_2m,
+    w.precipitation,
+    w.weathercode,
+    w.windspeed_10m
   FROM `sports_data_eu.matches_processed` AS m
   JOIN `sports_data_eu.reddit_processed` AS r
     ON CAST(m.id AS STRING) = r.match_id
+  LEFT JOIN `sports_data_eu.weather_processed` w 
+    ON m.id = w.match_id
 ),
-filtered_matches AS (
-  SELECT *
-  FROM matches_with_reddit
-  WHERE EXISTS (
-      SELECT 1 FROM UNNEST(threads) as thread WHERE thread.score >= 40
-  )
+team_standings AS (
+  SELECT 
+    s.fetchDate,
+    s.competitionId,
+    st.teamId,
+    st.form,
+    st.position
+  FROM `sports_data_eu.standings_processed` s,
+    UNNEST(standings) st
+  WHERE s.standingType = 'TOTAL'
 )
 SELECT 
-  DATE(utcDate) AS match_date,
-  competition.name AS league,
+  DATE(m.utcDate) AS match_date,
+  m.competition.name AS league,
   ARRAY_AGG(STRUCT(
-    id,
-    status,
-    matchday,
-    stage,
-    homeTeam,
-    awayTeam,
-    threads
+    m.id,
+    m.status,
+    m.matchday,
+    m.stage,
+    m.homeTeam,
+    m.awayTeam,
+    m.score,
+    m.threads,
+    m.temperature_2m,
+    m.precipitation,
+    m.weathercode,
+    m.windspeed_10m,
+    home_form.form as home_team_form,
+    away_form.form as away_team_form
   )) AS matches
-FROM filtered_matches
+FROM matches_with_data m
+LEFT JOIN team_standings home_form
+  ON m.homeTeam.id = home_form.teamId 
+  AND DATE(m.utcDate) = DATE(home_form.fetchDate)
+LEFT JOIN team_standings away_form
+  ON m.awayTeam.id = away_form.teamId
+  AND DATE(m.utcDate) = DATE(away_form.fetchDate)
 GROUP BY match_date, league
 ORDER BY match_date, league
-"""  # nosec B608
+"""
         bq_client = bigquery.Client()
         query_job = bq_client.query(sql_query)
         results = list(query_job.result())
@@ -87,35 +171,11 @@ ORDER BY match_date, league
 
         summaries = []
         for row in results:
-            match_date = row.match_date
-            league = row.league
-            prompt = f"# {league} Match Summary - {match_date}\n\n"
-            prompt += "## Matches\n\n"
-            for match in row.matches:
-                home_team = (
-                    match["homeTeam"]["name"]
-                    if match["homeTeam"] and "name" in match["homeTeam"]
-                    else "N/A"
-                )
-                away_team = (
-                    match["awayTeam"]["name"]
-                    if match["awayTeam"] and "name" in match["awayTeam"]
-                    else "N/A"
-                )
-                status = match["status"] if match["status"] else "N/A"
-                matchday = match["matchday"] if match["matchday"] is not None else "N/A"
-                prompt += (
-                    f"- **Match ID:** {match['id']}, **Status:** {status}, "
-                    f"**Matchday:** {matchday}, **Home:** {home_team} vs **Away:** {away_team}\n"
-                )
-            prompt += "\n## Reddit Highlights\n\n"
-            for match in row.matches:
-                threads = match["threads"]
-                for thread in threads:
-                    if thread["score"] >= 40:
-                        prompt += f"- {thread['title']}\n"
-            prompt += "\nPlease generate a detailed article summarizing these matches in markdown."
-            summaries.append((match_date, league, prompt))
+            summary_data = MatchSummaryPrompt(
+                match_date=str(row.match_date), league=row.league, matches=row.matches
+            )
+            prompt = summary_data.generate_prompt()
+            summaries.append((row.match_date, row.league, prompt))
 
         genai_client = genai.Client(
             vertexai=True,
@@ -135,8 +195,8 @@ ORDER BY match_date, league
 
             contents = [types.Content(role="user", parts=[{"text": prompt}])]
             generate_content_config = types.GenerateContentConfig(
-                temperature=1,
-                top_p=0.95,
+                temperature=0.3,
+                top_p=0.8,
                 max_output_tokens=2048,
                 response_modalities=["TEXT"],
                 safety_settings=[
@@ -191,15 +251,13 @@ ORDER BY match_date, league
 
 
 def save_to_gcs(content, filename, storage_client, bucket):
-    """
-    Save the given content as a file in the GCS bucket specified by the BUCKET_NAME env var,
-    under the given filename.
-    """
+    """Save content to GCS bucket"""
     blob = bucket.blob(filename)
     blob.upload_from_string(content, content_type="text/markdown")
 
 
 def send_discord_notification(title: str, message: str, color: int):
+    """Send notification to Discord webhook"""
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
         logging.warning("Discord webhook URL not set.")
