@@ -4,6 +4,7 @@ import logging
 import requests
 import base64
 import ftfy
+import unicodedata
 from google.cloud import bigquery, storage
 from google import genai
 from google.genai import types
@@ -50,7 +51,9 @@ Example format:
 
             weather = ""
             if match["temperature_2m"] is not None:
-                weather = f"\nWeather: {match['temperature_2m']}°C, "
+                weather = unicodedata.normalize(
+                    "NFKC", f"\nWeather: {match['temperature_2m']}°C, "
+                )
                 if match["precipitation"] > 0:
                     weather += f"Precipitation: {match['precipitation']}mm, "
                 weather += f"Wind: {match['windspeed_10m']} km/h"
@@ -229,7 +232,8 @@ ORDER BY match_date, league
                 contents=contents,
                 config=generate_content_config,
             ):
-                article_text += ftfy.fix_text(chunk.text)
+                cleaned_text = unicodedata.normalize("NFKC", chunk.text)
+                article_text += ftfy.fix_text(cleaned_text)
 
             save_to_gcs(article_text, filename, storage_client, bucket)
             logging.info(f"Saved markdown document to GCS with filename: {filename}")
