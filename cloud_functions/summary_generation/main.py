@@ -28,7 +28,7 @@ def generate_match_summary(event, context):
             )
             return error_message, 500
 
-        sql_query = f"""
+        sql_query = """
 WITH matches_with_reddit AS (
   SELECT 
     m.id,
@@ -40,8 +40,8 @@ WITH matches_with_reddit AS (
     m.awayTeam,
     m.competition,
     r.threads
-  FROM `{os.environ.get("GCP_PROJECT_ID")}.your_dataset.matches_processed` AS m
-  JOIN `{os.environ.get("GCP_PROJECT_ID")}.your_dataset.reddit_processed` AS r
+  FROM `sports_data_eu.matches_processed` AS m
+  JOIN `sports_data_eu.reddit_processed` AS r
     ON CAST(m.id AS STRING) = r.match_id
 ),
 filtered_matches AS (
