@@ -7,7 +7,7 @@ from google.cloud import bigquery, storage
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
 
 class MatchSummaryPrompt(BaseModel):
