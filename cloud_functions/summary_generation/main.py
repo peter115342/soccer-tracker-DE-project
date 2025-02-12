@@ -93,27 +93,27 @@ ORDER BY match_date, league
             prompt += "## Matches\n\n"
             for match in row.matches:
                 home_team = (
-                    match.homeTeam.name
-                    if match.homeTeam and "name" in match.homeTeam
+                    match["homeTeam"]["name"]
+                    if match["homeTeam"] and "name" in match["homeTeam"]
                     else "N/A"
                 )
                 away_team = (
-                    match.awayTeam.name
-                    if match.awayTeam and "name" in match.awayTeam
+                    match["awayTeam"]["name"]
+                    if match["awayTeam"] and "name" in match["awayTeam"]
                     else "N/A"
                 )
-                status = match.status if match.status else "N/A"
-                matchday = match.matchday if match.matchday is not None else "N/A"
+                status = match["status"] if match["status"] else "N/A"
+                matchday = match["matchday"] if match["matchday"] is not None else "N/A"
                 prompt += (
-                    f"- **Match ID:** {match.id}, **Status:** {status}, "
+                    f"- **Match ID:** {match['id']}, **Status:** {status}, "
                     f"**Matchday:** {matchday}, **Home:** {home_team} vs **Away:** {away_team}\n"
                 )
             prompt += "\n## Reddit Highlights\n\n"
             for match in row.matches:
-                threads = match.threads
+                threads = match["threads"]
                 for thread in threads:
-                    if thread.score >= 40:
-                        prompt += f"- {thread.title}\n"
+                    if thread["score"] >= 40:
+                        prompt += f"- {thread['title']}\n"
             prompt += "\nPlease generate a detailed article summarizing these matches in markdown."
             summaries.append((match_date, league, prompt))
 
