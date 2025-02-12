@@ -17,24 +17,14 @@ class MatchSummaryPrompt(BaseModel):
 
     def generate_prompt(self) -> str:
         prompt = f"""
-Generate a narrative match summary article for {self.league} matches on {self.match_date}.
-
-Write engaging match summaries that:
-1. Start with a clear headline and match result
-2. Describe the match context and significance
-3. Mention the weather conditions and their impact if relevant
-4. Include both teams' current form for context
-5. Incorporate relevant Reddit discussions/mentions
-6. Maintain a journalistic style
-7. Use only factual information provided - no speculation about players/events not mentioned
-
-Example format:
-# [League Name] Match Summary - [Date]
-
-## [Home Team] vs [Away Team]
-[Write 2-3 sentences incorporating the match result, weather conditions, team forms, and relevant fan discussions. Focus on telling as short story of what happened using only the provided data.]
-
-[Continue for each match...]
+Generate a factual match summary article for {self.league} matches on {self.match_date}. 
+Follow these strict guidelines:
+- Only use information provided in this prompt
+- Do not make assumptions about goals, scorers, or events not mentioned
+- Include weather conditions when available
+- Include team forms when available
+- Include relevant Reddit discussions/comments
+- No hypothetical scenarios or predictions
 
 Available match data:
 """
@@ -65,17 +55,16 @@ Available match data:
                 f"\n{home_team} vs {away_team}\n{score_info}{weather}{form_info}\n"
             )
 
-            prompt += "\nRelevant Reddit Discussion:\n"
-            for thread in match["threads"]:
-                if thread["score"] >= 40:
+            if match["threads"]:
+                prompt += "\nRelevant Reddit Discussion:\n"
+                for thread in match["threads"]:
                     prompt += (
                         f"- Thread: {thread['title']} (Score: {thread['score']})\n"
                     )
                     if thread["body"]:
                         prompt += f"  Content: {thread['body'][:200]}...\n"
                     for comment in thread["comments"]:
-                        if comment["score"] >= 40:
-                            prompt += f"  Top Comment: {comment['body'][:200]}... (Score: {comment['score']})\n"
+                        prompt += f"  Comment: {comment['body'][:200]}... (Score: {comment['score']})\n"
 
         prompt += """
 Please generate a comprehensive match summary using only the provided information above.
@@ -244,7 +233,7 @@ ORDER BY match_date, league
             )
             return message, 200
 
-        success_message = f"Successfully generated and saved match summaries for {generated_count} league/date groups."
+        success_message = f"Generated {generated_count} match summaries"
         logging.info(success_message)
         send_discord_notification(
             "✅ Generate Match Summaries: Success", success_message, 65280
