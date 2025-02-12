@@ -17,16 +17,25 @@ class MatchSummaryPrompt(BaseModel):
 
     def generate_prompt(self) -> str:
         prompt = f"""
-Generate a factual match summary article for {self.league} matches on {self.match_date}. 
-Follow these strict guidelines:
-- Only use information provided in this prompt
-- Do not make assumptions about goals, scorers, or events not mentioned
-- Include weather conditions when available
-- Include team forms when available
-- Include relevant Reddit discussions/comments
-- No hypothetical scenarios or predictions
+Generate a narrative match summary article for {self.league} matches on {self.match_date}.
 
-Available match data:
+Write engaging match summaries that:
+1. Start with a clear headline and match result
+2. Write 2-3 concise paragraphs that:
+   - Describe the match result and significance
+   - Mention weather conditions if they impacted the game
+   - Include both teams' current form for context
+   - Incorporate relevant fan reactions from Reddit
+3. Maintain a journalistic style
+4. Use only factual information provided
+
+Example format:
+# {self.league} Match Summary - {self.match_date}
+
+## [Home Team] vs [Away Team]
+[2-3 paragraphs incorporating all available data into a flowing narrative about the match, weather impact, team forms, and fan reactions. Focus on telling the story of what happened.]
+
+[Continue for each match...]
 """
         for match in self.matches:
             home_team = match["homeTeam"]["name"]
