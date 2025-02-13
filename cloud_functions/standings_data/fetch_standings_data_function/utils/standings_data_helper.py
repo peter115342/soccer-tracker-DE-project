@@ -36,7 +36,7 @@ def get_unique_dates() -> List[str]:
     query = f"""
         SELECT DISTINCT DATE(utcDate) as match_date
         FROM `{GCP_PROJECT_ID}.sports_data_eu.matches_processed`
-        WHERE DATE(utcDate) <= '2024-12-01'
+        WHERE DATE(utcDate) <= CURRENT_DATE()
         ORDER BY match_date DESC
     """  # nosec B608
     query_job = client.query(query)
