@@ -26,6 +26,11 @@ def sync_upcoming_matches_to_firestore(event, context):
         db = firestore.Client()
         tomorrow = (datetime.now() + timedelta(days=1)).date()
 
+        upcoming_collection = db.collection("upcoming_matches")
+        docs = upcoming_collection.stream()
+        for doc in docs:
+            doc.reference.delete()
+
         api_key = os.environ.get("API_FOOTBALL_KEY")
         if not api_key:
             raise ValueError("Football Data API key not configured")
@@ -69,7 +74,7 @@ def sync_upcoming_matches_to_firestore(event, context):
         date_doc.set(matches_data, merge=False)
 
         match_count = len(matches_data["matches"])
-        status_message = f"Successfully synced {match_count} upcoming matches for {tomorrow.isoformat()}"
+        status_message = f"Successfully synced {match_count} upcoming matches for {tomorrow.isoformat()} and cleared old data"
         logging.info(status_message)
         send_discord_notification(
             "✅ Upcoming Matches Firestore Sync: Success", status_message, 65280
