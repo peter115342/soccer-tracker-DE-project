@@ -3,7 +3,6 @@ import json
 import logging
 import requests
 import base64
-import ftfy
 import unicodedata
 from google.cloud import bigquery, storage
 from google import genai
