@@ -12,6 +12,10 @@ from pydantic import BaseModel
 from typing import List
 
 
+def normalize_text(text: str) -> str:
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+
+
 class MatchSummaryPrompt(BaseModel):
     match_date: str
     league: str
@@ -19,7 +23,7 @@ class MatchSummaryPrompt(BaseModel):
 
     def generate_prompt(self) -> str:
         prompt = f"""
-Generate a narrative match summary article for {self.league} matches on {self.match_date}.
+Generate a narrative match summary article for {normalize_text(self.league)} matches on {self.match_date}.
 
 Write engaging match summaries that:
 1. Start with a clear headline and match result
@@ -32,7 +36,7 @@ Write engaging match summaries that:
 4. Use only factual information provided
 
 Example format:
-# {self.league} Match Summary - {self.match_date}
+# {normalize_text(self.league)} Match Summary - {self.match_date}
 
 ## [Home Team] vs [Away Team]
 [2-3 paragraphs incorporating all available data into a flowing narrative about the match, weather impact, team forms, and fan reactions. Focus on telling the story of what happened.]
@@ -40,8 +44,8 @@ Example format:
 [Continue for each match...]
 """
         for match in self.matches:
-            home_team = match["homeTeam"]["name"]
-            away_team = match["awayTeam"]["name"]
+            home_team = normalize_text(match["homeTeam"]["name"])
+            away_team = normalize_text(match["awayTeam"]["name"])
 
             score_info = ""
             if match["score"] and match["score"]["fullTime"]:
@@ -51,9 +55,7 @@ Example format:
 
             weather = ""
             if match["temperature_2m"] is not None:
-                weather = unicodedata.normalize(
-                    "NFKC", f"\nWeather: {match['temperature_2m']}°C, "
-                )
+                weather = f"\nWeather: {match['temperature_2m']} degrees C, "
                 if match["precipitation"] > 0:
                     weather += f"Precipitation: {match['precipitation']}mm, "
                 weather += f"Wind: {match['windspeed_10m']} km/h"
@@ -71,13 +73,14 @@ Example format:
             if match["threads"]:
                 prompt += "\nRelevant Reddit Discussion:\n"
                 for thread in match["threads"]:
-                    prompt += (
-                        f"- Thread: {thread['title']} (Score: {thread['score']})\n"
-                    )
+                    thread_title = normalize_text(thread["title"])
+                    prompt += f"- Thread: {thread_title} (Score: {thread['score']})\n"
                     if thread["body"]:
-                        prompt += f"  Content: {thread['body'][:200]}...\n"
+                        thread_body = normalize_text(thread["body"][:200])
+                        prompt += f"  Content: {thread_body}...\n"
                     for comment in thread["comments"]:
-                        prompt += f"  Comment: {comment['body'][:200]}... (Score: {comment['score']})\n"
+                        comment_body = normalize_text(comment["body"][:200])
+                        prompt += f"  Comment: {comment_body}... (Score: {comment['score']})\n"
 
         prompt += """
 Please generate a comprehensive match summary using only the provided information above.
@@ -184,9 +187,11 @@ ORDER BY match_date, league
         summaries = []
         for row in results:
             summary_data = MatchSummaryPrompt(
-                match_date=str(row.match_date), league=row.league, matches=row.matches
+                match_date=str(row.match_date),
+                league=normalize_text(row.league),
+                matches=row.matches,
             )
-            prompt = ftfy.fix_text(summary_data.generate_prompt())
+            prompt = summary_data.generate_prompt()
             summaries.append((row.match_date, row.league, prompt))
 
         genai_client = genai.Client(
@@ -197,7 +202,7 @@ ORDER BY match_date, league
         model = "gemini-2.0-flash-001"
         generated_count = 0
         for match_date, league, prompt in summaries:
-            filename = f"match_summaries/{match_date}_{league}.md"
+            filename = f"match_summaries/{match_date}_{normalize_text(league)}.md"
             blob = bucket.blob(filename)
             if blob.exists(storage_client):
                 logging.info(
@@ -232,8 +237,8 @@ ORDER BY match_date, league
                 contents=contents,
                 config=generate_content_config,
             ):
-                cleaned_text = unicodedata.normalize("NFKC", chunk.text)
-                article_text += ftfy.fix_text(cleaned_text)
+                cleaned_text = unicodedata.normalize("NFKD", chunk.text)
+                article_text += cleaned_text.encode("ascii", "ignore").decode("ascii")
 
             save_to_gcs(article_text, filename, storage_client, bucket)
             logging.info(f"Saved markdown document to GCS with filename: {filename}")
@@ -265,8 +270,11 @@ ORDER BY match_date, league
 
 def save_to_gcs(content, filename, storage_client, bucket):
     """Save content to GCS bucket with cleaned text"""
+    normalized_content = unicodedata.normalize("NFKD", content)
     blob = bucket.blob(filename)
-    blob.upload_from_string(content, content_type="text/markdown")
+    blob.upload_from_string(
+        normalized_content, content_type="text/markdown; charset=utf-8"
+    )
 
 
 def send_discord_notification(title: str, message: str, color: int):
@@ -279,8 +287,8 @@ def send_discord_notification(title: str, message: str, color: int):
         "content": None,
         "embeds": [
             {
-                "title": title,
-                "description": message,
+                "title": normalize_text(title),
+                "description": normalize_text(message),
                 "color": color,
             }
         ],

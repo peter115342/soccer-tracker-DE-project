@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from typing import List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 from google.cloud import storage
 from google.cloud import bigquery
@@ -78,16 +78,21 @@ def should_fetch_standings(date: str, processed_dates: List[str]) -> bool:
 def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
     """
     Fetches standings for all competitions on a specific date.
+    Uses the next day's date for the API call to ensure complete data.
     Handles rate limiting and includes error handling for each request.
     """
     all_standings = []
+
+    next_date = (datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)).strftime(
+        "%Y-%m-%d"
+    )
 
     for comp_id, comp_code in COMPETITION_MAPPING.items():
         logging.info(
             f"Fetching standings for competition {comp_id} ({comp_code}) on {date}"
         )
         url = f"{BASE_URL}/competitions/{comp_code}/standings"
-        params = {"date": date}
+        params = {"date": next_date}
 
         try:
             response = requests.get(url, headers=HEADERS, params=params, timeout=90)
