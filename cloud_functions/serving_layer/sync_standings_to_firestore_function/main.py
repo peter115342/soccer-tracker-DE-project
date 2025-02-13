@@ -2,7 +2,7 @@ import json
 import os
 import logging
 from datetime import datetime
-from google.cloud import firestore, bigquery, pubsub_v1
+from google.cloud import firestore, bigquery
 import base64
 import requests
 
