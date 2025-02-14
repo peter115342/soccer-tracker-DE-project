@@ -3,7 +3,6 @@ from unittest.mock import patch, MagicMock
 from cloud_functions.serving_layer.sync_summaries_to_firestore_function.main import (
     sync_summaries_to_firestore,
 )
-from datetime import datetime
 
 
 @pytest.fixture
