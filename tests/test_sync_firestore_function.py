@@ -28,6 +28,8 @@ def sample_bigquery_row():
             self.lat = 51.5074
             self.lon = -0.1278
             self.threads = None
+            self.home_team_logo = "https://example.com/home_team_logo.png"
+            self.away_team_logo = "https://example.com/away_team_logo.png"
 
     return [Row()]
 
