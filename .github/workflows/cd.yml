@@ -234,7 +234,7 @@ jobs:
           terraform import google_pubsub_topic.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_standings_to_firestore_topic
           terraform import google_pubsub_topic.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_upcoming_matches_to_firestore_topic
           terraform import google_pubsub_topic.generate_match_summary projects/${{secrets.GCP_PROJECT_ID}}/topics/generate_match_summary_topic
-        #  terraform import google_pubsub_topic.sync_summaries_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_summaries_to_firestore_topic
+          terraform import google_pubsub_topic.sync_summaries_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_summaries_to_firestore_topic
 
       - name: Import Pub/Sub Subscriptions
         env:
@@ -265,7 +265,7 @@ jobs:
           terraform import google_pubsub_subscription.sync_standings_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_standings_to_firestore_subscription
           terraform import google_pubsub_subscription.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_upcoming_matches_to_firestore_subscription
           terraform import google_pubsub_subscription.generate_match_summary projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/generate_match_summary_subscription
-      #    terraform import google_pubsub_subscription.sync_summaries_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_summaries_to_firestore_subscription
+          terraform import google_pubsub_subscription.sync_summaries_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_summaries_to_firestore_subscription
       - name: Import Cloud Functions
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
