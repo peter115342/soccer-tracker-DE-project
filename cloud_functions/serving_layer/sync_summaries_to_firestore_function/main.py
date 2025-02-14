@@ -49,9 +49,12 @@ def sync_summaries_to_firestore(event, context):
                 continue
 
             content = blob.download_as_text()
+            formatted_content = content.replace("\r\n", "\n")
+            lines = formatted_content.split("\n")
 
             firestore_data = {
                 "content": content,
+                "formatted_content": lines,
                 "filename": blob.name,
                 "created_at": datetime.now().isoformat(),
                 "last_updated": datetime.now().isoformat(),
