@@ -41,14 +41,18 @@ def sync_matches_to_firestore(event, context):
             w.relativehumidity_2m,
             t.address,
             t.venue,
+            t.logo as home_team_logo,
             CAST(SPLIT(t.address, ',')[OFFSET(0)] AS FLOAT64) as lat,
             CAST(SPLIT(t.address, ',')[OFFSET(1)] AS FLOAT64) as lon,
+            t2.logo as away_team_logo,
             r.threads
         FROM `sports_data_eu.matches_processed` m
         LEFT JOIN `sports_data_eu.weather_processed` w
             ON m.id = w.match_id
         LEFT JOIN `sports_data_eu.teams` t
             ON m.homeTeam.id = t.id
+        LEFT JOIN `sports_data_eu.teams` t2
+            ON m.awayTeam.id = t2.id
         LEFT JOIN `sports_data_eu.reddit_processed` r
             ON CAST(m.id AS STRING) = r.match_id
         """
@@ -89,6 +93,8 @@ def sync_matches_to_firestore(event, context):
                 "status": row.status,
                 "home_team": row.home_team,
                 "away_team": row.away_team,
+                "home_team_logo": row.home_team_logo,
+                "away_team_logo": row.away_team_logo,
                 "home_score": row.home_score,
                 "away_score": row.away_score,
                 "weather": {
