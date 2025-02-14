@@ -38,6 +38,7 @@ def sync_summaries_to_firestore(event, context):
                 continue
 
             doc_id = blob.name.split("/")[-1].replace(".md", "")
+
             doc_ref = summaries_collection.document(doc_id)
             doc = doc_ref.get()
 
@@ -47,8 +48,8 @@ def sync_summaries_to_firestore(event, context):
                 )
                 continue
 
-            content_bytes = blob.download_as_bytes()
-            content = content_bytes.decode("utf-8", errors="replace")
+            content = blob.download_as_text()
+            content = content.replace("\n", "\\n")
 
             firestore_data = {
                 "content": content,
