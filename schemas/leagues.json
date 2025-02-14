@@ -1,0 +1,29 @@
+[{
+  "column_name": "current_season_matchday",
+  "data_type": "INT64",
+  "is_nullable": "YES"
+}, {
+  "column_name": "current_season_start_date",
+  "data_type": "DATE",
+  "is_nullable": "YES"
+}, {
+  "column_name": "logo",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "current_season_end_date",
+  "data_type": "DATE",
+  "is_nullable": "YES"
+}, {
+  "column_name": "code",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "name",
+  "data_type": "STRING",
+  "is_nullable": "YES"
+}, {
+  "column_name": "id",
+  "data_type": "INT64",
+  "is_nullable": "YES"
+}]

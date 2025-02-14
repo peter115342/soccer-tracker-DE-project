@@ -14,7 +14,9 @@ def sample_bigquery_row():
             self.utcDate = datetime(2023, 1, 1, 15, 0)
             self.status = "FINISHED"
             self.home_team = "Team A"
+            self.home_team_id = 101
             self.away_team = "Team B"
+            self.away_team_id = 102
             self.home_score = 2
             self.away_score = 1
             self.apparent_temperature = 20.5
@@ -28,6 +30,11 @@ def sample_bigquery_row():
             self.lat = 51.5074
             self.lon = -0.1278
             self.threads = None
+            self.home_team_logo = "https://example.com/home_team_logo.png"
+            self.away_team_logo = "https://example.com/away_team_logo.png"
+            self.league_id = 1001
+            self.league_name = "Premier League"
+            self.league_logo = "https://example.com/league_logo.png"
 
     return [Row()]
 

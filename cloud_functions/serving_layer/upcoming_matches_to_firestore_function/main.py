@@ -8,7 +8,8 @@ from google.cloud import firestore
 
 
 def sync_upcoming_matches_to_firestore(event, context):
-    """Cloud Function to sync tomorrow's matches from football-data API to Firestore."""
+    """Cloud Function to sync only tomorrow's matches from the football-data API to Firestore,
+    and delete all other days' match data in the 'upcoming_matches' collection."""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -31,6 +32,12 @@ def sync_upcoming_matches_to_firestore(event, context):
             raise ValueError("Football Data API key not configured")
 
         headers = {"X-Auth-Token": api_key}
+
+        upcoming_collection = db.collection("upcoming_matches")
+        existing_docs = upcoming_collection.stream()
+        for doc in existing_docs:
+            if doc.id != tomorrow.isoformat():
+                doc.reference.delete()
 
         competitions = [2002, 2014, 2015, 2019, 2021]  # BL1, SA, FL1, SA, PL
         matches_data = {
@@ -64,7 +71,6 @@ def sync_upcoming_matches_to_firestore(event, context):
                     f"Failed to fetch matches for competition {competition_id}: {response.status_code}"
                 )
 
-        upcoming_collection = db.collection("upcoming_matches")
         date_doc = upcoming_collection.document(tomorrow.isoformat())
         date_doc.set(matches_data, merge=False)
 

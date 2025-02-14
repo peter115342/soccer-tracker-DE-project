@@ -43,7 +43,6 @@ def test_sync_standings_to_firestore_success(sample_bigquery_results):
     with (
         patch("google.cloud.firestore.Client") as mock_firestore,
         patch("google.cloud.bigquery.Client") as mock_bigquery,
-        patch("google.cloud.pubsub_v1.PublisherClient") as mock_publisher,
     ):
         # Setup BigQuery mock
         mock_bq_instance = MagicMock()
@@ -60,13 +59,6 @@ def test_sync_standings_to_firestore_success(sample_bigquery_results):
         mock_collection.document.return_value = mock_doc
         mock_firestore.return_value = mock_firestore_instance
 
-        # Setup Pub/Sub mock
-        mock_publisher_instance = MagicMock()
-        mock_publisher.return_value = mock_publisher_instance
-        mock_future = MagicMock()
-        mock_future.result.return_value = "test-publish-id"
-        mock_publisher_instance.publish.return_value = mock_future
-
         result, status_code = sync_standings_to_firestore(event, context)
 
         assert status_code == 200
@@ -74,7 +66,6 @@ def test_sync_standings_to_firestore_success(sample_bigquery_results):
         mock_bq_instance.query.assert_called_once()
         mock_collection.document.assert_called()
         mock_doc.set.assert_called()
-        mock_publisher_instance.publish.assert_called()
 
 
 def test_sync_standings_to_firestore_invalid_message():

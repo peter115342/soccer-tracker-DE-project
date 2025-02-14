@@ -811,3 +811,43 @@ resource "google_cloudfunctions2_function" "sync_upcoming_matches_to_firestore" 
     retry_policy   = "RETRY_POLICY_RETRY"
   }
 }
+
+
+
+
+resource "google_cloudfunctions2_function" "generate_match_summary" {
+  name        = "generate_match_summary"
+  location    = "europe-central2"
+  description = "Generate match summary using Gemini"
+
+  build_config {
+    runtime     = "python312"
+    entry_point = "generate_match_summary"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.function_bucket.name
+        object = "cloud_functions/summary_generation/source.zip"
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count = 1
+    available_memory   = "1024M"
+    timeout_seconds    = 540
+    service_account_email = var.service_account_email
+    environment_variables = {
+      DISCORD_WEBHOOK_URL = var.discord_webhook_url
+      GCP_PROJECT_ID     = var.project_id
+      API_FOOTBALL_KEY    = var.api_football_key
+      BUCKET_NAME         = var.bucket_name
+    }
+  }
+
+  event_trigger {
+    trigger_region = "europe-central2"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.generate_match_summary.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
+}
