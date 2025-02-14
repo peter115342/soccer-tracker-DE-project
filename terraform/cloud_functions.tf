@@ -836,6 +836,8 @@ resource "google_cloudfunctions2_function" "sync_summaries_to_firestore" {
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
       GCP_PROJECT_ID     = var.project_id
+      BUCKET_NAME         = var.bucket_name
+
     }
   }
 
