@@ -823,7 +823,7 @@ resource "google_cloudfunctions2_function" "sync_summaries_to_firestore" {
     source {
       storage_source {
         bucket = google_storage_bucket.function_bucket.name
-        object = "cloud_functions/serving_layer/sync_summaries_to_firestore/source.zip"
+        object = "cloud_functions/serving_layer/sync_summaries_to_firestore_function/source.zip"
       }
     }
   }
