@@ -3,7 +3,7 @@ name: CD Pipeline
 on:
   push:
     branches:
-      - dev
+      - main
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -184,7 +184,7 @@ jobs:
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/serving_layer/sync_summaries_to_firestore_function/
           cd ../../..
-          
+
           cd cloud_functions/summary_generation
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/summary_generation/
@@ -236,7 +236,6 @@ jobs:
           terraform import google_pubsub_topic.sync_upcoming_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_upcoming_matches_to_firestore_topic
           terraform import google_pubsub_topic.generate_match_summary projects/${{secrets.GCP_PROJECT_ID}}/topics/generate_match_summary_topic
           terraform import google_pubsub_topic.sync_summaries_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_summaries_to_firestore_topic
-
 
       - name: Import Pub/Sub Subscriptions
         env:
