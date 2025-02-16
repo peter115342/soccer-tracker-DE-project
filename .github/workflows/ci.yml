@@ -59,14 +59,3 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
-
-      - name: Create .env file
-        working-directory: ./soccer_tracker_ui
-        run: |
-          touch .env
-          echo PUBLIC_FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} >> .env
-          echo PUBLIC_FIREBASE_AUTH_DOMAIN="${{ secrets.GCP_PROJECT_ID }}.firebaseapp.com" >> .env
-          echo PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }} >> .env
-          echo PUBLIC_FIREBASE_STORAGE_BUCKET="${{ secrets.GCP_PROJECT_ID }}.appspot.com" >> .env
-          echo PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }} >> .env
-          echo PUBLIC_FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }} >> .env
