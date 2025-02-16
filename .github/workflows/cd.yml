@@ -60,6 +60,42 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "16"
+
+      - name: Install Firebase CLI
+        run: |
+          npm install --global firebase-tools
+
+      - name: Build frontend
+        working-directory: ./soccer_tracker_ui
+        run: |
+          npm ci
+          npm run build
+        env:
+          PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          PUBLIC_FIREBASE_AUTH_DOMAIN: "${{ secrets.GCP_PROJECT_ID }}.firebaseapp.com"
+          PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          PUBLIC_FIREBASE_STORAGE_BUCKET: "${{ secrets.GCP_PROJECT_ID }}.appspot.com"
+          PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          PUBLIC_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+
+      - name: Deploy to Firebase Hosting
+        working-directory: ./soccer_tracker_ui
+        run: |
+          echo $FIREBASE_SERVICE_ACCOUNT | base64 --decode > serviceAccount.json
+          firebase deploy --only hosting --project ${{ secrets.GCP_PROJECT_ID }} \
+            --token "$(firebase login:ci --no-localhost)"
+        env:
+          PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          PUBLIC_FIREBASE_AUTH_DOMAIN: "${{ secrets.GCP_PROJECT_ID }}.firebaseapp.com"
+          PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          PUBLIC_FIREBASE_STORAGE_BUCKET: "${{ secrets.GCP_PROJECT_ID }}.appspot.com"
+          PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          PUBLIC_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+
       - name: Prepare and Upload Cloud Functions
         env:
           BUCKET_NAME: ${{secrets.FUNCTIONS_BUCKET_NAME}}
