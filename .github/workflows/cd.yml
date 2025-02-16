@@ -3,7 +3,7 @@ name: CD Pipeline
 on:
   push:
     branches:
-      - dev
+      - main
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -184,7 +184,7 @@ jobs:
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/serving_layer/sync_summaries_to_firestore_function/
           cd ../../..
-          
+
           cd cloud_functions/summary_generation
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/summary_generation/
