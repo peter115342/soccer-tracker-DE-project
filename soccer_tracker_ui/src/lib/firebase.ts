@@ -1,16 +1,24 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp, getApp, getApps } from "firebase/app";
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+const getFirebaseConfig = async () => {
+	const client = new SecretManagerServiceClient();
+	const [version] = await client.accessSecretVersion({
+		name: 'projects/vigilant-shell-435820-r2/secrets/firebase-config/versions/latest'
+	});
 
+	if (!version.payload || !version.payload.data) {
+		throw new Error('Failed to load Firebase configuration from Secret Manager');
+	}
+
+	return JSON.parse(version.payload.data.toString());
 };
 
+const initializeFirebase = async () => {
+	const firebaseConfig = await getFirebaseConfig();
+	const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+	return getFirestore(app);
+};
 
-// Initialize Firebase
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export const db = await initializeFirebase();
