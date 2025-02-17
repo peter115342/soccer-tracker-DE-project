@@ -6,7 +6,6 @@ let dbInstance: ReturnType<typeof getFirestore> | null = null;
 
 async function getFirebaseConfig() {
 	const client = new SecretManagerServiceClient();
-
 	const [version] = await client.accessSecretVersion({
 		name: 'projects/vigilant-shell-435820-r2/secrets/firebase-config/versions/latest'
 	});

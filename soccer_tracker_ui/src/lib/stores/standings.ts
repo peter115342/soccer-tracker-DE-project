@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '$lib/firebase';
+import { getDb } from '$lib/firebase';
 
 interface TeamStanding {
 	position: number;
@@ -29,6 +29,7 @@ interface LeagueStandings {
 export const standings = writable<LeagueStandings[]>([]);
 
 export const fetchStandings = async () => {
+	const db = await getDb();
 	const standingsCollection = collection(db, 'current_standings');
 	const snapshot = await getDocs(standingsCollection);
 	const standingsData = snapshot.docs.map((doc) => ({
