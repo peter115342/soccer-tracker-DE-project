@@ -1,7 +1,7 @@
 import pytest
 import base64
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta
+from datetime import datetime
 from cloud_functions.serving_layer.upcoming_matches_to_firestore_function.main import (
     sync_upcoming_matches_to_firestore,
 )
@@ -42,7 +42,7 @@ def pubsub_event():
 
 def test_sync_upcoming_matches_success(sample_matches_response, pubsub_event):
     context = None
-    tomorrow = (datetime.now() + timedelta(days=1)).date()
+    tomorrow = datetime.now().date()
 
     with (
         patch("google.cloud.firestore.Client") as mock_firestore,
