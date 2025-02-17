@@ -15,9 +15,20 @@ def sample_matches_response():
                 "id": 12345,
                 "utcDate": "2023-01-01T15:00:00Z",
                 "status": "SCHEDULED",
-                "homeTeam": {"name": "Team A"},
-                "awayTeam": {"name": "Team B"},
-                "competition": {"id": 2021, "name": "Premier League"},
+                "homeTeam": {
+                    "name": "Team A",
+                    "crest": "https://example.com/teamA.png",
+                },
+                "awayTeam": {
+                    "name": "Team B",
+                    "crest": "https://example.com/teamB.png",
+                },
+                "competition": {
+                    "id": 2021,
+                    "name": "Premier League",
+                    "emblem": "https://example.com/premier-league.png",
+                },
+                "area": {"name": "England", "flag": "https://example.com/england.svg"},
             }
         ]
     }
