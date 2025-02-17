@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getLocalTimeZone, today, parseDate, type CalendarDate } from '@internationalized/date';
+	import { getLocalTimeZone, today, type CalendarDate } from '@internationalized/date';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import { matches, fetchMatchesByDate } from '$lib/stores/matches';
@@ -15,9 +15,9 @@
 
 	async function handleDateChange(date: CalendarDate) {
 		loading = true;
-		selectedDate = date;
 		if (date) {
-			await fetchMatchesByDate(toJSDate(date));
+			const jsDate = toJSDate(date);
+			await fetchMatchesByDate(jsDate);
 		}
 		loading = false;
 	}
@@ -25,6 +25,10 @@
 	onMount(async () => {
 		await handleDateChange(selectedDate);
 	});
+
+	$: if (selectedDate) {
+		handleDateChange(selectedDate);
+	}
 </script>
 
 <div class="container mx-auto p-4">

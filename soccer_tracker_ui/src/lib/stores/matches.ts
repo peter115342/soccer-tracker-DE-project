@@ -65,7 +65,7 @@ export const fetchMatchesByDate = async (date: Date) => {
         })) as Match[];
         
         matches.set(matchList);
-        console.log('Fetched matches for date:', date, matchList);
+        console.log('Fetched matches:', matchList);
     } catch (error) {
         console.error('Error fetching matches:', error);
         matches.set([]);

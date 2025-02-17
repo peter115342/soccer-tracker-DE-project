@@ -6,14 +6,6 @@ import requests
 from datetime import datetime
 from google.cloud import bigquery, firestore, pubsub_v1
 
-LEAGUE_FLAGS = {
-    2014: "https://crests.football-data.org/760.svg",  # ES
-    2002: "https://crests.football-data.org/759.svg",  # DE
-    2019: "https://crests.football-data.org/784.svg",  # IT
-    2021: "https://crests.football-data.org/770.svg",  # EN
-    2015: "https://crests.football-data.org/773.svg",  # FR
-}
-
 
 def sync_matches_to_firestore(event, context):
     try:
@@ -118,7 +110,6 @@ def sync_matches_to_firestore(event, context):
                     "id": row.league_id,
                     "name": row.league_name,
                     "logo": row.league_logo,
-                    "flag": LEAGUE_FLAGS.get(row.league_id),
                 },
                 "weather": {
                     "apparent_temperature": row.apparent_temperature,
