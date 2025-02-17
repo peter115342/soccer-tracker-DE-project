@@ -7,9 +7,14 @@ interface Match {
     kickoff: string;
     status: string;
     home_team: string;
+    home_team_crest: string;
     away_team: string;
+    away_team_crest: string;
     competition_id: number;
     competition_name: string;
+    competition_emblem: string;
+    area_name: string;
+    area_flag: string;
 }
 
 interface DayMatches {

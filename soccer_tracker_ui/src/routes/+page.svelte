@@ -38,8 +38,13 @@
 						<div
 							class="bg-card hover:bg-accent flex items-center justify-between rounded-lg p-4 transition-colors"
 						>
-							<div class="flex-1 text-right">
+							<div class="flex flex-1 items-center justify-end gap-2 text-right">
 								<span class="font-semibold">{match.home_team}</span>
+								<img
+									src={match.home_team_crest}
+									alt={match.home_team}
+									class="h-8 w-8 object-contain"
+								/>
 							</div>
 
 							<div class="flex items-center space-x-2 px-4">
@@ -51,13 +56,23 @@
 								</span>
 							</div>
 
-							<div class="flex-1 text-left">
+							<div class="flex flex-1 items-center gap-2 text-left">
+								<img
+									src={match.away_team_crest}
+									alt={match.away_team}
+									class="h-8 w-8 object-contain"
+								/>
 								<span class="font-semibold">{match.away_team}</span>
 							</div>
 						</div>
 
-						<div class="text-muted-foreground text-center text-sm">
-							{match.competition_name}
+						<div
+							class="text-muted-foreground flex items-center justify-center gap-2 text-center text-sm"
+						>
+							<span>{match.competition_name}</span>
+							{#if match.area_flag}
+								<img src={match.area_flag} alt={match.area_name} class="h-6 w-6 object-contain" />
+							{/if}
 						</div>
 
 						{#if match !== dayMatches.matches[dayMatches.matches.length - 1]}
