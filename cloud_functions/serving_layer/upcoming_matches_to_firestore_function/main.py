@@ -3,7 +3,7 @@ import json
 import os
 import logging
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 from google.cloud import firestore
 
 
@@ -25,7 +25,7 @@ def sync_upcoming_matches_to_firestore(event, context):
             return error_message, 500
 
         db = firestore.Client()
-        tomorrow = (datetime.now() + timedelta(days=1)).date()
+        tomorrow = datetime.now().date()
 
         api_key = os.environ.get("API_FOOTBALL_KEY")
         if not api_key:
@@ -61,9 +61,14 @@ def sync_upcoming_matches_to_firestore(event, context):
                         "kickoff": match["utcDate"],
                         "status": match["status"],
                         "home_team": match["homeTeam"]["name"],
+                        "home_team_crest": match["homeTeam"]["crest"],
                         "away_team": match["awayTeam"]["name"],
+                        "away_team_crest": match["awayTeam"]["crest"],
                         "competition_id": match["competition"]["id"],
                         "competition_name": match["competition"]["name"],
+                        "competition_emblem": match["competition"]["emblem"],
+                        "area_name": match["area"]["name"],
+                        "area_flag": match["area"]["flag"],
                     }
                     matches_data["matches"].append(match_data)
             else:
