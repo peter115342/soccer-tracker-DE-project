@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import { collection, getDocs } from 'firebase/firestore';
-import { getDb } from '$lib/firebase';
+import { db } from '$lib/firebase';
 
 interface Match {
 	match_id: number;
@@ -26,7 +26,6 @@ interface DayMatches {
 export const upcomingMatches = writable<DayMatches[]>([]);
 
 export const fetchUpcomingMatches = async () => {
-	const db = await getDb();
 	const matchesCollection = collection(db, 'upcoming_matches');
 	const snapshot = await getDocs(matchesCollection);
 	const matches = snapshot.docs.map((doc) => ({

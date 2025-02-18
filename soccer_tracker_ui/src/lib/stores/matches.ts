@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { getDb } from '$lib/firebase';
+import { db } from '$lib/firebase';
 
 interface Weather {
 	apparent_temperature: number;
@@ -48,7 +48,6 @@ export const selectedLeague = writable<League | null>(null);
 export const availableLeagues = writable<League[]>([]);
 
 export const fetchAvailableLeagues = async () => {
-	const db = await getDb();
 	const matchesCollection = collection(db, 'matches');
 	const q = query(matchesCollection);
 
@@ -77,7 +76,6 @@ export const fetchMatchesByDateAndLeague = async (date: Date, leagueId: number) 
 
 	const endDate = new Date(date);
 	endDate.setHours(23, 59, 59, 999);
-	const db = await getDb();
 	const matchesCollection = collection(db, 'matches');
 	const q = query(
 		matchesCollection,
@@ -102,7 +100,6 @@ export const fetchMatchesByDateAndLeague = async (date: Date, leagueId: number) 
 };
 
 export const fetchAvailableDatesByLeague = async (leagueId: number) => {
-	const db = await getDb();
 	const matchesCollection = collection(db, 'matches');
 	const q = query(matchesCollection, where('league.id', '==', leagueId));
 
