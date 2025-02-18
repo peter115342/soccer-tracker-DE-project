@@ -1,24 +1,19 @@
-import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+// Import the functions you need from the SDKs you need
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { env } from '$env/dynamic/private';
 
-let dbInstance: ReturnType<typeof getFirestore> | null = null;
+// Your web app's Firebase configuration
+const firebaseConfig = {
+	apiKey: env.FIREBASE_API_KEY,
+	authDomain: env.FIREBASE_AUTH_DOMAIN,
+	projectId: env.FIREBASE_PROJECT_ID,
+	storageBucket: env.FIREBASE_STORAGE_BUCKET,
+	messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
+	appId: env.FIREBASE_APP_ID,
+	measurementId: env.FIREBASE_MEASUREMENT_ID
+};
 
-async function getFirebaseConfig() {
-	const client = new SecretManagerServiceClient();
-	const [version] = await client.accessSecretVersion({
-		name: 'projects/vigilant-shell-435820-r2/secrets/firebase-config/versions/latest'
-	});
-
-	const payload = version.payload?.data?.toString();
-	return JSON.parse(payload || '{}');
-}
-
-export async function getDb() {
-	if (!dbInstance) {
-		const firebaseConfig = await getFirebaseConfig();
-		const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-		dbInstance = getFirestore(app);
-	}
-	return dbInstance;
-}
+// Initialize Firebase
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+export const db = getFirestore(app);
