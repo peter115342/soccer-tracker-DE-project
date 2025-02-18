@@ -1,17 +1,14 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { env } from '$env/dynamic/private';
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-	apiKey: env.FIREBASE_API_KEY,
-	authDomain: env.FIREBASE_AUTH_DOMAIN,
-	projectId: env.FIREBASE_PROJECT_ID,
-	storageBucket: env.FIREBASE_STORAGE_BUCKET,
-	messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
-	appId: env.FIREBASE_APP_ID,
-	measurementId: env.FIREBASE_MEASUREMENT_ID
+	apiKey: 'AIzaSyCCbCaJcbZAV0silxwos8kEy1k-tpuKe3w',
+	authDomain: 'vigilant-shell-435820-r2.firebaseapp.com',
+	projectId: 'vigilant-shell-435820-r2',
+	storageBucket: 'vigilant-shell-435820-r2.firebasestorage.app',
+	messagingSenderId: '279923397259',
+	appId: '1:279923397259:web:b1961c36dfe7abc605fa8e',
+	measurementId: 'G-Z6V5P3347C'
 };
 
 // Initialize Firebase
