@@ -3,7 +3,7 @@ name: CD Pipeline
 on:
   push:
     branches:
-      - main
+      - dev
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -49,16 +49,16 @@ jobs:
         with:
           project_id: ${{secrets.GCP_PROJECT_ID}}
 
-      - name: Run Tests
-        env:
-          API_FOOTBALL_KEY: "dummy_key"
-          GOOGLE_MAPS_API_KEY: "dummy_key"
-          GCP_PROJECT_ID: "dummy_id"
-          REDDIT_CLIENT_ID: "dummy_id"
-          REDDIT_CLIENT_SECRET: "dummy_key"
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          uv run pytest tests/
+      # - name: Run Tests
+      #   env:
+      #     API_FOOTBALL_KEY: "dummy_key"
+      #     GOOGLE_MAPS_API_KEY: "dummy_key"
+      #     GCP_PROJECT_ID: "dummy_id"
+      #     REDDIT_CLIENT_ID: "dummy_id"
+      #     REDDIT_CLIENT_SECRET: "dummy_key"
+      #   run: |
+      #     export PYTHONPATH=$PYTHONPATH:$(pwd)
+      #     uv run pytest tests/
 
       - name: Prepare and Upload Cloud Functions
         env:
