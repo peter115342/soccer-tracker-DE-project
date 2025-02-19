@@ -6,7 +6,7 @@ import requests
 from datetime import datetime, timedelta
 from google.cloud import firestore
 
-def sync_matches_to_firestore(event, context):
+def sync_upcoming_matches_to_firestore(event, context):
     """Cloud Function to sync matches from the football-data API to Firestore.
     Handles both today's and tomorrow's matches based on the trigger action."""
     try:
