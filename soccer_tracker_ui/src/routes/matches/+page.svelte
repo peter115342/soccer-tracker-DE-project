@@ -153,41 +153,43 @@
 				{/each}
 			{:else}
 				{#each $matches as match}
-					<Card>
-						<CardContent class="p-6">
-							<div class="grid grid-cols-3 items-center gap-4">
-								<div class="flex flex-col items-center space-y-2">
-									<img
-										src={match.home_team_logo}
-										alt={match.home_team}
-										class="h-12 w-12 object-contain"
-									/>
-									<p class="flex min-h-[2.5rem] items-center text-center font-semibold">
-										{match.home_team}
-									</p>
-									<p class="text-2xl font-bold">{match.home_score ?? '-'}</p>
-								</div>
+					<a href="/matches/{match.id}">
+						<Card>
+							<CardContent class="p-6">
+								<div class="grid grid-cols-3 items-center gap-4">
+									<div class="flex flex-col items-center space-y-2">
+										<img
+											src={match.home_team_logo}
+											alt={match.home_team}
+											class="h-12 w-12 object-contain"
+										/>
+										<p class="flex min-h-[2.5rem] items-center text-center font-semibold">
+											{match.home_team}
+										</p>
+										<p class="text-2xl font-bold">{match.home_score ?? '-'}</p>
+									</div>
 
-								<div class="flex flex-col items-center justify-center space-y-2">
-									{#if match.weather}
-										<p class="text-sm">🌡️ {match.weather.temperature}°C</p>
-									{/if}
-								</div>
+									<div class="flex flex-col items-center justify-center space-y-2">
+										{#if match.weather}
+											<p class="text-sm">🌡️ {match.weather.temperature}°C</p>
+										{/if}
+									</div>
 
-								<div class="flex flex-col items-center space-y-2">
-									<img
-										src={match.away_team_logo}
-										alt={match.away_team}
-										class="h-12 w-12 object-contain"
-									/>
-									<p class="flex min-h-[2.5rem] items-center text-center font-semibold">
-										{match.away_team}
-									</p>
-									<p class="text-2xl font-bold">{match.away_score ?? '-'}</p>
+									<div class="flex flex-col items-center space-y-2">
+										<img
+											src={match.away_team_logo}
+											alt={match.away_team}
+											class="h-12 w-12 object-contain"
+										/>
+										<p class="flex min-h-[2.5rem] items-center text-center font-semibold">
+											{match.away_team}
+										</p>
+										<p class="text-2xl font-bold">{match.away_score ?? '-'}</p>
+									</div>
 								</div>
-							</div>
-						</CardContent>
-					</Card>
+							</CardContent>
+						</Card>
+					</a>
 				{/each}
 			{/if}
 		</div>
