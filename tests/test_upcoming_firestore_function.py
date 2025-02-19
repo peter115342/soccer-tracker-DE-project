@@ -36,7 +36,7 @@ def sample_matches_response():
 
 @pytest.fixture
 def pubsub_event():
-    message = '{"action": "sync_upcoming_matches_to_firestore"}'
+    message = '{"action": "sync_tomorrow_matches"}'
     return {"data": base64.b64encode(message.encode("utf-8"))}
 
 
