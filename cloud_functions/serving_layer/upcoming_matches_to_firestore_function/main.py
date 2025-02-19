@@ -18,15 +18,15 @@ def sync_upcoming_matches_to_firestore(event, context):
 
         if message_data.get("action") == "sync_today_matches":
             target_date = today
-            collection_name = "today_matches"
+            sync_type = "Today's"
         elif message_data.get("action") == "sync_tomorrow_matches":
             target_date = tomorrow
-            collection_name = "upcoming_matches"
+            sync_type = "Tomorrow's"
         else:
             error_message = "Invalid action specified"
             logging.error(error_message)
             send_discord_notification(
-                f"❌ {collection_name.title()} Sync: Invalid Trigger",
+                "❌ Upcoming Matches Sync: Invalid Trigger",
                 error_message,
                 16711680,
             )
@@ -39,8 +39,9 @@ def sync_upcoming_matches_to_firestore(event, context):
 
         headers = {"X-Auth-Token": api_key}
 
+        collection = db.collection("upcoming_matches")
+        
         # Clear existing collection
-        collection = db.collection(collection_name)
         existing_docs = collection.stream()
         for doc in existing_docs:
             doc.reference.delete()
@@ -87,10 +88,10 @@ def sync_upcoming_matches_to_firestore(event, context):
         date_doc.set(matches_data, merge=False)
 
         match_count = len(matches_data["matches"])
-        status_message = f"Successfully synced {match_count} matches for {target_date.isoformat()}"
+        status_message = f"Successfully synced {match_count} {sync_type} matches for {target_date.isoformat()}"
         logging.info(status_message)
         send_discord_notification(
-            f"✅ {collection_name.title()} Sync: Success",
+            "✅ Upcoming Matches Sync: Success",
             status_message,
             65280
         )
@@ -98,14 +99,16 @@ def sync_upcoming_matches_to_firestore(event, context):
         return status_message, 200
 
     except Exception as e:
-        error_message = f"Error during {collection_name} sync: {str(e)}"
+        error_message = f"Error during upcoming matches sync: {str(e)}"
         logging.exception(error_message)
         send_discord_notification(
-            f"❌ {collection_name.title()} Sync: Failure",
+            "❌ Upcoming Matches Sync: Failure",
             error_message,
             16711680
         )
         return error_message, 500
+
+
 
 def send_discord_notification(title: str, message: str, color: int):
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
