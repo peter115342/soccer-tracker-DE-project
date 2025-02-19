@@ -15,9 +15,20 @@ def sample_matches_response():
                 "id": 12345,
                 "utcDate": "2023-01-01T15:00:00Z",
                 "status": "SCHEDULED",
-                "homeTeam": {"name": "Team A"},
-                "awayTeam": {"name": "Team B"},
-                "competition": {"id": 2021, "name": "Premier League"},
+                "homeTeam": {
+                    "name": "Team A",
+                    "crest": "https://example.com/teamA.png",
+                },
+                "awayTeam": {
+                    "name": "Team B",
+                    "crest": "https://example.com/teamB.png",
+                },
+                "competition": {
+                    "id": 2021,
+                    "name": "Premier League",
+                    "emblem": "https://example.com/premier-league.png",
+                },
+                "area": {"name": "England", "flag": "https://example.com/england.svg"},
             }
         ]
     }
@@ -25,7 +36,7 @@ def sample_matches_response():
 
 @pytest.fixture
 def pubsub_event():
-    message = '{"action": "sync_upcoming_matches_to_firestore"}'
+    message = '{"action": "sync_tomorrow_matches"}'
     return {"data": base64.b64encode(message.encode("utf-8"))}
 
 
@@ -68,7 +79,7 @@ def test_sync_upcoming_matches_invalid_message():
     result, status_code = sync_upcoming_matches_to_firestore(event, context)
 
     assert status_code == 500
-    assert "Invalid message format" in result
+    assert "Invalid action specified" in result
 
 
 def test_sync_upcoming_matches_firestore_error(pubsub_event):
@@ -80,4 +91,4 @@ def test_sync_upcoming_matches_firestore_error(pubsub_event):
         result, status_code = sync_upcoming_matches_to_firestore(pubsub_event, context)
 
         assert status_code == 500
-        assert "Error during Upcoming Matches Firestore sync" in result
+        assert "Error during upcoming_matches sync" in result
