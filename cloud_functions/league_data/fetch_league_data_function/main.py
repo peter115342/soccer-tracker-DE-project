@@ -68,18 +68,18 @@ def load_data_into_bigquery(league_data_list: List[Dict[str, Any]]):
         }
         leagues.append(league_info)
 
-    if league_data["teams"]:
-        for team in league_data["teams"]:
-            team_info = {
-                "id": team["id"],
-                "name": team["name"],
-                "tla": team.get("tla"),
-                "logo": team.get("crest"),
-                "venue": team.get("venue"),
-                "address": team.get("address"),
-                "league_id": league_data["id"],
-            }
-            teams.append(team_info)
+        if league_data.get("teams"):
+            for team in league_data["teams"]:
+                team_info = {
+                    "id": team["id"],
+                    "name": team["name"],
+                    "tla": team.get("tla"),
+                    "logo": team.get("crest"),
+                    "venue": team.get("venue"),
+                    "address": team.get("address"),
+                    "league_id": league_data["id"],
+                }
+                teams.append(team_info)
 
     insert_data_into_bigquery(league_table_name, leagues)
     insert_data_into_bigquery(team_table_name, teams)
