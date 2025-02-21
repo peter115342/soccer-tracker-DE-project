@@ -39,11 +39,10 @@
 				const VectorSource = await import('ol/source/Vector').then((m) => m.default);
 				const { Style, Icon } = await import('ol/style');
 
-				await new Promise((resolve) => setTimeout(resolve, 0));
 				const stadiumLocation = fromLonLat([match.location.lon, match.location.lat]);
 
 				map = new Map({
-					target: 'map',
+					target: 'standalone-map',
 					layers: [
 						new TileLayer({
 							source: new OSM()
@@ -51,7 +50,9 @@
 					],
 					view: new View({
 						center: stadiumLocation,
-						zoom: 15
+						zoom: 15,
+						minZoom: 2,
+						maxZoom: 19
 					})
 				});
 
@@ -74,7 +75,11 @@
 				});
 
 				map.addLayer(vectorLayer);
-				map.updateSize();
+
+				window.setTimeout(() => {
+					map.updateSize();
+					map.renderSync();
+				}, 200);
 			}
 		}
 		loading = false;
@@ -223,3 +228,11 @@
 		</Card>
 	{/if}
 </div>
+
+<!-- Standalone map container -->
+{#if match?.location}
+	<div class="text-muted-foreground mb-2 text-center text-sm">
+		Debug Coordinates: Lat {match.location.lat}, Lon {match.location.lon}
+	</div>
+{/if}
+<div id="standalone-map" style="width: 100%; height: 400px; margin-top: 20px;"></div>

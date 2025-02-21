@@ -2,7 +2,7 @@ import os
 import requests
 import logging
 from typing import Dict, Any, Optional
-from google.cloud import bigquery
+# from google.cloud import bigquery
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,16 +22,16 @@ BASE_URL = "https://api.football-data.org/v4"
 HEADERS = {"X-Auth-Token": API_KEY}
 
 
-def get_existing_teams_from_bq(project_id: str, dataset: str) -> dict:
-    """Fetch existing team IDs and addresses from BigQuery"""
-    client = bigquery.Client(project=project_id)
-    query = """
-        SELECT id, address
-        FROM `{}.{}.teams`
-    """.format(project_id, dataset)  # nosec B608
+# def get_existing_teams_from_bq(project_id: str, dataset: str) -> dict:
+#     """Fetch existing team IDs and addresses from BigQuery"""
+#     client = bigquery.Client(project=project_id)
+#     query = """
+#         SELECT id, address
+#         FROM `{}.{}.teams`
+#     """.format(project_id, dataset)  # nosec B608
 
-    results = client.query(query).result()
-    return {row.id: row.address for row in results}
+#     results = client.query(query).result()
+#     return {row.id: row.address for row in results}
 
 
 def get_stadium_coordinates(
@@ -41,12 +41,12 @@ def get_stadium_coordinates(
     Get stadium coordinates using Google Maps Geocoding API with enhanced search queries and fallbacks.
     """
     search_queries = [
-        f"{venue}, {team_city}, {team_country}",
-        f"{venue}, {team_country}",
-        f"{team_name} Stadium, {team_city}, {team_country}",
-        f"{team_name} Stadium, {team_country}",
-        f"{venue}, {team_country} football stadium",
-        f"{team_name}, {team_country} football stadium",
+        f"{venue} Football Stadium, {team_city}, {team_country}",
+        f"{team_name} Football Stadium, {team_city}, {team_country}",
+        f"{venue} Soccer Stadium, {team_city}, {team_country}",
+        f"{team_name} Stadium {team_city} {team_country} Football Ground",
+        f"{venue} Football Ground {team_city}",
+        f"{team_name} Home Ground {team_city} {team_country}",
     ]
 
     for query in search_queries:
@@ -93,18 +93,7 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
 
     assert GCP_PROJECT_ID is not None
 
-    existing_teams = get_existing_teams_from_bq(GCP_PROJECT_ID, "sports_data_eu")
-
     for team in teams_data.get("teams", []):
-        team_id = team.get("id")
-
-        if team_id in existing_teams:
-            logging.info(
-                f"Team {team.get('name')} already exists, skipping coordinates lookup"
-            )
-            team["address"] = existing_teams[team_id]
-            continue
-
         team_name = team.get("name", "")
         stadium_name = team.get("venue", "") or team_name
         team_address = team.get("address", "")
@@ -130,9 +119,9 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
         team["address"] = coordinates
 
         if coordinates:
-            logging.info(f"Added coordinates for new team: {team_name}")
+            logging.info(f"Added coordinates for team: {team_name}")
         else:
-            logging.warning(f"Could not get coordinates for new team: {team_name}")
+            logging.warning(f"Could not get coordinates for team: {team_name}")
 
     league_data["teams"] = teams_data.get("teams", [])
     logging.info(f"Successfully fetched data for league code: {league_code}")
