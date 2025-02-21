@@ -69,7 +69,8 @@
 					style: new Style({
 						image: new Icon({
 							anchor: [0.5, 1],
-							src: '/marker-icon.png'
+							scale: 0.4,
+							src: 'https://openlayers.org/en/latest/examples/data/icon.png'
 						})
 					})
 				});
