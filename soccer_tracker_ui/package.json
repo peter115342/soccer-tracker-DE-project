@@ -23,7 +23,7 @@
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@types/leaflet": "^1.9.16",
 		"autoprefixer": "^10.4.20",
-		"bits-ui": "^1.2.1",
+		"bits-ui": "^1.3.2",
 		"clsx": "^2.1.1",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",

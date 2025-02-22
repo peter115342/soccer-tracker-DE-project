@@ -6,6 +6,7 @@
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import 'ol/ol.css';
+	import { getWeatherInfo } from '$lib/weather_data';
 
 	export let data;
 	const matchId = data.id;
@@ -149,6 +150,13 @@
 					<CardContent>
 						<div class="grid grid-cols-2 gap-4 md:grid-cols-4">
 							<div class="flex flex-col items-center rounded-lg border p-4">
+								<span class="text-sm">Weather Condition</span>
+								<span class="my-2 text-4xl">{getWeatherInfo(match.weather.weathercode).icon}</span>
+								<span class="text-center text-sm"
+									>{getWeatherInfo(match.weather.weathercode).description}</span
+								>
+							</div>
+							<div class="flex flex-col items-center rounded-lg border p-4">
 								<span class="text-sm">Temperature</span>
 								<span class="text-xl font-bold">{match.weather.temperature}°C</span>
 							</div>
@@ -180,13 +188,16 @@
 			<TabsContent value="reddit">
 				<Card>
 					<CardHeader>
-						<CardTitle>Reddit Discussions</CardTitle>
+						<CardTitle
+							>Reddit Discussions at the end of {new Date(
+								match.date
+							).toLocaleDateString()}</CardTitle
+						>
 					</CardHeader>
 					<CardContent>
 						{#if match.reddit_data?.threads}
 							{#each match.reddit_data.threads as thread}
 								<div class="border-b py-4">
-									<h4 class="font-semibold">{thread.thread_type}</h4>
 									<p>Score: {thread.score}</p>
 									<p>Comments: {thread.num_comments}</p>
 									<div class="mt-4 space-y-2">
@@ -194,9 +205,7 @@
 											<div class="bg-muted rounded p-3">
 												<p class="text-sm font-semibold">u/{comment.author}</p>
 												<p>{comment.body}</p>
-												<p class="text-muted-foreground text-sm">
-													Score: {comment.score} • {new Date(comment.created_at).toLocaleString()}
-												</p>
+												<p class="text-muted-foreground text-sm">Score: {comment.score}</p>
 											</div>
 										{/each}
 									</div>

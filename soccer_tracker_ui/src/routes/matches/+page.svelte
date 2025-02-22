@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getLocalTimeZone, today, parseDate, type DateValue } from '@internationalized/date';
+	import { getLocalTimeZone, parseDate, type DateValue } from '@internationalized/date';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import {
@@ -16,8 +16,9 @@
 	} from '$lib/stores/matches';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
+	import { getWeatherInfo } from '$lib/weather_data';
 
-	let selectedDate: DateValue = today(getLocalTimeZone());
+	let selectedDate: DateValue;
 	let loading = true;
 
 	function toJSDate(date: DateValue): Date {
@@ -58,6 +59,10 @@
 	onMount(async () => {
 		await fetchAvailableLeagues();
 	});
+
+	$: if ($latestMatchDate && !selectedDate) {
+		selectedDate = parseDate($latestMatchDate.toISOString().split('T')[0]);
+	}
 
 	$: if (selectedDate && $selectedLeague) {
 		handleDateChange(selectedDate);
@@ -171,6 +176,7 @@
 
 									<div class="flex flex-col items-center justify-center space-y-2">
 										{#if match.weather}
+											<p class="text-2xl">{getWeatherInfo(match.weather.weathercode).icon}</p>
 											<p class="text-sm">🌡️ {match.weather.temperature}°C</p>
 										{/if}
 									</div>
