@@ -49,8 +49,7 @@ def sync_summaries_to_firestore(event, context):
                 continue
 
             content = blob.download_as_text()
-            content = content.replace("\n", "\\n")
-
+            # Store the content as is, without replacing newlines
             firestore_data = {
                 "content": content,
                 "filename": blob.name,

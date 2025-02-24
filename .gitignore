@@ -29,3 +29,4 @@ deployment_scripts.txt
 vertex_example.py
 parse_md.py
 output.md
+cors-config.json

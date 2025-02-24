@@ -15,11 +15,20 @@ export async function fetchMatchSummary(date: string, league: string) {
 
 		if (summaryDoc.exists()) {
 			const data = summaryDoc.data();
-			// First replace any double backslash + n with a real newline
-			let processedContent = data.content.toString().replace(/\\n/g, '\n');
-			// Then replace any remaining literal '\n' strings with real newlines
-			processedContent = processedContent.replace(/\\n/g, '\n');
-			matchSummary.set(processedContent);
+
+			// First handle literal "\n" strings
+			let processedContent = data.content.replace(/\\n/g, '\n');
+
+			// Then ensure headings have proper spacing
+			processedContent = processedContent.replace(/(?<!\n)#(?!\s*#)/g, '\n\n#');
+
+			// Normalize multiple newlines to max two
+			processedContent = processedContent.replace(/\n{3,}/g, '\n\n');
+
+			// Ensure proper spacing between sections
+			processedContent = processedContent.replace(/\*\*Final Score.*?\*\*\n(?!\n)/g, '**$&\n\n');
+
+			matchSummary.set(processedContent.trim());
 		} else {
 			console.log(`No summary found for ${docId}`);
 			matchSummary.set(null);

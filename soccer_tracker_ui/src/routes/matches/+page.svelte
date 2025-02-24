@@ -169,7 +169,7 @@
 							<CardContent
 								class="prose prose-lg prose-pre:whitespace-pre-wrap prose-headings:font-bold prose-headings:mt-6 prose-headings:mb-2 prose-p:mb-4 prose-h1:text-2xl prose-h2:text-xl max-w-none bg-white p-8"
 							>
-								<p>{$matchSummary}</p>
+								{@html marked($matchSummary || '')}
 							</CardContent>
 						</Card>
 					</CollapsibleContent>
