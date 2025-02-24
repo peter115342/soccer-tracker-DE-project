@@ -4,6 +4,14 @@
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import {
+		Collapsible,
+		CollapsibleContent,
+		CollapsibleTrigger
+	} from '$lib/components/ui/collapsible';
+	import { Button } from '$lib/components/ui/button';
+	import { ChevronDown } from 'lucide-svelte';
+	import { marked } from 'marked';
+	import {
 		matches,
 		fetchMatchesByDateAndLeague,
 		availableDates,
@@ -14,6 +22,7 @@
 		selectedLeague,
 		type League
 	} from '$lib/stores/matches';
+	import { matchSummary, fetchMatchSummary } from '$lib/stores/summaries';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import { getWeatherInfo } from '$lib/weather_data';
@@ -25,10 +34,15 @@
 		return new Date(date.year, date.month - 1, date.day);
 	}
 
+	function formatDateToString(date: DateValue): string {
+		const year = String(date.year);
+		const month = String(date.month).padStart(2, '0');
+		const day = String(date.day).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	}
+
 	function isDateUnavailable(date: DateValue) {
-		const dateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(
-			date.day
-		).padStart(2, '0')}`;
+		const dateStr = formatDateToString(date);
 		return !$availableDates.has(dateStr);
 	}
 
@@ -36,8 +50,11 @@
 		if (!$selectedLeague) return;
 		loading = true;
 		if (date) {
-			const jsDate = toJSDate(date);
-			await fetchMatchesByDateAndLeague(jsDate, $selectedLeague.id);
+			const dateStr = formatDateToString(date);
+			await Promise.all([
+				fetchMatchesByDateAndLeague(toJSDate(date), $selectedLeague.id),
+				fetchMatchSummary(dateStr, $selectedLeague.name)
+			]);
 		}
 		loading = false;
 	}
@@ -51,7 +68,8 @@
 		await fetchAvailableDatesByLeague(league.id);
 
 		if ($latestMatchDate) {
-			selectedDate = parseDate($latestMatchDate.toISOString().split('T')[0]);
+			const dateStr = $latestMatchDate.toISOString().split('T')[0];
+			selectedDate = parseDate(dateStr);
 			await handleDateChange(selectedDate);
 		}
 	}
@@ -61,7 +79,8 @@
 	});
 
 	$: if ($latestMatchDate && !selectedDate) {
-		selectedDate = parseDate($latestMatchDate.toISOString().split('T')[0]);
+		const dateStr = $latestMatchDate.toISOString().split('T')[0];
+		selectedDate = parseDate(dateStr);
 	}
 
 	$: if (selectedDate && $selectedLeague) {
@@ -131,6 +150,31 @@
 					Select a league to view matches
 				{/if}
 			</h2>
+
+			{#if $matchSummary}
+				<Collapsible class="mb-8 w-full">
+					<div
+						class="flex items-center justify-between space-x-4 rounded-t-lg bg-slate-100 px-4 py-2"
+					>
+						<h3 class="text-2xl font-semibold text-slate-800">Match Day Summary</h3>
+						<CollapsibleTrigger>
+							<Button variant="ghost" size="sm" class="hover:bg-slate-200">
+								<ChevronDown class="h-6 w-6" />
+								<span class="sr-only">Toggle summary</span>
+							</Button>
+						</CollapsibleTrigger>
+					</div>
+					<CollapsibleContent class="space-y-2">
+						<Card class="border-2 border-slate-200">
+							<CardContent
+								class="prose prose-lg prose-pre:whitespace-pre-wrap prose-headings:font-bold prose-headings:mt-6 prose-headings:mb-2 prose-p:mb-4 prose-h1:text-2xl prose-h2:text-xl max-w-none bg-white p-8"
+							>
+								<p>{$matchSummary}</p>
+							</CardContent>
+						</Card>
+					</CollapsibleContent>
+				</Collapsible>
+			{/if}
 
 			{#if loading}
 				{#each Array(5) as _}

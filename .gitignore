@@ -27,3 +27,5 @@ match_ids.json
 .pytest_cache/
 deployment_scripts.txt
 vertex_example.py
+parse_md.py
+output.md

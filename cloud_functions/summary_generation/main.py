@@ -156,12 +156,28 @@ SELECT
     away_form.form as away_team_form
   )) AS matches
 FROM matches_with_data m
-LEFT JOIN team_standings home_form
+LEFT JOIN (
+  SELECT teamId, form, fetchDate
+  FROM team_standings ts
+  WHERE fetchDate = (
+    SELECT MAX(fetchDate)
+    FROM team_standings
+    WHERE fetchDate < ts.fetchDate
+  )
+) home_form
   ON m.homeTeam.id = home_form.teamId 
-  AND DATE(m.utcDate) = DATE(home_form.fetchDate)
-LEFT JOIN team_standings away_form
+  AND DATE(m.utcDate) > DATE(home_form.fetchDate)
+LEFT JOIN (
+  SELECT teamId, form, fetchDate
+  FROM team_standings ts
+  WHERE fetchDate = (
+    SELECT MAX(fetchDate)
+    FROM team_standings
+    WHERE fetchDate < ts.fetchDate
+  )
+) away_form
   ON m.awayTeam.id = away_form.teamId
-  AND DATE(m.utcDate) = DATE(away_form.fetchDate)
+  AND DATE(m.utcDate) > DATE(away_form.fetchDate)
 GROUP BY match_date, league
 ORDER BY match_date, league
 """
