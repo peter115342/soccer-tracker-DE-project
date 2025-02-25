@@ -30,6 +30,14 @@
 
 				const L = await import('leaflet');
 
+				// Fix Leaflet's default icon paths with type assertion to avoid TypeScript error
+				delete (L.Icon.Default.prototype as any)._getIconUrl;
+				L.Icon.Default.mergeOptions({
+					iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+					iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+					shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png'
+				});
+
 				const mapContainer = document.getElementById('standalone-map');
 				if (mapContainer) {
 					map = L.map('standalone-map').setView([match.location.lat, match.location.lon], 15);
