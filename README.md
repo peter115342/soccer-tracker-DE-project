@@ -3,7 +3,7 @@
 </p>
 
 <div style="background-color: #FFEDD5; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-  <strong>⚠️ LEARNING PROJECT:</strong> This is a personal learning project in the field of data engineering. I understand the architecture might not be the most optimal as this project.I made this to practise and learn.  Feedback and suggestions are highly welcomed!
+  <strong>⚠️ LEARNING PROJECT:</strong> This is a personal learning project in the field of data engineering. I understand the architecture might not be the most optimal as this project. I made this to practise and learn.  Feedback and suggestions are highly welcomed!
 </div>
 
 # Football Statistics Tracker 📊⚽
