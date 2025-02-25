@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import requests
 import base64
 import unicodedata
 from google.cloud import bigquery, storage
@@ -9,6 +8,9 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 from typing import List
+from cloud_functions.discord_utils.discord_notifications import (
+    send_discord_notification,
+)
 
 
 def normalize_text(text: str) -> str:
@@ -290,29 +292,3 @@ def save_to_gcs(content, filename, storage_client, bucket):
     blob.upload_from_string(
         normalized_content, content_type="text/markdown; charset=utf-8"
     )
-
-
-def send_discord_notification(title: str, message: str, color: int):
-    """Send notification to Discord webhook"""
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        logging.warning("Discord webhook URL not set.")
-        return
-    discord_data = {
-        "content": None,
-        "embeds": [
-            {
-                "title": normalize_text(title),
-                "description": normalize_text(message),
-                "color": color,
-            }
-        ],
-    }
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
-    )
-    if response.status_code != 204:
-        logging.error(
-            f"Failed to send Discord notification: {response.status_code}, {response.text}"
-        )

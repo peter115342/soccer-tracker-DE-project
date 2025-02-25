@@ -5,6 +5,10 @@ import logging
 import requests
 from datetime import datetime, timedelta
 from google.cloud import firestore
+from cloud_functions.discord_utils.discord_notifications import (
+    send_discord_notification,
+)
+
 
 def sync_upcoming_matches_to_firestore(event, context):
     """Cloud Function to sync matches from the football-data API to Firestore.
@@ -40,7 +44,7 @@ def sync_upcoming_matches_to_firestore(event, context):
         headers = {"X-Auth-Token": api_key}
 
         collection = db.collection("upcoming_matches")
-        
+
         # Clear existing collection
         existing_docs = collection.stream()
         for doc in existing_docs:
@@ -54,10 +58,12 @@ def sync_upcoming_matches_to_firestore(event, context):
         }
 
         for competition_id in competitions:
-            url = f"http://api.football-data.org/v4/competitions/{competition_id}/matches"
+            url = (
+                f"http://api.football-data.org/v4/competitions/{competition_id}/matches"
+            )
             params = {
                 "dateFrom": target_date.isoformat(),
-                "dateTo": target_date.isoformat()
+                "dateTo": target_date.isoformat(),
             }
 
             response = requests.get(url, headers=headers, params=params, timeout=30)
@@ -91,9 +97,7 @@ def sync_upcoming_matches_to_firestore(event, context):
         status_message = f"Successfully synced {match_count} {sync_type} matches for {target_date.isoformat()}"
         logging.info(status_message)
         send_discord_notification(
-            "✅ Upcoming Matches Sync: Success",
-            status_message,
-            65280
+            "✅ Upcoming Matches Sync: Success", status_message, 65280
         )
 
         return status_message, 200
@@ -102,34 +106,6 @@ def sync_upcoming_matches_to_firestore(event, context):
         error_message = f"Error during upcoming matches sync: {str(e)}"
         logging.exception(error_message)
         send_discord_notification(
-            "❌ Upcoming Matches Sync: Failure",
-            error_message,
-            16711680
+            "❌ Upcoming Matches Sync: Failure", error_message, 16711680
         )
         return error_message, 500
-
-
-
-def send_discord_notification(title: str, message: str, color: int):
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        logging.warning("Discord webhook URL not set.")
-        return
-    discord_data = {
-        "content": None,
-        "embeds": [
-            {
-                "title": title,
-                "description": message,
-                "color": color,
-            }
-        ],
-    }
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
-    )
-    if response.status_code != 204:
-        logging.error(
-            f"Failed to send Discord notification: {response.status_code}, {response.text}"
-        )

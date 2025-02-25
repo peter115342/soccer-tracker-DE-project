@@ -3,9 +3,11 @@ import json
 import os
 import logging
 import time
-import requests
 from google.cloud import bigquery, dataform_v1beta1
 from datetime import datetime
+from cloud_functions.discord_utils.discord_notifications import (
+    send_discord_notification,
+)
 
 
 def trigger_dataform_workflow():
@@ -54,31 +56,6 @@ def trigger_dataform_workflow():
         time.sleep(5)
 
     return current_workflow_invocation
-
-
-def send_discord_notification(title: str, message: str, color: int):
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        logging.warning("Discord webhook URL not set.")
-        return
-    discord_data = {
-        "content": None,
-        "embeds": [
-            {
-                "title": title,
-                "description": message,
-                "color": color,
-            }
-        ],
-    }
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
-    )
-    if response.status_code != 204:
-        logging.error(
-            f"Failed to send Discord notification: {response.status_code}, {response.text}"
-        )
 
 
 def transform_weather(event, context):
