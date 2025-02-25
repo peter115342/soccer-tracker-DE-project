@@ -26,6 +26,11 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import { getWeatherInfo } from '$lib/weather_data';
+	marked.setOptions({
+		gfm: true,
+		breaks: true,
+		pedantic: false
+	});
 
 	let selectedDate: DateValue;
 	let loading = true;
@@ -152,18 +157,16 @@
 			</h2>
 
 			{#if $matchSummary}
-				<Collapsible class="mb-8 w-full">
-					<div
-						class="flex items-center justify-between space-x-4 rounded-t-lg bg-slate-100 px-4 py-2"
-					>
-						<h3 class="text-2xl font-semibold text-slate-800">Match Day Summary</h3>
-						<CollapsibleTrigger>
-							<Button variant="ghost" size="sm" class="hover:bg-slate-200">
-								<ChevronDown class="h-6 w-6" />
-								<span class="sr-only">Toggle summary</span>
-							</Button>
-						</CollapsibleTrigger>
-					</div>
+				<Collapsible class="mb-12 w-full">
+					<CollapsibleTrigger class="w-full">
+						<div
+							class="flex items-center justify-between space-x-4 rounded-t-lg bg-slate-100 px-4 py-2 transition-colors hover:bg-slate-200"
+						>
+							<h3 class="text-2xl font-semibold text-slate-800">Match Day Summary</h3>
+							<ChevronDown class="h-6 w-6" />
+							<span class="sr-only">Toggle summary</span>
+						</div>
+					</CollapsibleTrigger>
 					<CollapsibleContent class="space-y-2">
 						<Card class="border-2 border-slate-200">
 							<CardContent
@@ -177,70 +180,79 @@
 			{/if}
 
 			{#if loading}
-				{#each Array(5) as _}
-					<Card>
-						<CardContent class="p-6">
-							<div class="grid grid-cols-3 items-center gap-4">
-								<div class="flex flex-col items-center space-y-2">
-									<Skeleton class="h-12 w-12 rounded-full" />
-									<Skeleton class="h-4 w-24" />
-									<Skeleton class="h-8 w-8" />
-								</div>
-								<div class="flex flex-col items-center justify-center space-y-2">
-									<Skeleton class="h-4 w-16" />
-									<Skeleton class="h-4 w-32" />
-									<Skeleton class="h-4 w-20" />
-								</div>
-								<div class="flex flex-col items-center space-y-2">
-									<Skeleton class="h-12 w-12 rounded-full" />
-									<Skeleton class="h-4 w-24" />
-									<Skeleton class="h-8 w-8" />
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				{/each}
-			{:else}
-				{#each $matches as match}
-					<a href="/matches/{match.id}">
+				<div class="mt-12">
+					{#each Array(5) as _}
 						<Card>
 							<CardContent class="p-6">
 								<div class="grid grid-cols-3 items-center gap-4">
 									<div class="flex flex-col items-center space-y-2">
-										<img
-											src={match.home_team_logo}
-											alt={match.home_team}
-											class="h-12 w-12 object-contain"
-										/>
-										<p class="flex min-h-[2.5rem] items-center text-center font-semibold">
-											{match.home_team}
-										</p>
-										<p class="text-2xl font-bold">{match.home_score ?? '-'}</p>
+										<Skeleton class="h-12 w-12 rounded-full" />
+										<Skeleton class="h-4 w-24" />
+										<Skeleton class="h-8 w-8" />
 									</div>
-
 									<div class="flex flex-col items-center justify-center space-y-2">
-										{#if match.weather}
-											<p class="text-2xl">{getWeatherInfo(match.weather.weathercode).icon}</p>
-											<p class="text-sm">🌡️ {match.weather.temperature}°C</p>
-										{/if}
+										<Skeleton class="h-4 w-16" />
+										<Skeleton class="h-4 w-32" />
+										<Skeleton class="h-4 w-20" />
 									</div>
-
 									<div class="flex flex-col items-center space-y-2">
-										<img
-											src={match.away_team_logo}
-											alt={match.away_team}
-											class="h-12 w-12 object-contain"
-										/>
-										<p class="flex min-h-[2.5rem] items-center text-center font-semibold">
-											{match.away_team}
-										</p>
-										<p class="text-2xl font-bold">{match.away_score ?? '-'}</p>
+										<Skeleton class="h-12 w-12 rounded-full" />
+										<Skeleton class="h-4 w-24" />
+										<Skeleton class="h-8 w-8" />
 									</div>
 								</div>
 							</CardContent>
 						</Card>
-					</a>
-				{/each}
+					{/each}
+				</div>
+			{:else}
+				<div class="mt-12">
+					{#each $matches as match}
+						<a href="/matches/{match.id}">
+							<Card class="transition-shadow hover:shadow-md">
+								<!-- Added hover effect -->
+								<CardContent class="p-6">
+									<div class="flex flex-col space-y-4">
+										<!-- Wrapper for content and text -->
+										<div class="grid grid-cols-3 items-center gap-4">
+											<div class="flex flex-col items-center space-y-2">
+												<img
+													src={match.home_team_logo}
+													alt={match.home_team}
+													class="h-12 w-12 object-contain"
+												/>
+												<p class="flex min-h-[2.5rem] items-center text-center font-semibold">
+													{match.home_team}
+												</p>
+												<p class="text-2xl font-bold">{match.home_score ?? '-'}</p>
+											</div>
+
+											<div class="flex flex-col items-center justify-center space-y-2">
+												{#if match.weather}
+													<p class="text-2xl">{getWeatherInfo(match.weather.weathercode).icon}</p>
+													<p class="text-sm">🌡️ {match.weather.temperature}°C</p>
+												{/if}
+											</div>
+
+											<div class="flex flex-col items-center space-y-2">
+												<img
+													src={match.away_team_logo}
+													alt={match.away_team}
+													class="h-12 w-12 object-contain"
+												/>
+												<p class="flex min-h-[2.5rem] items-center text-center font-semibold">
+													{match.away_team}
+												</p>
+												<p class="text-2xl font-bold">{match.away_score ?? '-'}</p>
+											</div>
+										</div>
+										<div class="text-center text-sm text-slate-500">Click to show details</div>
+									</div>
+								</CardContent>
+							</Card>
+						</a>
+					{/each}
+				</div>
 			{/if}
 		</div>
 	</div>

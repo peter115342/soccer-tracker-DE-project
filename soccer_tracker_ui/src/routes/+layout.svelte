@@ -12,10 +12,17 @@
 				<div class="flex items-center gap-6">
 					<Button variant="ghost" size="lg" href="/" class="font-bold">⚽ Home</Button>
 					<Button variant="ghost" href="/matches">Match Data</Button>
+					<Button variant="ghost" href="/about">About</Button>
 				</div>
 				<div>
-					<Button variant="ghost" size="icon" href="https://github.com/peter115342" target="_blank">
-						<Github class="h-5 w-5" />
+					<Button
+						variant="ghost"
+						size="icon"
+						href="https://github.com/peter115342"
+						target="_blank"
+						class="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+					>
+						<Github class="h-8 w-8" />
 						<span class="sr-only">GitHub</span>
 					</Button>
 				</div>
