@@ -80,15 +80,14 @@ soccer-tracker-DE-project/
 ├── README.md
 ├── .gitignore
 ├── pyproject.toml
-├── terraform/
-│   ├── terraform/                     # IaC definitions
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── pubsub.tf
-│   │   ├── cloud_functions.tf
-│   └── Github/workflows/              # CI/CD in Github Actions
-│       ├── cd.yml
-│       └── ci.yml
+├── Github/workflows/                  # CI/CD in Github Actions
+│   ├── cd.yml
+│   └── ci.yml
+├── terraform/                         # IaC definitions
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── pubsub.tf
+│   └── cloud_functions.tf
 ├── cloud_functions/
 │   ├── league_data/                   # League and Teams data extraction and load
 │   ├── discord_utils/                 # Package for sending Discord notifications using webhooks
@@ -96,8 +95,8 @@ soccer-tracker-DE-project/
 │   ├── weather_data/                  # Weather data extraction and load
 │   ├── reddit_data/                   # Reddit data extraction and load
 │   ├── standings_data/                # Standings data extraction and load for each matchday
-│   └── data_validation/               # Data validation using Dataplex
-│   └── serving_layer/                 # Load data to firestore
+│   ├── data_validation/               # Data validation using Dataplex
+│   ├── serving_layer/                 # Load data to firestore
 │   └── generate_summaries/            # Generate match summaries with Gemini
 ├── soccer_tracker_ui/                 # Svelte web app in Firebase
 │   ├── src/
