@@ -11,3 +11,7 @@
 
 - [Terraform Documentation](https://www.terraform.io/docs/index.html)
 - [Terraform GCP Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
+
+--------------------------------------------------------
+
+For more details, refer to the main [README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/README.md) of the project.
