@@ -112,6 +112,12 @@ soccer-tracker-DE-project/
 └── tests/                             # Test suite for Cloud Functions with Pytest
 ```
 
+## Additional Documentation
+
+- [Tests README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/tests/README.md)
+- [Cloud Functions README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/cloud_functions/README.md)
+- [Terraform README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/terraform/README.md)
+  
 ## [Web app](https://dataeurotop5football.win/)
 
 The project includes a Svelte web app for visualizing match results, weather data, and match summaries. 
