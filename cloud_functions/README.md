@@ -68,3 +68,6 @@ This module contains functions for handling weather data, which may be relevant 
 
 Path: `cloud_functions/weather_data`
 
+--------------------------------------------------------
+
+For more details, refer to the main [README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/README.md) of the project.
