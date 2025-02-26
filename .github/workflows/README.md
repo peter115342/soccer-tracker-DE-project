@@ -77,3 +77,7 @@ The CD pipeline deploys multiple cloud functions for different purposes, includi
 ## Terraform Resources
 
 Terraform is used to manage the infrastructure, more details [here](https://github.com/peter115342/soccer-tracker-DE-project/tree/main/terraform)
+
+--------------------------------------------------------
+
+For more details, refer to the main [README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/README.md) of the project.
