@@ -3,7 +3,7 @@
 </p>
 
 <div style="background-color: #FFEDD5; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-  <strong>⚠️ LEARNING PROJECT:</strong> This is a personal learning project in the field of data engineering. I understand the architecture might not be the most optimal as this project. I made this to practise and learn.  Feedback and suggestions are highly welcomed!
+  <strong>⚠️ LEARNING PROJECT:</strong> This is a personal learning project in the field of data engineering. I understand the architecture might not be the most optimal as this project. I made this to practise and learn. Feedback and suggestions are highly welcomed!
 </div>
 
 # Football Statistics Tracker 📊⚽
@@ -117,6 +117,8 @@ soccer-tracker-DE-project/
 - [Tests README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/tests/README.md)
 - [Cloud Functions README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/cloud_functions/README.md)
 - [Terraform README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/terraform/README.md)
+- [GH Actions README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/.github/workflows/README.md)
+
   
 ## [Web app](https://dataeurotop5football.win/)
 
@@ -134,8 +136,8 @@ App includes:
 ![image](https://github.com/user-attachments/assets/d66691a7-adb1-41a8-9fdd-c65e56c36c00)
 
 <div style="background-color: #FFEDD5; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-  <strong>⚠️ DISCLAIMER:</strong> I know this data probably does not have much real value as it is not real-time and the statitics are not that deep ( I wanted to stay within free tiers of APIs).
+  <strong>⚠️ DISCLAIMER:</strong> I know this data probably does not have much real value as it is not real-time and the statistics are not that deep ( I wanted to stay within free tiers of APIs).
 </div>
 
 -----------------------------------
-I got the idea to make this project by seeing this [repo](https://github.com/digitalghost-dev/premier-league) by [digitalghost-dev](https://github.com/digitalghost-dev)
+I got the idea to make this project from this [repo](https://github.com/digitalghost-dev/premier-league) by [digitalghost-dev](https://github.com/digitalghost-dev)
