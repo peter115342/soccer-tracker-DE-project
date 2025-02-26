@@ -123,13 +123,13 @@ App includes:
 - Weather data during matches
 - Comments from Reddit
 
-
------------------------------------
 ![image](https://github.com/user-attachments/assets/92d2b39d-1e6d-4f4b-bd23-0d0adde4f9dc)
 
 ![image](https://github.com/user-attachments/assets/d66691a7-adb1-41a8-9fdd-c65e56c36c00)
 
+<div style="background-color: #FFEDD5; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+  <strong>⚠️ DISCLAIMER:</strong> I know this data probably does not have much real value as it is not real-time and the statitics are not that deep ( I wanted to stay within free tiers of APIs).
+</div>
 
-----------------------
-
+-----------------------------------
 I got the idea to make this project by seeing this [repo](https://github.com/digitalghost-dev/premier-league) by [digitalghost-dev](https://github.com/digitalghost-dev)
