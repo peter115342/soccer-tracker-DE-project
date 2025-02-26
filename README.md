@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/ce31cf4c-a438-4f31-b4c1-24620b96c5f9" width="300" alt="Football Statistics Tracker Logo">
+  <img src="https://github.com/user-attachments/assets/ce31cf4c-a438-4f31-b4c1-24620b96c5f9" width="225" alt="Football Statistics Tracker Logo">
 </p>
 
 <div style="background-color: #FFEDD5; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
