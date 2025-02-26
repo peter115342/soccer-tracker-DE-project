@@ -4,9 +4,10 @@
 	import { Github } from 'lucide-svelte';
 	import { page } from '$app/stores';
 	let { children } = $props();
+	const currentYear = new Date().getFullYear();
 </script>
 
-<div class="bg-background min-h-screen">
+<div class="bg-background flex min-h-screen flex-col">
 	<header class="bg-card border-b">
 		<div class="container mx-auto px-2 md:px-4">
 			<nav class="flex h-14 items-stretch justify-between">
@@ -61,7 +62,25 @@
 		</div>
 	</header>
 
-	<main class="container mx-auto p-4">
+	<main class="container mx-auto flex-grow p-4">
 		{@render children()}
 	</main>
+
+	<footer class="bg-card mt-auto border-t">
+		<div class="container mx-auto px-4 py-3">
+			<div class="flex items-center justify-between">
+				<div class="text-muted-foreground text-sm">© {currentYear} Soccer Tracker</div>
+				<div class="flex items-center">
+					<a
+						href="https://github.com/peter115342"
+						target="_blank"
+						class="flex items-center text-sm text-purple-800 transition-colors hover:text-purple-600"
+					>
+						<Github class="mr-1 h-4 w-4" />
+						<span>peter115342</span>
+					</a>
+				</div>
+			</div>
+		</div>
+	</footer>
 </div>

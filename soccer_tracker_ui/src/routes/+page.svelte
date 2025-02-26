@@ -5,7 +5,6 @@
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import {
 		Table,
 		TableBody,
@@ -99,10 +98,10 @@
 					Match data will be available at 1AM UTC the next day
 				</p>
 
-				<ScrollArea class="h-[calc(100vh-12rem)] w-full rounded-md border">
+				<div class="w-full rounded-md border">
 					<div class="p-4">
-						{#each $upcomingMatches as dayMatches}
-							<Card class="mb-6">
+						{#each $upcomingMatches as dayMatches, index}
+							<Card class="mb-4 {index === $upcomingMatches.length - 1 ? 'mb-0' : ''}">
 								<CardHeader>
 									<CardTitle>
 										{new Date(dayMatches.date).toLocaleDateString('en-US', {
@@ -171,7 +170,7 @@
 							</Card>
 						{/each}
 					</div>
-				</ScrollArea>
+				</div>
 			</div>
 		{/if}
 	</div>
@@ -204,7 +203,8 @@
 												alt="La Liga"
 												class="h-8 w-8"
 											/>
-											<span class="whitespace-nowrap text-xs">La Liga</span>
+											<span class="hidden whitespace-nowrap text-xs sm:inline">La Liga</span>
+											<span class="inline whitespace-nowrap text-xs sm:hidden">PD</span>
 										</div>
 									{:else if league.competition_id === 2002}
 										<div class="flex flex-col items-center gap-2">
@@ -213,7 +213,8 @@
 												alt="Bundesliga"
 												class="h-8 w-8"
 											/>
-											<span class="whitespace-nowrap text-xs">Bundesliga</span>
+											<span class="hidden whitespace-nowrap text-xs sm:inline">Bundesliga</span>
+											<span class="inline whitespace-nowrap text-xs sm:hidden">BL</span>
 										</div>
 									{:else if league.competition_id === 2019}
 										<div class="flex flex-col items-center gap-2">
@@ -222,7 +223,8 @@
 												alt="Serie A"
 												class="h-8 w-8"
 											/>
-											<span class="whitespace-nowrap text-xs">Serie A</span>
+											<span class="hidden whitespace-nowrap text-xs sm:inline">Serie A</span>
+											<span class="inline whitespace-nowrap text-xs sm:hidden">SA</span>
 										</div>
 									{:else if league.competition_id === 2021}
 										<div class="flex flex-col items-center gap-2">
@@ -231,7 +233,8 @@
 												alt="Premier League"
 												class="h-8 w-8"
 											/>
-											<span class="whitespace-nowrap text-xs">Premier League</span>
+											<span class="hidden whitespace-nowrap text-xs sm:inline">Premier League</span>
+											<span class="inline whitespace-nowrap text-xs sm:hidden">PL</span>
 										</div>
 									{:else if league.competition_id === 2015}
 										<div class="flex flex-col items-center gap-2">
@@ -240,7 +243,8 @@
 												alt="Ligue 1"
 												class="h-8 w-8"
 											/>
-											<span class="whitespace-nowrap text-xs">Ligue 1</span>
+											<span class="hidden whitespace-nowrap text-xs sm:inline">Ligue 1</span>
+											<span class="inline whitespace-nowrap text-xs sm:hidden">FL1</span>
 										</div>
 									{/if}
 								</TabsTrigger>
