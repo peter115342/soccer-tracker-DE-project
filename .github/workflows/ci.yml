@@ -59,3 +59,4 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           uv run pytest tests/
+
