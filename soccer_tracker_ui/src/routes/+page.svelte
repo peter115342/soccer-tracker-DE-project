@@ -95,7 +95,7 @@
 				</h1>
 
 				<p class="text-muted-foreground mb-6">
-					Match data will be available at 1AM UTC the next day
+					Match data will be available at 3AM UTC the next day
 				</p>
 
 				<div class="w-full rounded-md border">
