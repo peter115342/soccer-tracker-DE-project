@@ -10,7 +10,7 @@ class MatchValidator:
 
     def __init__(self, api_key: Optional[str] = None):
         """Initialize with optional API key."""
-        self.api_key = api_key or os.environ.get("FOOTBALL_DATA_API_KEY")
+        self.api_key = api_key or os.environ.get("API_FOOTBALL_KEY")
         if not self.api_key:
             raise ValueError(
                 "Football Data API key not provided or found in environment variables"
