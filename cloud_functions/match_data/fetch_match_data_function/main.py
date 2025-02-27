@@ -1,10 +1,13 @@
-import requests
 import json
 import os
 import logging
 from datetime import datetime, timedelta
 from google.cloud import pubsub_v1
 from .utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs
+from cloud_functions.discord_utils.discord_notifications import (
+    send_discord_notification,
+)
+
 
 def fetch_football_data(event, context):
     """
@@ -78,28 +81,3 @@ def fetch_football_data(event, context):
         )
         logging.exception(error_message)
         return error_message, 500
-
-
-def send_discord_notification(title: str, message: str, color: int):
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        logging.warning("Discord webhook URL not set.")
-        return
-    discord_data = {
-        "content": None,
-        "embeds": [
-            {
-                "title": title,
-                "description": message,
-                "color": color,
-            }
-        ],
-    }
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
-    )
-    if response.status_code != 204:
-        logging.error(
-            f"Failed to send Discord notification: {response.status_code}, {response.text}"
-        )

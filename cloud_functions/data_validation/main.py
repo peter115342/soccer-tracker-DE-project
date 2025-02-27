@@ -6,6 +6,7 @@ import requests
 from google.cloud import dataplex_v1
 from google.cloud import bigquery
 import plotly.graph_objects as go
+from .utils.match_validator import MatchValidator
 
 
 def get_table_record_counts() -> dict:
@@ -316,7 +317,7 @@ def send_discord_notification(
 
 
 def trigger_dataplex_scans(event, context):
-    """Triggers Dataplex data quality scans for all tables"""
+    """Triggers Dataplex data quality scans for all tables and validates match data"""
     try:
         pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
         message_data = json.loads(pubsub_message)
@@ -328,6 +329,9 @@ def trigger_dataplex_scans(event, context):
                 "❌ Dataplex Scans: Invalid Trigger", error_message, 16711680
             )
             return error_message, 500
+
+        match_validator = MatchValidator()
+        discrepancies = match_validator.validate_matches()
 
         client = dataplex_v1.DataScanServiceClient()
         project_id = os.environ.get("GCP_PROJECT_ID")
@@ -370,15 +374,30 @@ def trigger_dataplex_scans(event, context):
             scan_summary += f"\n\n**{table}**:\n"
             scan_summary += f"Pass Rate: {results['pass_rate']:.2f}%"
 
+        match_validation_summary = "\n\n**Match Data Validation:**"
+        if discrepancies:
+            match_validation_summary += f"\n\nFound {len(discrepancies)} score discrepancies in the last 24 hours:"
+            for discrepancy in discrepancies:
+                match_validation_summary += (
+                    f"\n- {discrepancy['home_team']} vs {discrepancy['away_team']} "
+                    f"(Match ID: {discrepancy['match_id']}): "
+                    f"BQ shows {discrepancy['bq_score']}, API shows {discrepancy['api_score']}"
+                )
+        else:
+            match_validation_summary += (
+                "\n\nNo score discrepancies found for matches in the last 24 hours."
+            )
+
         status_message = (
             f"Successfully triggered {len(triggered_scans)} Dataplex quality scans\n"
             f"Record count trends for the last 30 days shown in the graphs above."
             f"{scan_summary}"
+            f"{match_validation_summary}"
         )
 
         logging.info(status_message)
         send_discord_notification(
-            "✅ Dataplex Scans: Triggered",
+            "✅ Data Validation: Complete",
             status_message,
             65280,
             daily_plot,
@@ -388,7 +407,7 @@ def trigger_dataplex_scans(event, context):
         return status_message, 200
 
     except Exception as e:
-        error_message = f"Error triggering Dataplex scans: {str(e)}"
-        send_discord_notification("❌ Dataplex Scans: Failed", error_message, 16711680)
+        error_message = f"Error during data validation: {str(e)}"
+        send_discord_notification("❌ Data Validation: Failed", error_message, 16711680)
         logging.exception(error_message)
         return error_message, 500

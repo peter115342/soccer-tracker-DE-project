@@ -1,6 +1,6 @@
 [project]
 name = "soccer-tracker-de-project"
-version = "0.1.0"
+version = "1.0.0"
 description = "Soccer tracker data engineering project"
 readme = "README.md"
 requires-python = ">=3.12"

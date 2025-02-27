@@ -2,10 +2,10 @@ from typing import List, Dict, Any
 
 from .utils.api_helpers_league import get_league_data
 from .utils.bigquery_helpers_league import insert_data_into_bigquery
-import requests
-import json
-import os
-import logging
+
+from cloud_functions.discord_utils.discord_notifications import (
+    send_discord_notification,
+)
 
 
 def fetch_league_data(event, context):
@@ -68,43 +68,18 @@ def load_data_into_bigquery(league_data_list: List[Dict[str, Any]]):
         }
         leagues.append(league_info)
 
-    if league_data["teams"]:
-        for team in league_data["teams"]:
-            team_info = {
-                "id": team["id"],
-                "name": team["name"],
-                "tla": team.get("tla"),
-                "logo": team.get("crest"),
-                "venue": team.get("venue"),
-                "address": team.get("address"),
-                "league_id": league_data["id"],
-            }
-            teams.append(team_info)
+        if league_data.get("teams"):
+            for team in league_data["teams"]:
+                team_info = {
+                    "id": team["id"],
+                    "name": team["name"],
+                    "tla": team.get("tla"),
+                    "logo": team.get("crest"),
+                    "venue": team.get("venue"),
+                    "address": team.get("address"),
+                    "league_id": league_data["id"],
+                }
+                teams.append(team_info)
 
     insert_data_into_bigquery(league_table_name, leagues)
     insert_data_into_bigquery(team_table_name, teams)
-
-
-def send_discord_notification(title: str, message: str, color: int):
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        logging.warning("Discord webhook URL not set.")
-        return
-    discord_data = {
-        "content": None,
-        "embeds": [
-            {
-                "title": title,
-                "description": message,
-                "color": color,
-            }
-        ],
-    }
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(
-        webhook_url, data=json.dumps(discord_data), headers=headers, timeout=90
-    )
-    if response.status_code != 204:
-        logging.error(
-            f"Failed to send Discord notification: {response.status_code}, {response.text}"
-        )

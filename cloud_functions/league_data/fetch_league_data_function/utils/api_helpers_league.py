@@ -21,6 +21,14 @@ if not GCP_PROJECT_ID:
 BASE_URL = "https://api.football-data.org/v4"
 HEADERS = {"X-Auth-Token": API_KEY}
 
+LEAGUE_COUNTRY_MAP = {
+    "PL": "England",
+    "FL1": "France",
+    "BL1": "Germany",
+    "SA": "Italy",
+    "PD": "Spain",
+}
+
 
 def get_existing_teams_from_bq(project_id: str, dataset: str) -> dict:
     """Fetch existing team IDs and addresses from BigQuery"""
@@ -34,19 +42,20 @@ def get_existing_teams_from_bq(project_id: str, dataset: str) -> dict:
     return {row.id: row.address for row in results}
 
 
-def get_stadium_coordinates(
-    venue: str, team_name: str, team_city: str, team_country: str
-) -> Optional[str]:
+def get_stadium_coordinates(venue: str, team_name: str, country: str) -> Optional[str]:
     """
     Get stadium coordinates using Google Maps Geocoding API with enhanced search queries and fallbacks.
+    Includes country information for more accurate results.
     """
     search_queries = [
-        f"{venue}, {team_city}, {team_country}",
-        f"{venue}, {team_country}",
-        f"{team_name} Stadium, {team_city}, {team_country}",
-        f"{team_name} Stadium, {team_country}",
-        f"{venue}, {team_country} football stadium",
-        f"{team_name}, {team_country} football stadium",
+        f"{venue} Stadium, {team_name}, {country}",
+        f"{team_name} Stadium, {country}",
+        f"{venue}, {team_name}, {country}",
+        f"{team_name} Football Stadium, {country}",
+        f"{venue} Football Ground, {country}",
+        f"{team_name} Home Ground, {country}",
+        f"{venue}, {country}",
+        f"{venue} Arena, {team_name}, {country}",
     ]
 
     for query in search_queries:
@@ -73,7 +82,9 @@ def get_stadium_coordinates(
         except Exception as e:
             logging.error(f"An error occurred for query: {query}: {e}")
 
-    logging.error(f"All attempts failed to get coordinates for team: {team_name}")
+    logging.error(
+        f"All attempts failed to get coordinates for team: {team_name} in {country}"
+    )
     return None
 
 
@@ -95,6 +106,10 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
 
     existing_teams = get_existing_teams_from_bq(GCP_PROJECT_ID, "sports_data_eu")
 
+    country = LEAGUE_COUNTRY_MAP.get(league_code, "")
+    if not country:
+        logging.warning(f"No country mapping found for league code: {league_code}")
+
     for team in teams_data.get("teams", []):
         team_id = team.get("id")
 
@@ -107,32 +122,16 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
 
         team_name = team.get("name", "")
         stadium_name = team.get("venue", "") or team_name
-        team_address = team.get("address", "")
-        team_area = team.get("area", {})
-        team_city = ""
-        team_country = ""
 
-        if team_address and "," in team_address:
-            address_parts = [part.strip() for part in team_address.split(",")]
-            if len(address_parts) >= 2:
-                team_city = address_parts[-2]
-                team_country = address_parts[-1]
-        else:
-            team_city = team_area.get("name", "")
-            team_country = league_data.get("area", {}).get("name", "")
-
-        team_city = team_city if team_city else ""
-        team_country = team_country if team_country else ""
-
-        coordinates = get_stadium_coordinates(
-            stadium_name, team_name, team_city, team_country
-        )
+        coordinates = get_stadium_coordinates(stadium_name, team_name, country)
         team["address"] = coordinates
 
         if coordinates:
-            logging.info(f"Added coordinates for new team: {team_name}")
+            logging.info(f"Added coordinates for new team: {team_name} in {country}")
         else:
-            logging.warning(f"Could not get coordinates for new team: {team_name}")
+            logging.warning(
+                f"Could not get coordinates for new team: {team_name} in {country}"
+            )
 
     league_data["teams"] = teams_data.get("teams", [])
     logging.info(f"Successfully fetched data for league code: {league_code}")

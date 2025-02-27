@@ -91,4 +91,5 @@ def test_sync_upcoming_matches_firestore_error(pubsub_event):
         result, status_code = sync_upcoming_matches_to_firestore(pubsub_event, context)
 
         assert status_code == 500
-        assert "Error during upcoming_matches sync" in result
+        assert "Error during upcoming matches sync" in result
+
