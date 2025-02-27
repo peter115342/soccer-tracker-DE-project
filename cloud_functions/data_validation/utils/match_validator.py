@@ -1,15 +1,14 @@
 import os
 import logging
 import requests
-from datetime import datetime, timedelta
 from google.cloud import bigquery
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Optional
 
 
 class MatchValidator:
     """Class to validate match data by comparing BigQuery data with the Football-data.org API."""
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: Optional[str] = None):
         """Initialize with optional API key."""
         self.api_key = api_key or os.environ.get("FOOTBALL_DATA_API_KEY")
         if not self.api_key:
@@ -49,7 +48,7 @@ class MatchValidator:
 
         return [dict(row.items()) for row in results]
 
-    def get_match_from_api(self, match_id: int) -> Dict:
+    def get_match_from_api(self, match_id: int) -> Optional[Dict]:
         """Fetch a specific match from the Football-data.org API."""
         url = f"{self.api_base_url}/matches/{match_id}"
 
