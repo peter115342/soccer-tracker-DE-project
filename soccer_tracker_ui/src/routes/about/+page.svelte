@@ -107,9 +107,7 @@
 			Gemini 2.0 Flash
 		</li>
 		<li>
-			<span class="font-semibold">Visualization:</span>
-			<a href="https://dataeurotop5football.win/" class="text-blue-600 hover:underline">Web app</a> for
-			insights
+			<span class="font-semibold">Visualization:</span> This web app for insights
 		</li>
 	</ol>
 
@@ -200,47 +198,6 @@
 			</tbody>
 		</table>
 	</div>
-
-	<h2 class="mb-4 text-2xl font-bold">Project Structure</h2>
-	<Card class="mb-6">
-		<CardContent class="p-4">
-			<pre class="overflow-x-auto whitespace-pre-wrap text-sm">
-soccer-tracker-DE-project/
-├── README.md
-├── .gitignore
-├── pyproject.toml
-├── Github/workflows/                  # CI/CD in Github Actions
-│   ├── cd.yml
-│   └── ci.yml
-├── terraform/                         # IaC definitions
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── pubsub.tf
-│   └── cloud_functions.tf
-├── cloud_functions/
-│   ├── league_data/                   # League and Teams data extraction and load
-│   ├── discord_utils/                 # Package for sending Discord notifications using webhooks
-│   ├── match_data/                    # Match data extraction and load
-│   ├── weather_data/                  # Weather data extraction and load
-│   ├── reddit_data/                   # Reddit data extraction and load
-│   ├── standings_data/                # Standings data extraction and load for each matchday
-│   ├── data_validation/               # Data validation using Dataplex
-│   ├── serving_layer/                 # Load data to firestore
-│   └── generate_summaries/            # Generate match summaries with Gemini
-├── soccer_tracker_ui/                 # Svelte web app in Firebase
-│   ├── src/
-│   │   ├── lib/                       # Reusable components
-│   │   │   ├── components/            # UI components from [shadcn](https://next.shadcn-svelte.com/)
-│   │   │   ├── firebase.ts            # Firebase/Firestore connection
-│   │   │   └── stores/                # Svelte stores for state management
-│   │   ├── routes/                    # Page components
-│   ├── package.json                   # Dependencies and scripts
-│   ├── svelte.config.js               # Svelte configuration
-│   ├── vite.config.js                 # Vite bundler config
-└── tests/                             # Test suite for Cloud Functions with Pytest
-      </pre>
-		</CardContent>
-	</Card>
 
 	<Alert class="mb-8 border-amber-200 bg-amber-50">
 		<AlertDescription>
