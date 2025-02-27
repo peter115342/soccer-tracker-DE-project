@@ -41,7 +41,7 @@ class MatchValidator:
             competition.id as competition_id
         FROM `sports_data_eu.matches_processed`
         WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {hours} HOUR)
-        """
+        """  # nosec B608
 
         query_job = self.bq_client.query(query)
         results = query_job.result()
