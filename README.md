@@ -6,6 +6,7 @@
   <strong>⚠️ LEARNING PROJECT:</strong> This is a personal learning project in the field of data engineering. I understand the architecture might not be the most optimal as this project. I made this to practise and learn. Feedback and suggestions are highly welcomed!
 </div>
 
+
 # Football Statistics Tracker 📊⚽
 
 ![Python](https://img.shields.io/badge/Python-3.12-green.svg)
@@ -118,7 +119,7 @@ soccer-tracker-DE-project/
 - [Terraform README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/terraform/README.md)
 - [GH Actions README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/.github/workflows/README.md)
 
-  
+
 ## [Web app](https://dataeurotop5football.win/)
 
 The project includes a Svelte web app for visualizing match results, weather data, and match summaries. 
