@@ -52,9 +52,7 @@ def get_stadium_coordinates(venue: str, team_name: str, country: str) -> Optiona
         f"{team_name} Stadium, {country}",
         f"{venue}, {team_name}, {country}",
         f"{team_name} Football Stadium, {country}",
-        f"{venue} Football Ground, {country}",
         f"{team_name} Home Ground, {country}",
-        f"{venue}, {country}",
         f"{venue} Arena, {team_name}, {country}",
     ]
 
