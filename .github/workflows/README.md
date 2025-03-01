@@ -56,7 +56,7 @@ The CD pipeline is triggered on push events to the `main` branch. It handles the
 
 ## Secrets
 
-Both workflows rely on several secrets for authentication and configuration. These secrets should be configured in the repository settings:
+Both workflows rely on several secrets for authentication and configuration. These secrets are configured in the repository settings:
 - `GCP_SA_KEY`
 - `GCP_PROJECT_ID`
 - `FUNCTIONS_BUCKET_NAME`
