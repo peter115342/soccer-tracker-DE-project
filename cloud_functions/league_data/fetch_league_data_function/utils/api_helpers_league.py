@@ -48,13 +48,14 @@ def get_stadium_coordinates(venue: str, team_name: str, country: str) -> Optiona
     Includes country information for more accurate results.
     """
     search_queries = [
-        f"{venue} Stadium, {team_name}, {country}",
-        f"{team_name} Stadium, {country}",
-        f"{venue}, {team_name}, {country}",
-        f"{team_name} Football Stadium, {country}",
-        f"{team_name} Home Ground, {country}",
-        f"{venue} Arena, {team_name}, {country}",
-    ]
+       f"{venue} Football Stadium, {team_name}, {country}",
+       f"{team_name} Football Stadium, {venue}, {country}", 
+       f"{venue} Soccer Ground, {team_name}, {country}",   
+       f"{team_name} Home Stadium {venue}, {country}",
+       f"{team_name} Stadium {venue}, {country}",
+       f"{team_name}, {venue} Stadium, {country}",
+       f"{venue}, {team_name} Football Club, {country}"
+       ]
 
     for query in search_queries:
         params = {"address": query, "key": GOOGLE_MAPS_API_KEY}
