@@ -48,6 +48,7 @@ def get_stadium_coordinates(venue: str, team_name: str, country: str) -> Optiona
     Includes country information for more accurate results.
     """
     search_queries = [
+       f"{team_name} {venue} {country}",
        f"{venue} Football Stadium, {team_name}, {country}",
        f"{team_name} Football Stadium, {venue}, {country}", 
        f"{venue} Soccer Ground, {team_name}, {country}",   
