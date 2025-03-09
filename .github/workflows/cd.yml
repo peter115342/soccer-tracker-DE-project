@@ -329,7 +329,6 @@ jobs:
           terraform import google_pubsub_subscription.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_standings_to_parquet_subscription
           terraform import google_pubsub_subscription.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/standings_to_bigquery_subscription
           terraform import google_pubsub_subscription.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_standings_subscription
-          terraform import google_pubsub_subscription.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_reddit_to_parquet_subscription
           terraform import google_pubsub_subscription.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/reddit_to_bigquery_subscription
           terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_reddit_subscription
           terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/trigger_quality_scans_subscription
