@@ -300,7 +300,6 @@ jobs:
           terraform import google_pubsub_topic.convert_standings_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_standings_to_parquet_topic
           terraform import google_pubsub_topic.standings_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/standings_to_bigquery_topic
           terraform import google_pubsub_topic.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_standings_topic
-          terraform import google_pubsub_topic.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_reddit_to_parquet_topic
           terraform import google_pubsub_topic.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/reddit_to_bigquery_topic
           terraform import google_pubsub_topic.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_reddit_topic
           terraform import google_pubsub_topic.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/topics/trigger_quality_scans_topic
