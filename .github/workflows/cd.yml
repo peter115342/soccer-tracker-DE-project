@@ -302,6 +302,7 @@ jobs:
           terraform import google_pubsub_topic.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_standings_topic
           terraform import google_pubsub_topic.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/topics/convert_reddit_to_parquet_topic
           terraform import google_pubsub_topic.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/topics/reddit_to_bigquery_topic
+          terraform import google_pubsub_topic.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/topics/process_reddit_data_topic
           terraform import google_pubsub_topic.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/topics/transform_reddit_topic
           terraform import google_pubsub_topic.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/topics/trigger_quality_scans_topic
           terraform import google_pubsub_topic.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/topics/sync_matches_to_firestore_topic
@@ -332,6 +333,7 @@ jobs:
           terraform import google_pubsub_subscription.transform_standings projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_standings_subscription
           terraform import google_pubsub_subscription.convert_reddit_to_parquet projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/convert_reddit_to_parquet_subscription
           terraform import google_pubsub_subscription.reddit_to_bigquery projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/reddit_to_bigquery_subscription
+          terraform import google_pubsub_subscription.process_reddit_data projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/process_reddit_data_subscription
           terraform import google_pubsub_subscription.transform_reddit projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/transform_reddit_subscription
           terraform import google_pubsub_subscription.trigger_quality_scans projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/trigger_quality_scans_subscription
           terraform import google_pubsub_subscription.sync_matches_to_firestore projects/${{secrets.GCP_PROJECT_ID}}/subscriptions/sync_matches_to_firestore_subscription
