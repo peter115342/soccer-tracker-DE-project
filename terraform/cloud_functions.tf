@@ -649,7 +649,7 @@ resource "google_cloudfunctions2_function" "process_reddit_data" {
     max_instance_count = 1
     available_memory   = "2048M"
     available_cpu      = 1
-    timeout_seconds    = 540
+    timeout_seconds    = 1200
     service_account_email = var.service_account_email
     environment_variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
