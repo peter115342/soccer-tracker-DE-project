@@ -17,7 +17,7 @@ jobs:
 
       - name: Install uv
         run: |
-          pip install uv
+          pip install --upgrade --no-cache-dir uv
 
       - name: Create Virtual Environment
         run: |
