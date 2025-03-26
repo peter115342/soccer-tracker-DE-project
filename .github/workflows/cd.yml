@@ -3,7 +3,7 @@ name: CD Pipeline
 on:
   push:
     branches:
-      - fix/message_when_no_matches
+      - main
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
