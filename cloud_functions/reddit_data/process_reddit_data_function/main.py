@@ -11,7 +11,7 @@ from cloud_functions.discord_utils.discord_notifications import (
 
 
 def process_reddit_threads(event, context):
-    """Cloud Function to process all available Reddit threads and match them with actual matches"""
+    """Cloud Function to process only the latest two available Reddit threads"""
     try:
         if event and "data" in event:
             pubsub_message = base64.b64decode(event["data"]).decode("utf-8")
@@ -35,11 +35,17 @@ def process_reddit_threads(event, context):
         bucket = storage_client.bucket(bucket_name)
 
         blobs = bucket.list_blobs(prefix="reddit_data/raw/")
+
         dates = [
             blob.name.split("/")[-1].replace(".json", "")
             for blob in blobs
             if blob.name.endswith(".json")
         ]
+        dates.sort(reverse=True)
+
+        dates = dates[:2]
+
+        logging.info(f"Processing only the latest two dates: {dates}")
 
         total_processed = 0
         total_skipped = 0
@@ -66,7 +72,8 @@ def process_reddit_threads(event, context):
 
         success_message = (
             f"Successfully processed {total_processed} new threads "
-            f"across {len(dates)} dates and skipped {total_skipped} threads\n\n"
+            f"across {len(dates)} dates (latest two only) and skipped {total_skipped} threads\n\n"
+            f"Processed dates: {', '.join(dates)}\n\n"
             f"Validation Results:\n" + "\n".join(validation_summary)
         )
 

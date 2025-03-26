@@ -647,8 +647,8 @@ resource "google_cloudfunctions2_function" "process_reddit_data" {
 
   service_config {
     max_instance_count = 1
-    available_memory   = "2048M"
-    available_cpu      = 2
+    available_memory   = "4096M"
+    available_cpu      = 4
     timeout_seconds    = 540
     service_account_email = var.service_account_email
     environment_variables = {
