@@ -7,21 +7,21 @@ runConfig:
   # cpu: 1
   # memoryMiB: 512
 
-# Environment variables and secrets.
-env:
-  # Grant access to secrets in Cloud Secret Manager.
-  # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-  - variable: FIREBASE_API_KEY
-    secret: firebaseApiKey
-  - variable: FIREBASE_AUTH_DOMAIN
-    secret: firebaseAuthDomain
-  - variable: FIREBASE_PROJECT_ID
-    secret: firebaseProjectId
-  - variable: FIREBASE_STORAGE_BUCKET
-    secret: firebaseStorageBucket
-  - variable: FIREBASE_MESSAGING_SENDER_ID
-    secret: firebaseMessagingSenderId
-  - variable: FIREBASE_APP_ID
-    secret: firebaseAppId
-  - variable: FIREBASE_MEASUREMENT_ID
-    secret: firebaseMeasurementId
+# # Environment variables and secrets.
+# env:
+#   # Grant access to secrets in Cloud Secret Manager.
+#   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
+#   - variable: FIREBASE_API_KEY
+#     secret: firebaseApiKey
+#   - variable: FIREBASE_AUTH_DOMAIN
+#     secret: firebaseAuthDomain
+#   - variable: FIREBASE_PROJECT_ID
+#     secret: firebaseProjectId
+#   - variable: FIREBASE_STORAGE_BUCKET
+#     secret: firebaseStorageBucket
+#   - variable: FIREBASE_MESSAGING_SENDER_ID
+#     secret: firebaseMessagingSenderId
+#   - variable: FIREBASE_APP_ID
+#     secret: firebaseAppId
+#   - variable: FIREBASE_MEASUREMENT_ID
+#     secret: firebaseMeasurementId
