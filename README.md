@@ -68,7 +68,7 @@ The pipeline follows the following architecture:
 | CI/CD | GitHub Actions |
 | Package Management | uv, pyproject.toml |
 | Code Quality | Ruff, Bandit, Mypy |
-| Testins | pytest |
+| Testing | pytest |
 | Web Framework | Svelte, ShadCN UI Components |
 | Hosting | Firebase App Hosting |
 | LLM | Google Gemini 2.0 Flash |
