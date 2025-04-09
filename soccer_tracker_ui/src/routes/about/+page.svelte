@@ -29,11 +29,9 @@
 		<Badge variant="outline" class="bg-green-100">Python 3.12</Badge>
 		<Badge variant="outline" class="bg-blue-100">GCP Powered</Badge>
 		<Badge variant="outline" class="bg-purple-100">IaC Terraform</Badge>
-		<Badge variant="outline" class="bg-green-100">CI/CD passing</Badge>
 		<Badge variant="outline" class="bg-orange-100">Svelte</Badge>
 		<Badge variant="outline" class="bg-blue-100">BigQuery</Badge>
 		<Badge variant="outline" class="bg-yellow-100">Firestore</Badge>
-		<Badge variant="outline" class="bg-gray-100">Repo Size</Badge>
 	</div>
 
 	<p class="mb-6">
