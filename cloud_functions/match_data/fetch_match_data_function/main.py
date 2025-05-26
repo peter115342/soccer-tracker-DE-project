@@ -16,7 +16,7 @@ def fetch_football_data(event, context):
     """
     try:
         date_to = datetime.now().strftime("%Y-%m-%d")
-        date_from = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        date_from = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
 
         logging.info(f"Fetching matches from {date_from} to {date_to}")
         matches = fetch_matches_for_competitions(date_from, date_to)
