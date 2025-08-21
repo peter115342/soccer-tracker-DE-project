@@ -98,18 +98,6 @@
 					<div class="p-4">
 						{#each $upcomingMatches as dayMatches, index}
 							<Card class="mb-4 {index === $upcomingMatches.length - 1 ? 'mb-0' : ''}">
-								{#if dayMatches.matches && dayMatches.matches.length > 0}
-									<CardHeader>
-										<CardTitle>
-											{new Date(dayMatches.date).toLocaleDateString('en-US', {
-												weekday: 'long',
-												year: 'numeric',
-												month: 'long',
-												day: 'numeric'
-											})}
-										</CardTitle>
-									</CardHeader>
-								{/if}
 								<CardContent>
 									{#if dayMatches.matches && dayMatches.matches.length > 0}
 										<div class="space-y-4">
