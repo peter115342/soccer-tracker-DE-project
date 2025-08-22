@@ -103,7 +103,7 @@
 										<div class="space-y-4">
 											{#each dayMatches.matches as match}
 												<div
-													class="bg-card hover:bg-accent flex flex-col items-center justify-between gap-4 rounded-lg p-4 transition-colors sm:flex-row"
+													class="hover:bg-accent flex flex-col items-center justify-between gap-4 p-4 transition-colors sm:flex-row"
 												>
 													<div class="flex flex-1 items-center justify-end gap-2 text-right">
 														<span class="font-semibold">{match.home_team}</span>
