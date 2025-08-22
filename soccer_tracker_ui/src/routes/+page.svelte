@@ -97,8 +97,8 @@
 				<div class="w-full rounded-md border">
 					<div class="p-4">
 						{#each $upcomingMatches as dayMatches, index}
-							<Card class="mb-4 {index === $upcomingMatches.length - 1 ? 'mb-0' : ''}">
-								<CardContent>
+							<Card class="mb-4 bg-transparent border-0 shadow-none {index === $upcomingMatches.length - 1 ? 'mb-0' : ''}">
+								<CardContent class="p-0">
 									{#if dayMatches.matches && dayMatches.matches.length > 0}
 										<div class="space-y-4">
 											{#each dayMatches.matches as match}
@@ -150,7 +150,7 @@
 											{/each}
 										</div>
 									{:else}
-										<p class="text-muted-foreground">
+										<p class="text-muted-foreground p-4">
 											No matches scheduled for this date
 										</p>
 									{/if}
