@@ -97,23 +97,13 @@
 				<div class="w-full rounded-md border">
 					<div class="p-4">
 						{#each $upcomingMatches as dayMatches, index}
-							<Card class="mb-4 {index === $upcomingMatches.length - 1 ? 'mb-0' : ''}">
-								<CardHeader>
-									<CardTitle>
-										{new Date(dayMatches.date).toLocaleDateString('en-US', {
-											weekday: 'long',
-											year: 'numeric',
-											month: 'long',
-											day: 'numeric'
-										})}
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
+							<Card class="mb-4 bg-transparent border-0 shadow-none {index === $upcomingMatches.length - 1 ? 'mb-0' : ''}">
+								<CardContent class="p-0">
 									{#if dayMatches.matches && dayMatches.matches.length > 0}
 										<div class="space-y-4">
 											{#each dayMatches.matches as match}
 												<div
-													class="bg-card hover:bg-accent flex flex-col items-center justify-between gap-4 rounded-lg p-4 transition-colors sm:flex-row"
+													class="hover:bg-accent flex flex-col items-center justify-between gap-4 p-4 transition-colors sm:flex-row"
 												>
 													<div class="flex flex-1 items-center justify-end gap-2 text-right">
 														<span class="font-semibold">{match.home_team}</span>
@@ -160,7 +150,7 @@
 											{/each}
 										</div>
 									{:else}
-										<p class="text-muted-foreground">
+										<p class="text-muted-foreground p-4">
 											No matches scheduled for this date
 										</p>
 									{/if}
