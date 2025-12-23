@@ -102,7 +102,7 @@
 		</li>
 		<li>
 			<span class="font-semibold">Summarization:</span> Creation of short summaries in Markdown with
-			Gemini 2.0 Flash
+			Gemini
 		</li>
 		<li>
 			<span class="font-semibold">Visualization:</span> This web app for insights
@@ -191,7 +191,7 @@
 				</tr>
 				<tr class="border-b">
 					<td class="px-4 py-2">LLM</td>
-					<td class="px-4 py-2">Google Gemini 2.0 Flash</td>
+					<td class="px-4 py-2">Google Gemini 2.5 Flash</td>
 				</tr>
 			</tbody>
 		</table>

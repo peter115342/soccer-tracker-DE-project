@@ -6,7 +6,6 @@
   <strong>⚠️ LEARNING PROJECT:</strong> This is a personal learning project in the field of data engineering. I understand the architecture might not be the most optimal as this project. I made this to practise and learn. Feedback and suggestions are highly welcomed!
 </div>
 
-
 # Football Statistics Tracker 📊⚽
 
 ![Python](https://img.shields.io/badge/Python-3.12-green.svg)
@@ -17,7 +16,6 @@
 ![BigQuery](https://img.shields.io/badge/BigQuery-blue?logo=google-cloud)
 ![Firestore](https://img.shields.io/badge/Firestore-yellow?logo=firebase)
 ![Repo Size](https://img.shields.io/github/repo-size/peter115342/soccer-tracker-DE-project)
-
 
 An end-to-end data engineering pipeline that collects, processes, and analyzes football match results, standings data, weather data, Reddit data and summarizes matchdays using Gemini from the top 5 European leagues. Used data sources include [football-data.org](https://www.football-data.org/) API, [Open-Meteo](https://open-meteo.com/) API, and [PRAW](https://praw.readthedocs.io/en/stable/) (Reddit API), [Maps](https://developers.google.com/maps)...
 
@@ -40,10 +38,10 @@ This project demonstrates a complete data pipeline for football (soccer) results
 The pipeline follows the following architecture:
 
 1. **Data Ingestion**: Cloud Functions trigger on schedule to fetch data
-2. **Storage Layers**: Raw data(json) → External BQ tables (Parquet) → Processed Data in BQ → Firestore  
-4. **Validation**: Very simple validation and Data qaulity with Dataplex
-5. **Summarization**: Creation of short summaries in Markdown with Gemini 2.0 Flash
-6. **Visualization**: [Web app](https://dataeurotop5football.win/) for insights 
+2. **Storage Layers**: Raw data(json) → External BQ tables (Parquet) → Processed Data in BQ → Firestore
+3. **Validation**: Very simple validation and Data qaulity with Dataplex
+4. **Summarization**: Creation of short summaries in Markdown with Gemini
+5. **Visualization**: [Web app](https://dataeurotop5football.win/) for insights
 
 ## Data Sources
 
@@ -54,25 +52,24 @@ The pipeline follows the following architecture:
 
 ## Technology Stack
 
-| Category | Technologies |
-|----------|--------------|
-| Cloud Platform | Google Cloud Platform (GCP) |
-| Infrastructure as Code | Terraform |
-| Programming Languages | Python, TypeScript (Svelte) |
-| Data Storage | Cloud Storage, BigQuery, Firestore |
-| Data Quality | Dataplex |
-| Data Transformation | Dataform |
-| Serverless Computing | Cloud Functions |
-| Event-Driven Architecture | Pub/Sub |
-| API Consumption | Football-data.org, Open-Meteo, Reddit API, Google Maps |
-| CI/CD | GitHub Actions |
-| Package Management | uv, pyproject.toml |
-| Code Quality | Ruff, Bandit, Mypy |
-| Testing | pytest |
-| Web Framework | Svelte, ShadCN UI Components |
-| Hosting | Firebase App Hosting |
-| LLM | Google Gemini 2.0 Flash |
-
+| Category                  | Technologies                                           |
+| ------------------------- | ------------------------------------------------------ |
+| Cloud Platform            | Google Cloud Platform (GCP)                            |
+| Infrastructure as Code    | Terraform                                              |
+| Programming Languages     | Python, TypeScript (Svelte)                            |
+| Data Storage              | Cloud Storage, BigQuery, Firestore                     |
+| Data Quality              | Dataplex                                               |
+| Data Transformation       | Dataform                                               |
+| Serverless Computing      | Cloud Functions                                        |
+| Event-Driven Architecture | Pub/Sub                                                |
+| API Consumption           | Football-data.org, Open-Meteo, Reddit API, Google Maps |
+| CI/CD                     | GitHub Actions                                         |
+| Package Management        | uv, pyproject.toml                                     |
+| Code Quality              | Ruff, Bandit, Mypy                                     |
+| Testing                   | pytest                                                 |
+| Web Framework             | Svelte, ShadCN UI Components                           |
+| Hosting                   | Firebase App Hosting                                   |
+| LLM                       | Google Gemini 2.5 Flash                                |
 
 ## Project Structure
 
@@ -119,15 +116,14 @@ soccer-tracker-DE-project/
 - [Terraform README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/terraform/README.md)
 - [GH Actions README](https://github.com/peter115342/soccer-tracker-DE-project/blob/main/.github/workflows/README.md)
 
-
 ## [Web app](https://dataeurotop5football.win/)
 
-The project includes a Svelte web app for visualizing match results, weather data, and match summaries. 
+The project includes a Svelte web app for visualizing match results, weather data, and match summaries.
 
 App includes:
 
 - Match Results
-- Match summaries using an LLM (Gemini 2.0 Flash)
+- Match summaries using an LLM (Gemini 2.5 Flash)
 - Weather data during matches
 - Comments from Reddit
 
@@ -139,5 +135,6 @@ App includes:
   <strong>⚠️ DISCLAIMER:</strong> I know this data probably does not have much real value as it is not real-time and the statistics are not that deep ( I wanted to stay within free tiers of APIs).
 </div>
 
------------------------------------
+---
+
 I got the idea to make this project from this [repo](https://github.com/digitalghost-dev/premier-league) by [digitalghost-dev](https://github.com/digitalghost-dev)

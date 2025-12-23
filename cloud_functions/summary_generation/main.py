@@ -216,7 +216,7 @@ ORDER BY match_date, league
             project=os.environ.get("GCP_PROJECT_ID"),
             location="us-central1",
         )
-        model = "gemini-2.0-flash-001"
+        model = "gemini-2.5-flash"
         generated_count = 0
         for match_date, league, prompt in summaries:
             filename = f"match_summaries/{match_date}_{normalize_text(league)}.md"
