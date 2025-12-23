@@ -33,7 +33,8 @@ This project demonstrates a complete data pipeline for football (soccer) results
 
 ## Architecture
 
-![Architecture Diagram](https://github.com/user-attachments/assets/f60432f9-40fb-4467-83d2-969d3826b372)
+<img width="3157" height="3063" alt="image" src="https://github.com/user-attachments/assets/51b13aec-6b2c-4fde-9403-73851f531d00" />
+
 
 The pipeline follows the following architecture:
 
