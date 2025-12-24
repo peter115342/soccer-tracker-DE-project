@@ -3,5 +3,4 @@ google-cloud-storage
 google-cloud-pubsub
 google-cloud-bigquery
 requests
-plotly>=5.0.0
-kaleido==0.2.1
+matplotlib
