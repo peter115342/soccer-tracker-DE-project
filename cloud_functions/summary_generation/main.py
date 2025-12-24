@@ -22,6 +22,7 @@ class MatchSummaryPrompt(BaseModel):
     league: str
     matches: List[dict]
 
+    # TODO: move to config file
     def generate_prompt(self) -> str:
         prompt = f"""
 Generate a narrative match summary article for {normalize_text(self.league)} matches on {self.match_date}.
