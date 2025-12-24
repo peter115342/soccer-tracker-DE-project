@@ -3,9 +3,14 @@ import json
 import os
 import logging
 import requests
+from io import BytesIO
 from google.cloud import dataplex_v1
 from google.cloud import bigquery
-import plotly.graph_objects as go
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from .utils.match_validator import MatchValidator
 
 
@@ -206,71 +211,87 @@ def get_scan_results(table_suffix: str) -> dict:
 
 def create_records_plot(record_counts: dict) -> bytes:
     """Creates a line plot of record counts over time."""
-    fig = go.Figure()
+    fig, ax = plt.subplots(figsize=(10, 6))
 
-    fig.add_trace(
-        go.Scatter(
-            x=record_counts["dates"],
-            y=record_counts["matches"],
-            name="Matches/Weather",
-            mode="lines+markers",
-        )
+    ax.plot(
+        record_counts["dates"],
+        record_counts["matches"],
+        marker="o",
+        label="Matches/Weather",
+        linewidth=2,
+        markersize=4,
     )
 
-    fig.add_trace(
-        go.Scatter(
-            x=record_counts["dates"],
-            y=record_counts["reddit"],
-            name="Reddit",
-            mode="lines+markers",
-        )
+    ax.plot(
+        record_counts["dates"],
+        record_counts["reddit"],
+        marker="o",
+        label="Reddit",
+        linewidth=2,
+        markersize=4,
     )
 
-    fig.update_layout(
-        title="Daily Record Counts - Last 30 Days",
-        xaxis_title="Date",
-        yaxis_title="Number of Records",
-        height=600,
-        width=1000,
-        showlegend=True,
-    )
+    ax.set_title("Daily Record Counts - Last 30 Days", fontsize=14, fontweight="bold")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Number of Records")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
 
-    img_bytes = fig.to_image(format="png")
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+    plt.xticks(rotation=45, ha="right")
+
+    plt.tight_layout()
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png", dpi=100)
+    buf.seek(0)
+    img_bytes = buf.getvalue()
+    plt.close(fig)
+
     return img_bytes
 
 
 def create_total_records_plot(record_counts: dict) -> bytes:
     """Creates a line plot of total record counts over time."""
-    fig = go.Figure()
+    fig, ax = plt.subplots(figsize=(10, 6))
 
-    fig.add_trace(
-        go.Scatter(
-            x=record_counts["dates"],
-            y=record_counts["matches"],
-            name="Matches/Weather",
-            mode="lines+markers",
-        )
+    ax.plot(
+        record_counts["dates"],
+        record_counts["matches"],
+        marker="o",
+        label="Matches/Weather",
+        linewidth=2,
+        markersize=4,
     )
 
-    fig.add_trace(
-        go.Scatter(
-            x=record_counts["dates"],
-            y=record_counts["reddit"],
-            name="Reddit",
-            mode="lines+markers",
-        )
+    ax.plot(
+        record_counts["dates"],
+        record_counts["reddit"],
+        marker="o",
+        label="Reddit",
+        linewidth=2,
+        markersize=4,
     )
 
-    fig.update_layout(
-        title="Total Records Over Time - Last 30 Days",
-        xaxis_title="Date",
-        yaxis_title="Total Number of Records",
-        height=600,
-        width=1000,
-        showlegend=True,
+    ax.set_title(
+        "Total Records Over Time - Last 30 Days", fontsize=14, fontweight="bold"
     )
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Total Number of Records")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
 
-    img_bytes = fig.to_image(format="png")
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+    plt.xticks(rotation=45, ha="right")
+
+    plt.tight_layout()
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png", dpi=100)
+    buf.seek(0)
+    img_bytes = buf.getvalue()
+    plt.close(fig)
+
     return img_bytes
 
 
