@@ -85,7 +85,7 @@ def get_scan_results(table_suffix: str) -> dict:
     query = load_query("scan_results").format(
         project_id=project_id,
         table_suffix=table_suffix,
-        limit=record_limits.get(table_suffix, 4)
+        limit=record_limits.get(table_suffix, 4),
     )  # nosec B608
 
     try:
