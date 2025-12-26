@@ -1,0 +1,1 @@
+SELECT COUNT(*) as match_count FROM sports_data_eu.matches_processed

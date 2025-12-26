@@ -3,10 +3,17 @@ import json
 import os
 import logging
 from datetime import datetime
+from pathlib import Path
 from google.cloud import bigquery, pubsub_v1
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+
+
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
 
 
 def load_standings_to_bigquery(event, context):
@@ -60,10 +67,7 @@ def load_standings_to_bigquery(event, context):
             bigquery_client.create_table(table)
             logging.info("Created external table 'standings_parquet'.")
 
-        query = """
-            SELECT COUNT(*) as standings_count
-            FROM `sports_data_raw_parquet.standings_parquet`
-        """
+        query = load_query("standings_count")
         query_job = bigquery_client.query(query)
         standings_count = next(query_job.result())[0]
 

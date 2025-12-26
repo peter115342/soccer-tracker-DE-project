@@ -2,11 +2,18 @@ import json
 import os
 import logging
 from datetime import datetime
+from pathlib import Path
 from google.cloud import firestore, bigquery, pubsub_v1
 import base64
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+
+
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
 
 
 def sync_standings_to_firestore(event, context):
@@ -26,21 +33,7 @@ def sync_standings_to_firestore(event, context):
         db = firestore.Client()
         bq_client = bigquery.Client()
 
-        query = """
-            WITH LatestDates AS (
-                SELECT 
-                    competitionId,
-                    MAX(fetchDate) as latest_date
-                FROM `sports_data_eu.standings_processed`
-                GROUP BY competitionId
-            )
-            SELECT s.*
-            FROM `sports_data_eu.standings_processed` s
-            INNER JOIN LatestDates l
-                ON s.competitionId = l.competitionId
-                AND s.fetchDate = l.latest_date
-            WHERE s.standingType = 'TOTAL'
-        """
+        query = load_query("latest_standings")
 
         query_job = bq_client.query(query)
         results = query_job.result()

@@ -1,6 +1,7 @@
 import os
 import requests
 import logging
+from pathlib import Path
 from typing import Dict, Any, Optional
 from google.cloud import bigquery
 
@@ -30,13 +31,16 @@ LEAGUE_COUNTRY_MAP = {
 }
 
 
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent.parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
+
+
 def get_existing_teams_from_bq(project_id: str, dataset: str) -> dict:
     """Fetch existing team IDs and addresses from BigQuery"""
     client = bigquery.Client(project=project_id)
-    query = """
-        SELECT id, address
-        FROM `{}.{}.teams`
-    """.format(project_id, dataset)  # nosec B608
+    query = load_query("existing_teams").format(project_id=project_id, dataset=dataset)  # nosec B608
 
     results = client.query(query).result()
     return {row.id: row.address for row in results}
@@ -48,15 +52,15 @@ def get_stadium_coordinates(venue: str, team_name: str, country: str) -> Optiona
     Includes country information for more accurate results.
     """
     search_queries = [
-       f"{team_name} {venue} {country}",
-       f"{venue} Football Stadium, {team_name}, {country}",
-       f"{team_name} Football Stadium, {venue}, {country}", 
-       f"{venue} Soccer Ground, {team_name}, {country}",   
-       f"{team_name} Home Stadium {venue}, {country}",
-       f"{team_name} Stadium {venue}, {country}",
-       f"{team_name}, {venue} Stadium, {country}",
-       f"{venue}, {team_name} Football Club, {country}"
-       ]
+        f"{team_name} {venue} {country}",
+        f"{venue} Football Stadium, {team_name}, {country}",
+        f"{team_name} Football Stadium, {venue}, {country}",
+        f"{venue} Soccer Ground, {team_name}, {country}",
+        f"{team_name} Home Stadium {venue}, {country}",
+        f"{team_name} Stadium {venue}, {country}",
+        f"{team_name}, {venue} Stadium, {country}",
+        f"{venue}, {team_name} Football Club, {country}",
+    ]
 
     for query in search_queries:
         params = {"address": query, "key": GOOGLE_MAPS_API_KEY}

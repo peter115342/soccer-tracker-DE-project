@@ -2,6 +2,7 @@ import logging
 import os
 import json
 import base64
+from pathlib import Path
 from .utils.weather_data_helper import fetch_weather_by_coordinates, save_weather_to_gcs
 from google.cloud import bigquery, pubsub_v1, storage
 from datetime import datetime
@@ -11,6 +12,12 @@ from cloud_functions.discord_utils.discord_notifications import (
 
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
+
+
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
 
 
 def fetch_weather_data(data, context):
@@ -167,19 +174,7 @@ def get_match_data():
     """
     client = bigquery.Client()
     # nosec - Safe in BigQuery context
-    query = f"""
-        SELECT
-            m.id AS match_id,
-            m.utcDate AS utcDate,
-            m.competition.id AS competition_code,
-            m.competition.name AS competition_name,
-            m.homeTeam.id AS home_team_id,
-            m.homeTeam.name AS home_team_name,
-            t.address AS home_team_address
-        FROM `{client.project}.sports_data_eu.matches_processed` AS m
-        JOIN `{client.project}.sports_data_eu.teams` AS t
-        ON m.homeTeam.id = t.id
-    """  # nosec B608
+    query = load_query("matches_with_teams").format(project_id=client.project)  # nosec B608
     query_job = client.query(query)
     results = query_job.result()
     matches = []

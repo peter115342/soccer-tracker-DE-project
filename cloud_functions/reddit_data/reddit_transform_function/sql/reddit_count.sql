@@ -1,0 +1,1 @@
+SELECT COUNT(*) as reddit_count FROM sports_data_eu.reddit_processed
