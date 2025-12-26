@@ -2,10 +2,17 @@ import base64
 import json
 import os
 import logging
+from pathlib import Path
 from google.cloud import bigquery
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+
+
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
 
 
 def load_weather_to_bigquery(event, context):
@@ -60,10 +67,7 @@ def load_weather_to_bigquery(event, context):
             bigquery_client.create_table(table)
             logging.info("Created external table 'weather_parquet'.")
 
-        query = """
-            SELECT COUNT(*) as weather_count 
-            FROM `sports_data_raw_parquet.weather_parquet`
-        """
+        query = load_query("weather_count")
         query_job = bigquery_client.query(query)
         weather_count = next(query_job.result())[0]
 

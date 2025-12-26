@@ -1,8 +1,15 @@
 import os
 import logging
 import requests
+from pathlib import Path
 from google.cloud import bigquery
 from typing import List, Dict, Optional
+
+
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent.parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
 
 
 class MatchValidator:
@@ -22,26 +29,7 @@ class MatchValidator:
 
     def get_matches_from_bq(self, hours: int = 24) -> List[Dict]:
         """Fetch matches from the last N hours from BigQuery."""
-        query = f"""
-        SELECT 
-            id, 
-            homeTeam.name as home_team_name,
-            awayTeam.name as away_team_name,
-            CASE 
-                WHEN score.fullTime.homeTeam IS NOT NULL THEN score.fullTime.homeTeam
-                ELSE -1
-            END as home_score,
-            CASE 
-                WHEN score.fullTime.awayTeam IS NOT NULL THEN score.fullTime.awayTeam
-                ELSE -1
-            END as away_score,
-            status,
-            utcDate,
-            lastUpdated,
-            competition.id as competition_id
-        FROM `sports_data_eu.matches_processed`
-        WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {hours} HOUR)
-        """  # nosec B608
+        query = load_query("recent_matches").format(hours=hours)  # nosec B608
 
         query_job = self.bq_client.query(query)
         results = query_job.result()

@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from datetime import datetime
+from pathlib import Path
 import praw
 from google.cloud import storage, bigquery
 from typing import List, Dict, Any
@@ -18,17 +19,19 @@ GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent.parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
+
+
 def get_match_dates_from_bq() -> List[str]:
     """
     Fetch unique dates from matches_processed table in BigQuery.
     Returns dates in descending order to process newest matches first.
     """
     client = bigquery.Client()
-    query = """
-        SELECT DISTINCT DATE(utcDate) as match_date
-        FROM `sports_data_eu.matches_processed`
-        ORDER BY match_date DESC
-    """
+    query = load_query("match_dates")
     query_job = client.query(query)
     return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
 
