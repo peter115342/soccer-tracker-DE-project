@@ -4,6 +4,7 @@ import os
 import logging
 import requests
 from io import BytesIO
+from pathlib import Path
 from google.cloud import dataplex_v1
 from google.cloud import bigquery
 import matplotlib
@@ -14,42 +15,17 @@ import matplotlib.dates as mdates
 from .utils.match_validator import MatchValidator
 
 
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
+
+
 def get_table_record_counts() -> dict:
     """Fetches daily record counts from BigQuery tables."""
     client = bigquery.Client()
 
-    query = """
-    WITH matches_counts AS (
-        SELECT DATE(utcDate) as date, COUNT(*) as count
-        FROM `sports_data_eu.matches_processed`
-        WHERE utcDate >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
-        GROUP BY date
-        ORDER BY date
-    ),
-    weather_counts AS (
-        SELECT DATE(timestamp) as date, COUNT(*) as count
-        FROM `sports_data_eu.weather_processed`
-        WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
-        GROUP BY date
-        ORDER BY date
-    ),
-    reddit_counts AS (
-        SELECT match_date as date, COUNT(*) as count
-        FROM `sports_data_eu.reddit_processed`
-        WHERE match_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-        GROUP BY date
-        ORDER BY date
-    )
-    SELECT
-        COALESCE(m.date, w.date, r.date) as date,
-        m.count as matches_count,
-        w.count as weather_count,
-        r.count as reddit_count
-    FROM matches_counts m
-    FULL OUTER JOIN weather_counts w ON m.date = w.date
-    FULL OUTER JOIN reddit_counts r ON m.date = r.date
-    ORDER BY date
-    """  # nosec B608
+    query = load_query("daily_record_counts")  # nosec B608
 
     results = client.query(query).result()
 
@@ -76,86 +52,7 @@ def get_table_total_counts() -> dict:
     """Fetches total record counts from BigQuery tables up to each date in the last 20 days."""
     client = bigquery.Client()
 
-    query = """
-    -- Generate a date range covering all dates from the earliest data point to today
-    WITH all_dates AS (
-        SELECT
-            GENERATE_DATE_ARRAY(
-                (SELECT MIN(DATE(utcDate)) FROM `sports_data_eu.matches_processed`),
-                CURRENT_DATE()
-            ) AS date_array
-    ),
-    dates AS (
-        SELECT date
-        FROM UNNEST((SELECT date_array FROM all_dates)) AS date
-    ),
-    matches_daily_counts AS (
-        SELECT
-            DATE(utcDate) AS date,
-            COUNT(*) AS daily_count
-        FROM `sports_data_eu.matches_processed`
-        GROUP BY date
-    ),
-    matches_cumulative AS (
-        SELECT
-            d.date,
-            SUM(m.daily_count) OVER (ORDER BY d.date) AS cumulative_count
-        FROM dates d
-        LEFT JOIN matches_daily_counts m ON d.date = m.date
-        WHERE d.date <= CURRENT_DATE()
-    ),
-    weather_daily_counts AS (
-        SELECT
-            DATE(timestamp) AS date,
-            COUNT(*) AS daily_count
-        FROM `sports_data_eu.weather_processed`
-        GROUP BY date
-    ),
-    weather_cumulative AS (
-        SELECT
-            d.date,
-            SUM(w.daily_count) OVER (ORDER BY d.date) AS cumulative_count
-        FROM dates d
-        LEFT JOIN weather_daily_counts w ON d.date = w.date
-        WHERE d.date <= CURRENT_DATE()
-    ),
-    reddit_daily_counts AS (
-        SELECT
-            match_date AS date,
-            COUNT(*) AS daily_count
-        FROM `sports_data_eu.reddit_processed`
-        GROUP BY date
-    ),
-    reddit_cumulative AS (
-        SELECT
-            d.date,
-            SUM(r.daily_count) OVER (ORDER BY d.date) AS cumulative_count
-        FROM dates d
-        LEFT JOIN reddit_daily_counts r ON d.date = r.date
-        WHERE d.date <= CURRENT_DATE()
-    ),
-    -- Combine cumulative counts
-    combined_counts AS (
-        SELECT
-            d.date,
-            mc.cumulative_count AS matches_count,
-            wc.cumulative_count AS weather_count,
-            rc.cumulative_count AS reddit_count
-        FROM dates d
-        LEFT JOIN matches_cumulative mc ON d.date = mc.date
-        LEFT JOIN weather_cumulative wc ON d.date = wc.date
-        LEFT JOIN reddit_cumulative rc ON d.date = rc.date
-        WHERE d.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-        ORDER BY d.date
-    )
-    SELECT
-        date,
-        matches_count,
-        weather_count,
-        reddit_count
-    FROM combined_counts
-    ORDER BY date
-    """  # nosec B608
+    query = load_query("total_record_counts")  # nosec B608
 
     results = client.query(query).result()
 
@@ -185,18 +82,11 @@ def get_scan_results(table_suffix: str) -> dict:
 
     record_limits = {"reddit": 4, "matches": 4, "standings": 5, "weather": 9}
 
-    query = f"""
-    WITH latest_records AS (
-        SELECT
-            job_quality_result.score as pass_rate
-        FROM `{project_id}.processed_data_zone.{table_suffix}_processed_quality`
-        WHERE job_quality_result.score IS NOT NULL
-        ORDER BY job_start_time DESC
-        LIMIT {record_limits.get(table_suffix, 4)}
-    )
-    SELECT AVG(pass_rate) as avg_pass_rate
-    FROM latest_records
-    """  # nosec B608
+    query = load_query("scan_results").format(
+        project_id=project_id,
+        table_suffix=table_suffix,
+        limit=record_limits.get(table_suffix, 4)
+    )  # nosec B608
 
     try:
         results = client.query(query).result()
