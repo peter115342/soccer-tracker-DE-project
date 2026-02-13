@@ -1,3 +1,4 @@
+import logging
 from typing import List, Dict, Any
 
 from .utils.api_helpers_league import get_league_data
@@ -5,6 +6,11 @@ from .utils.bigquery_helpers_league import insert_data_into_bigquery
 
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
+)
+from cloud_functions.data_contracts.league_contract import LeagueContract
+from cloud_functions.data_contracts.validation import (
+    validate_records,
+    format_validation_summary,
 )
 
 
@@ -28,7 +34,20 @@ def fetch_league_data(event, context):
             league_data = get_league_data(code)
             league_data_list.append(league_data)
 
-        load_data_into_bigquery(league_data_list)
+        valid_leagues, validation_errors = validate_records(
+            league_data_list, LeagueContract
+        )
+
+        if validation_errors:
+            summary = format_validation_summary(
+                len(league_data_list), len(valid_leagues), validation_errors
+            )
+            logging.warning(f"League data validation issues:\n{summary}")
+            send_discord_notification(
+                "⚠️ Fetch League Data: Validation Issues", summary, 16776960
+            )
+
+        load_data_into_bigquery(valid_leagues)
 
         send_discord_notification(
             "✅ Fetch League Data: Success",

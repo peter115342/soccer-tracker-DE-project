@@ -9,6 +9,8 @@ from datetime import datetime
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+from cloud_functions.data_contracts.weather_contract import WeatherContract
+from cloud_functions.data_contracts.validation import validate_single
 
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
@@ -72,6 +74,7 @@ def fetch_weather_data(data, context):
 
         processed_count = 0
         error_count = 0
+        validation_error_count = 0
         processed_weather_data = []
         storage_client = storage.Client(project=GCP_PROJECT_ID)
         bucket = storage_client.bucket(GCS_BUCKET_NAME)
@@ -112,6 +115,12 @@ def fetch_weather_data(data, context):
                 weather_data = fetch_weather_by_coordinates(lat, lon, match_datetime)
 
                 if weather_data:
+                    try:
+                        validate_single(weather_data, WeatherContract)
+                    except Exception as ve:
+                        validation_error_count += 1
+                        logging.warning(f"Weather validation failed for match {match_id}: {ve}")
+                        continue
                     if save_weather_to_gcs(weather_data, match_id):
                         processed_count += 1
                         processed_weather_data.append(weather_data)
@@ -122,6 +131,13 @@ def fetch_weather_data(data, context):
             except Exception as e:
                 error_count += 1
                 logging.error(f"Error processing match {match_id}: {e}")
+
+        if validation_error_count > 0:
+            validation_message = f"{validation_error_count} weather records failed Pydantic validation and were skipped"
+            logging.warning(validation_message)
+            send_discord_notification(
+                "⚠️ Weather Data: Validation Issues", validation_message, 16776960
+            )
 
         if processed_count > 0:
             success_message = (

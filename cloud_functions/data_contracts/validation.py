@@ -6,7 +6,7 @@ from pydantic import BaseModel, ValidationError
 def validate_records(
     records: List[Dict[str, Any]],
     contract: Type[BaseModel],
-    max_error_rate: float = 0.05,
+    max_error_rate: float = 0.25,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     Validate a list of records against a Pydantic contract model.

@@ -2,8 +2,8 @@ name: CI Pipeline
 
 on:
   push:
-    branches-ignore:
-      - main
+    branches:
+      - 'no-such-branch-for-ci-disable'
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest

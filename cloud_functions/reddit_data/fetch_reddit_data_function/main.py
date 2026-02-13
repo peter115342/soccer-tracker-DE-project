@@ -11,6 +11,8 @@ from .utils.reddit_data_helper import (
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+from cloud_functions.data_contracts.reddit_contract import RedditDataContract
+from cloud_functions.data_contracts.validation import validate_single
 
 
 def fetch_reddit_data(event, context):
@@ -21,16 +23,30 @@ def fetch_reddit_data(event, context):
         dates = get_match_dates_from_bq()
         threads_processed = 0
         error_count = 0
+        validation_error_count = 0
 
         for date in dates:
             try:
                 reddit_data = fetch_reddit_threads(date)
                 if reddit_data["threads"]:
+                    try:
+                        validate_single(reddit_data, RedditDataContract)
+                    except Exception as ve:
+                        validation_error_count += 1
+                        logging.warning(f"Reddit data validation failed for date {date}: {ve}")
+                        continue
                     save_to_gcs(reddit_data, date)
                     threads_processed += len(reddit_data["threads"])
             except Exception as e:
                 error_count += 1
                 logging.error(f"Error processing date {date}: {e}")
+
+        if validation_error_count > 0:
+            validation_message = f"{validation_error_count} Reddit data records failed Pydantic validation and were skipped"
+            logging.warning(validation_message)
+            send_discord_notification(
+                "⚠️ Fetch Reddit Data: Validation Issues", validation_message, 16776960
+            )
 
         success_message = f"Processed {threads_processed} Reddit threads across {len(dates)} dates. Errors: {error_count}"
         logging.info(success_message)

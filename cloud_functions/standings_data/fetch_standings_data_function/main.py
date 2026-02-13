@@ -13,6 +13,8 @@ from .utils.standings_data_helper import (
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+from cloud_functions.data_contracts.standings_contract import StandingsContract
+from cloud_functions.data_contracts.validation import validate_single
 
 
 def fetch_standings_data(event, context):
@@ -40,12 +42,19 @@ def fetch_standings_data(event, context):
 
         processed_count = 0
         error_count = 0
+        validation_error_count = 0
 
         for date in dates_to_process:
             try:
                 standings_list = fetch_standings_for_date(date)
 
                 for standings in standings_list:
+                    try:
+                        validate_single(standings, StandingsContract)
+                    except Exception as ve:
+                        validation_error_count += 1
+                        logging.warning(f"Standings validation failed for date {date}: {ve}")
+                        continue
                     competition_id = standings["competitionId"]
                     save_standings_to_gcs(standings, date, competition_id)
                     processed_count += 1
@@ -53,6 +62,13 @@ def fetch_standings_data(event, context):
             except Exception as e:
                 error_count += 1
                 logging.error(f"Error processing date {date}: {str(e)}")
+
+        if validation_error_count > 0:
+            validation_message = f"{validation_error_count} standings records failed Pydantic validation and were skipped"
+            logging.warning(validation_message)
+            send_discord_notification(
+                "⚠️ Fetch Standings Data: Validation Issues", validation_message, 16776960
+            )
 
         success_message = (
             f"Processed {len(dates_to_process)} new dates\n"
