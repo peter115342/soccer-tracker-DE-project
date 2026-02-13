@@ -2,11 +2,14 @@ import os
 import json
 import logging
 import time
+from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 import requests
 from google.cloud import storage
 from google.cloud import bigquery
+from pydantic import ValidationError
+from cloud_functions.data_contracts.standings_contract import StandingsContract
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,18 +30,19 @@ COMPETITION_MAPPING = {
 REQUEST_INTERVAL = 6  # Seconds between API requests
 
 
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent.parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
+
+
 def get_unique_dates() -> List[str]:
     """
     Fetch only unprocessed unique dates from matches_processed table.
     Returns only dates up to current date in descending order.
     """
     client = bigquery.Client()
-    query = f"""
-        SELECT DISTINCT DATE(utcDate) as match_date
-        FROM `{GCP_PROJECT_ID}.sports_data_eu.matches_processed`
-        WHERE DATE(utcDate) <= CURRENT_DATE()
-        ORDER BY match_date DESC
-    """  # nosec B608
+    query = load_query("unique_match_dates").format(project_id=GCP_PROJECT_ID)  # nosec B608
     query_job = client.query(query)
     return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
 
@@ -111,6 +115,15 @@ def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
 
             standings_data["fetchDate"] = date
             standings_data["competitionId"] = comp_id
+
+            try:
+                StandingsContract.model_validate(standings_data)
+            except ValidationError as e:
+                logging.warning(
+                    f"Standings validation failed for {comp_code} on {date}: "
+                    f"{e.error_count()} issue(s)"
+                )
+
             all_standings.append(standings_data)
 
             time.sleep(REQUEST_INTERVAL)

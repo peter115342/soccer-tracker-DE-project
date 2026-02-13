@@ -6,6 +6,8 @@ import json
 from google.cloud import storage
 import os
 import time
+from pydantic import ValidationError
+from cloud_functions.data_contracts.weather_contract import WeatherContract
 
 BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -85,6 +87,13 @@ def fetch_weather_by_coordinates(
             data = try_forecast_api()
 
     if "hourly" in data and any(data["hourly"].values()):
+        try:
+            WeatherContract.model_validate(data)
+        except ValidationError as e:
+            logging.warning(
+                f"Weather data validation failed for ({lat}, {lon}): {e.error_count()} issue(s)"
+            )
+            return {}
         return data
 
     logging.error(f"Invalid or empty data received: {data}")

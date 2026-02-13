@@ -3,10 +3,17 @@ import json
 import os
 import logging
 from datetime import datetime
+from pathlib import Path
 from google.cloud import bigquery, firestore, pubsub_v1
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+
+
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
 
 
 def sync_matches_to_firestore(event, context):
@@ -25,46 +32,7 @@ def sync_matches_to_firestore(event, context):
         bq_client = bigquery.Client()
         db = firestore.Client()
 
-        query = """
-        SELECT 
-            m.id,
-            m.utcDate,
-            m.status,
-            m.homeTeam.id as home_team_id,
-            m.homeTeam.name as home_team,
-            m.awayTeam.id as away_team_id,
-            m.awayTeam.name as away_team,
-            m.score.fullTime.homeTeam as home_score,
-            m.score.fullTime.awayTeam as away_score,
-            w.apparent_temperature,
-            w.weathercode,
-            w.temperature_2m,
-            w.precipitation,
-            w.windspeed_10m,
-            w.cloudcover,
-            w.relativehumidity_2m,
-            t.address,
-            t.venue,
-            t.logo as home_team_logo,
-            CAST(SPLIT(t.address, ',')[OFFSET(0)] AS FLOAT64) as lat,
-            CAST(SPLIT(t.address, ',')[OFFSET(1)] AS FLOAT64) as lon,
-            t2.logo as away_team_logo,
-            r.threads,
-            l.id as league_id,
-            l.name as league_name,
-            l.logo as league_logo
-        FROM `sports_data_eu.matches_processed` m
-        LEFT JOIN `sports_data_eu.weather_processed` w
-            ON m.id = w.match_id
-        LEFT JOIN `sports_data_eu.teams` t
-            ON m.homeTeam.id = t.id
-        LEFT JOIN `sports_data_eu.teams` t2
-            ON m.awayTeam.id = t2.id
-        LEFT JOIN `sports_data_eu.leagues` l
-            ON t.league_id = l.id
-        LEFT JOIN `sports_data_eu.reddit_processed` r
-            ON CAST(m.id AS STRING) = r.match_id
-        """
+        query = load_query("matches_with_details")
 
         query_job = bq_client.query(query)
         matches_collection = db.collection("matches")

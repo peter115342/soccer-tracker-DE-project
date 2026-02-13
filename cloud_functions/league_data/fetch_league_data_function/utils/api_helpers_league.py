@@ -1,8 +1,11 @@
 import os
 import requests
 import logging
+from pathlib import Path
 from typing import Dict, Any, Optional
 from google.cloud import bigquery
+from pydantic import ValidationError
+from cloud_functions.data_contracts.league_contract import LeagueContract
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,13 +33,16 @@ LEAGUE_COUNTRY_MAP = {
 }
 
 
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent.parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
+
+
 def get_existing_teams_from_bq(project_id: str, dataset: str) -> dict:
     """Fetch existing team IDs and addresses from BigQuery"""
     client = bigquery.Client(project=project_id)
-    query = """
-        SELECT id, address
-        FROM `{}.{}.teams`
-    """.format(project_id, dataset)  # nosec B608
+    query = load_query("existing_teams").format(project_id=project_id, dataset=dataset)  # nosec B608
 
     results = client.query(query).result()
     return {row.id: row.address for row in results}
@@ -48,15 +54,15 @@ def get_stadium_coordinates(venue: str, team_name: str, country: str) -> Optiona
     Includes country information for more accurate results.
     """
     search_queries = [
-       f"{team_name} {venue} {country}",
-       f"{venue} Football Stadium, {team_name}, {country}",
-       f"{team_name} Football Stadium, {venue}, {country}", 
-       f"{venue} Soccer Ground, {team_name}, {country}",   
-       f"{team_name} Home Stadium {venue}, {country}",
-       f"{team_name} Stadium {venue}, {country}",
-       f"{team_name}, {venue} Stadium, {country}",
-       f"{venue}, {team_name} Football Club, {country}"
-       ]
+        f"{team_name} {venue} {country}",
+        f"{venue} Football Stadium, {team_name}, {country}",
+        f"{team_name} Football Stadium, {venue}, {country}",
+        f"{venue} Soccer Ground, {team_name}, {country}",
+        f"{team_name} Home Stadium {venue}, {country}",
+        f"{team_name} Stadium {venue}, {country}",
+        f"{team_name}, {venue} Stadium, {country}",
+        f"{venue}, {team_name} Football Club, {country}",
+    ]
 
     for query in search_queries:
         params = {"address": query, "key": GOOGLE_MAPS_API_KEY}
@@ -135,5 +141,13 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
 
     league_data["teams"] = teams_data.get("teams", [])
     logging.info(f"Successfully fetched data for league code: {league_code}")
+
+    try:
+        LeagueContract.model_validate(league_data)
+    except ValidationError as e:
+        logging.warning(
+            f"League data validation failed for {league_code}: "
+            f"{e.error_count()} issue(s)"
+        )
 
     return league_data

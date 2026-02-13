@@ -1,0 +1,1 @@
+SELECT COUNT(*) as weather_count FROM sports_data_eu.weather_processed

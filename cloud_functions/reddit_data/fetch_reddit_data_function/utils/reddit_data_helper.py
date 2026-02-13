@@ -2,9 +2,12 @@ import os
 import json
 import logging
 from datetime import datetime
+from pathlib import Path
 import praw
 from google.cloud import storage, bigquery
 from typing import List, Dict, Any
+from pydantic import ValidationError
+from cloud_functions.data_contracts.reddit_contract import RedditThread
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,17 +21,19 @@ GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent.parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
+
+
 def get_match_dates_from_bq() -> List[str]:
     """
     Fetch unique dates from matches_processed table in BigQuery.
     Returns dates in descending order to process newest matches first.
     """
     client = bigquery.Client()
-    query = """
-        SELECT DISTINCT DATE(utcDate) as match_date
-        FROM `sports_data_eu.matches_processed`
-        ORDER BY match_date DESC
-    """
+    query = load_query("match_dates")
     query_job = client.query(query)
     return [row.match_date.strftime("%Y-%m-%d") for row in query_job]
 
@@ -102,7 +107,22 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
             logging.error(f"Error fetching {flair} threads for {date}: {str(e)}")
             continue
 
-    result = {"date": date, "threads": threads, "thread_count": len(threads)}
+    valid_threads = []
+    for thread in threads:
+        try:
+            RedditThread.model_validate(thread)
+            valid_threads.append(thread)
+        except ValidationError as e:
+            logging.warning(
+                f"Reddit thread validation failed for '{thread.get('title', 'unknown')}': "
+                f"{e.error_count()} issue(s)"
+            )
+
+    result = {
+        "date": date,
+        "threads": valid_threads,
+        "thread_count": len(valid_threads),
+    }
 
     logging.info(f"Collected {len(threads)} threads for date {date}")
     return result

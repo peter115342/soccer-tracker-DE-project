@@ -3,11 +3,18 @@ import json
 import os
 import logging
 import time
+from pathlib import Path
 from google.cloud import bigquery, dataform_v1beta1
 from datetime import datetime
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+
+
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
 
 
 def trigger_dataform_workflow():
@@ -79,9 +86,7 @@ def transform_weather(event, context):
         status_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         client = bigquery.Client()
-        count_query = (
-            "SELECT COUNT(*) as weather_count FROM sports_data_eu.weather_processed"
-        )
+        count_query = load_query("weather_count")
         count_job = client.query(count_query)
         weather_count = next(count_job.result())[0]
 

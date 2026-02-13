@@ -1,0 +1,1 @@
+SELECT COUNT(*) as standings_count FROM sports_data_eu.standings_processed

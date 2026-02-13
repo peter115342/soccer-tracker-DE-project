@@ -3,9 +3,16 @@ from rapidfuzz import fuzz
 import json
 import re
 import unicodedata
+from pathlib import Path
 from typing import Dict, List, Optional, Any
 import logging
 from datetime import datetime
+
+
+def load_query(name: str) -> str:
+    """Load SQL query from file."""
+    sql_path = Path(__file__).parent.parent / "sql" / f"{name}.sql"
+    return sql_path.read_text()
 
 
 def get_competition_variations(competition: str) -> List[str]:
@@ -71,18 +78,7 @@ def get_existing_matches(bucket) -> Dict[str, Dict[str, Any]]:
 def get_matches_for_date(date: str) -> List[Dict[str, Any]]:
     """Fetch matches from BigQuery for a specific date"""
     client = bigquery.Client()
-    query = """
-        SELECT 
-            CAST(id as STRING) as id,
-            utcDate,
-            homeTeam.name as home_team,
-            awayTeam.name as away_team,
-            score.fullTime.homeTeam as home_score,
-            score.fullTime.awayTeam as away_score,
-            competition.name as competition
-        FROM `sports_data_eu.matches_processed`
-        WHERE DATE(utcDate) = DATE(@date)
-    """
+    query = load_query("matches_for_date")
 
     job_config = bigquery.QueryJobConfig(
         query_parameters=[bigquery.ScalarQueryParameter("date", "STRING", date)]
@@ -99,15 +95,7 @@ def validate_match_data(match_data: Dict[str, Any], bucket_name: str) -> Dict[st
         match_data["threads"][0]["created_utc"]
     ).strftime("%Y-%m-%d")
 
-    query = """
-        SELECT 
-            CAST(id as STRING) as id,
-            DATE(utcDate) as match_date,
-            homeTeam.name as home_team,
-            awayTeam.name as away_team
-        FROM `sports_data_eu.matches_processed`
-        WHERE id = @match_id
-    """
+    query = load_query("validate_match")
 
     job_config = bigquery.QueryJobConfig(
         query_parameters=[
