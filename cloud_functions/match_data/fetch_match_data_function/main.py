@@ -40,9 +40,7 @@ def fetch_football_data(event, context):
             )
             return "No new matches to process.", 200
 
-        valid_matches, validation_errors = validate_records(
-            matches, MatchContract
-        )
+        valid_matches, validation_errors = validate_records(matches, MatchContract)
 
         if validation_errors:
             summary = format_validation_summary(

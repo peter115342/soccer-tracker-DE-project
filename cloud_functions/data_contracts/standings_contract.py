@@ -32,7 +32,9 @@ class StandingsTableEntry(BaseModel):
             raise ValueError(f"Position must be >= 1, got {v}")
         return v
 
-    @field_validator("playedGames", "won", "draw", "lost", "points", "goalsFor", "goalsAgainst")
+    @field_validator(
+        "playedGames", "won", "draw", "lost", "points", "goalsFor", "goalsAgainst"
+    )
     @classmethod
     def non_negative_stats(cls, v):
         if v < 0:

@@ -110,9 +110,7 @@ def format_validation_summary(
     ]
 
     for error in errors[:5]:
-        field_errors = ", ".join(
-            f"{e['loc'][-1]}: {e['msg']}" for e in error["errors"]
-        )
+        field_errors = ", ".join(f"{e['loc'][-1]}: {e['msg']}" for e in error["errors"])
         lines.append(f"  - Index {error['index']}: {field_errors}")
 
     if error_count > 5:

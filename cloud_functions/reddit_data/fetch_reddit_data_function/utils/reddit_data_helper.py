@@ -118,7 +118,11 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
                 f"{e.error_count()} issue(s)"
             )
 
-    result = {"date": date, "threads": valid_threads, "thread_count": len(valid_threads)}
+    result = {
+        "date": date,
+        "threads": valid_threads,
+        "thread_count": len(valid_threads),
+    }
 
     logging.info(f"Collected {len(threads)} threads for date {date}")
     return result
