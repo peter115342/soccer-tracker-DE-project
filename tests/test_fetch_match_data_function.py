@@ -13,6 +13,7 @@ def sample_matches():
             "homeTeam": {"id": 1, "name": "Team A"},
             "awayTeam": {"id": 2, "name": "Team B"},
             "utcDate": "2023-01-01T15:00:00Z",
+            "status": "FINISHED",
         }
     ]
 
