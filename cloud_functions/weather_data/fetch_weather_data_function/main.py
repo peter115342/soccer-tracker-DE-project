@@ -119,7 +119,9 @@ def fetch_weather_data(data, context):
                         validate_single(weather_data, WeatherContract)
                     except Exception as ve:
                         validation_error_count += 1
-                        logging.warning(f"Weather validation failed for match {match_id}: {ve}")
+                        logging.warning(
+                            f"Weather validation failed for match {match_id}: {ve}"
+                        )
                         continue
                     if save_weather_to_gcs(weather_data, match_id):
                         processed_count += 1

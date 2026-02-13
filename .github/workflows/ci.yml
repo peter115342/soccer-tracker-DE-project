@@ -3,7 +3,7 @@ name: CI Pipeline
 on:
   push:
     branches:
-      - 'no-such-branch-for-ci-disable'
+      - "no-such-branch-for-ci-disable"
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest

@@ -33,7 +33,9 @@ def fetch_reddit_data(event, context):
                         validate_single(reddit_data, RedditDataContract)
                     except Exception as ve:
                         validation_error_count += 1
-                        logging.warning(f"Reddit data validation failed for date {date}: {ve}")
+                        logging.warning(
+                            f"Reddit data validation failed for date {date}: {ve}"
+                        )
                         continue
                     save_to_gcs(reddit_data, date)
                     threads_processed += len(reddit_data["threads"])

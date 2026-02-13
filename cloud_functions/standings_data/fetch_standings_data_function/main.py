@@ -53,7 +53,9 @@ def fetch_standings_data(event, context):
                         validate_single(standings, StandingsContract)
                     except Exception as ve:
                         validation_error_count += 1
-                        logging.warning(f"Standings validation failed for date {date}: {ve}")
+                        logging.warning(
+                            f"Standings validation failed for date {date}: {ve}"
+                        )
                         continue
                     competition_id = standings["competitionId"]
                     save_standings_to_gcs(standings, date, competition_id)
@@ -67,7 +69,9 @@ def fetch_standings_data(event, context):
             validation_message = f"{validation_error_count} standings records failed Pydantic validation and were skipped"
             logging.warning(validation_message)
             send_discord_notification(
-                "⚠️ Fetch Standings Data: Validation Issues", validation_message, 16776960
+                "⚠️ Fetch Standings Data: Validation Issues",
+                validation_message,
+                16776960,
             )
 
         success_message = (
