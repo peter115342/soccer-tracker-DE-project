@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
 from google.cloud import bigquery
+from pydantic import ValidationError
+from cloud_functions.data_contracts.league_contract import LeagueContract
 
 logging.basicConfig(level=logging.INFO)
 
@@ -139,5 +141,13 @@ def get_league_data(league_code: str) -> Dict[str, Any]:
 
     league_data["teams"] = teams_data.get("teams", [])
     logging.info(f"Successfully fetched data for league code: {league_code}")
+
+    try:
+        LeagueContract.model_validate(league_data)
+    except ValidationError as e:
+        logging.warning(
+            f"League data validation failed for {league_code}: "
+            f"{e.error_count()} issue(s)"
+        )
 
     return league_data

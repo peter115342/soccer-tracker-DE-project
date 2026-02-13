@@ -3,3 +3,4 @@ google-cloud-bigquery
 datetime
 google-cloud-storage
 google-cloud-pubsub
+pydantic>=2.0

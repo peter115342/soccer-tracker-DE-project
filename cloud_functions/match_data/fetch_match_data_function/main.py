@@ -7,6 +7,11 @@ from .utils.match_data_helper import fetch_matches_for_competitions, save_to_gcs
 from cloud_functions.discord_utils.discord_notifications import (
     send_discord_notification,
 )
+from cloud_functions.data_contracts.match_contract import MatchContract
+from cloud_functions.data_contracts.validation import (
+    validate_records,
+    format_validation_summary,
+)
 
 
 def fetch_football_data(event, context):
@@ -35,7 +40,20 @@ def fetch_football_data(event, context):
             )
             return "No new matches to process.", 200
 
-        for match in matches:
+        valid_matches, validation_errors = validate_records(
+            matches, MatchContract
+        )
+
+        if validation_errors:
+            summary = format_validation_summary(
+                len(matches), len(valid_matches), validation_errors
+            )
+            logging.warning(f"Match data validation issues:\n{summary}")
+            send_discord_notification(
+                "⚠️ Fetch Match Data: Validation Issues", summary, 16776960
+            )
+
+        for match in valid_matches:
             try:
                 match_id = match["id"]
                 if "season" in match and "winner" in match["season"]:

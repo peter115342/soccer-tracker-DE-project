@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import requests
 from google.cloud import storage
 from google.cloud import bigquery
+from pydantic import ValidationError
+from cloud_functions.data_contracts.standings_contract import StandingsContract
 
 logging.basicConfig(level=logging.INFO)
 
@@ -113,6 +115,15 @@ def fetch_standings_for_date(date: str) -> List[Dict[str, Any]]:
 
             standings_data["fetchDate"] = date
             standings_data["competitionId"] = comp_id
+
+            try:
+                StandingsContract.model_validate(standings_data)
+            except ValidationError as e:
+                logging.warning(
+                    f"Standings validation failed for {comp_code} on {date}: "
+                    f"{e.error_count()} issue(s)"
+                )
+
             all_standings.append(standings_data)
 
             time.sleep(REQUEST_INTERVAL)

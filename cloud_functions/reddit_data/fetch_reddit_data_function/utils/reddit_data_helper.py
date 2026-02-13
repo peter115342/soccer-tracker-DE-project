@@ -6,6 +6,8 @@ from pathlib import Path
 import praw
 from google.cloud import storage, bigquery
 from typing import List, Dict, Any
+from pydantic import ValidationError
+from cloud_functions.data_contracts.reddit_contract import RedditThread
 
 logging.basicConfig(level=logging.INFO)
 
@@ -105,7 +107,18 @@ def fetch_reddit_threads(date: str) -> Dict[str, Any]:
             logging.error(f"Error fetching {flair} threads for {date}: {str(e)}")
             continue
 
-    result = {"date": date, "threads": threads, "thread_count": len(threads)}
+    valid_threads = []
+    for thread in threads:
+        try:
+            RedditThread.model_validate(thread)
+            valid_threads.append(thread)
+        except ValidationError as e:
+            logging.warning(
+                f"Reddit thread validation failed for '{thread.get('title', 'unknown')}': "
+                f"{e.error_count()} issue(s)"
+            )
+
+    result = {"date": date, "threads": valid_threads, "thread_count": len(valid_threads)}
 
     logging.info(f"Collected {len(threads)} threads for date {date}")
     return result
