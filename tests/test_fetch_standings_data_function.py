@@ -57,11 +57,11 @@ def test_fetch_standings_data_success(sample_event):
                                 "points": 25,
                                 "goalsFor": 20,
                                 "goalsAgainst": 5,
-                                "goalDifference": 15
+                                "goalDifference": 15,
                             }
-                        ]
+                        ],
                     }
-                ]
+                ],
             }
         ]
         mock_save_standings_to_gcs.return_value = True

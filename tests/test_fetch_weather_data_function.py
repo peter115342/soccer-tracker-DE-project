@@ -94,10 +94,7 @@ def test_fetch_weather_data_with_matches(
     mock_fetch_weather.return_value = {
         "latitude": 40.7128,
         "longitude": -74.0060,
-        "hourly": {
-            "time": ["2023-01-01T15:00"],
-            "temperature_2m": [20.5]
-        }
+        "hourly": {"time": ["2023-01-01T15:00"], "temperature_2m": [20.5]},
     }
     mock_save_weather_to_gcs.return_value = True
 
