@@ -38,7 +38,31 @@ def test_fetch_standings_data_success(sample_event):
         mock_get_unique_dates.return_value = ["2023-01-01", "2023-01-02"]
         mock_get_processed_dates.return_value = ["2023-01-01"]
         mock_fetch_standings_for_date.return_value = [
-            {"competitionId": 1, "standingsData": "..."}
+            {
+                "competitionId": 1,
+                "competition": {"id": 1, "name": "Premier League", "code": "PL"},
+                "season": {"id": 1, "startDate": "2023-08-01", "endDate": "2024-05-31"},
+                "standings": [
+                    {
+                        "stage": "REGULAR_SEASON",
+                        "type": "TOTAL",
+                        "table": [
+                            {
+                                "position": 1,
+                                "team": {"id": 1, "name": "Team A"},
+                                "playedGames": 10,
+                                "won": 8,
+                                "draw": 1,
+                                "lost": 1,
+                                "points": 25,
+                                "goalsFor": 20,
+                                "goalsAgainst": 5,
+                                "goalDifference": 15
+                            }
+                        ]
+                    }
+                ]
+            }
         ]
         mock_save_standings_to_gcs.return_value = True
 
