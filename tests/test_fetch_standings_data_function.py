@@ -39,8 +39,8 @@ def test_fetch_standings_data_success(sample_event):
         mock_get_processed_dates.return_value = ["2023-01-01"]
         mock_fetch_standings_for_date.return_value = [
             {
-                "competitionId": 1,
-                "competition": {"id": 1, "name": "Premier League", "code": "PL"},
+                "competitionId": "2021",
+                "competition": {"id": 2021, "name": "Premier League", "code": "PL"},
                 "season": {"id": 1, "startDate": "2023-08-01", "endDate": "2024-05-31"},
                 "standings": [
                     {
