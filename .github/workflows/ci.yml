@@ -2,8 +2,8 @@ name: CI Pipeline
 
 on:
   push:
-    branches-ignore:
-      - main
+    branches:
+      - dev
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest

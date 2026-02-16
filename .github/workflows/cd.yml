@@ -79,6 +79,8 @@ jobs:
           mkdir -p cloud_functions/discord_utils
           cp ../../discord_utils/discord_notifications.py cloud_functions/discord_utils/
           cp ../../discord_utils/__init__.py cloud_functions/discord_utils/
+          mkdir -p cloud_functions/data_contracts
+          cp ../../data_contracts/*.py cloud_functions/data_contracts/
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/league_data/fetch_league_data_function/
           cd ../../..
@@ -88,6 +90,8 @@ jobs:
           mkdir -p cloud_functions/discord_utils
           cp ../../discord_utils/discord_notifications.py cloud_functions/discord_utils/
           cp ../../discord_utils/__init__.py cloud_functions/discord_utils/
+          mkdir -p cloud_functions/data_contracts
+          cp ../../data_contracts/*.py cloud_functions/data_contracts/
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/match_data/fetch_match_data_function/
           cd ../../..
@@ -121,6 +125,8 @@ jobs:
           mkdir -p cloud_functions/discord_utils
           cp ../../discord_utils/discord_notifications.py cloud_functions/discord_utils/
           cp ../../discord_utils/__init__.py cloud_functions/discord_utils/
+          mkdir -p cloud_functions/data_contracts
+          cp ../../data_contracts/*.py cloud_functions/data_contracts/
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/weather_data/fetch_weather_data_function/
           cd ../../..
@@ -154,6 +160,8 @@ jobs:
           mkdir -p cloud_functions/discord_utils
           cp ../../discord_utils/discord_notifications.py cloud_functions/discord_utils/
           cp ../../discord_utils/__init__.py cloud_functions/discord_utils/
+          mkdir -p cloud_functions/data_contracts
+          cp ../../data_contracts/*.py cloud_functions/data_contracts/
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/standings_data/fetch_standings_data_function/
           cd ../../..
@@ -187,6 +195,8 @@ jobs:
           mkdir -p cloud_functions/discord_utils
           cp ../../discord_utils/discord_notifications.py cloud_functions/discord_utils/
           cp ../../discord_utils/__init__.py cloud_functions/discord_utils/
+          mkdir -p cloud_functions/data_contracts
+          cp ../../data_contracts/*.py cloud_functions/data_contracts/
           zip -r source.zip *
           gsutil cp source.zip gs://$BUCKET_NAME/cloud_functions/reddit_data/fetch_reddit_data_function/
           cd ../../..
