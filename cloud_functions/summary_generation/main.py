@@ -34,15 +34,14 @@ class MatchSummaryPrompt(BaseModel):
         prompt = f"""
 Generate a narrative match summary article for {normalize_text(self.league)} matches on {self.match_date}.
 
-Write engaging match summaries that:
-1. Start with a clear headline and match result
-2. Write 2-3 concise paragraphs that:
-   - Describe the match result and significance
-   - Mention weather conditions if they impacted the game
-   - Include both teams' current form for context
-   - Incorporate relevant fan reactions from Reddit
-3. Maintain a journalistic style
-4. Use only factual information provided
+### STRICTURES (Follow strictly):
+1. **Uniformity:** Each match summary MUST be roughly the same length. Do not favor the first matches with more detail than the last.
+2. **Conciseness:** Limit each match summary to a total of 150-200 words. 
+3. **Content Requirements:**
+   - Paragraph 1: Result, significance, and impact of weather (if applicable).
+   - Paragraph 2: Current form of both teams and one representative fan sentiment from Reddit.
+4. **Journalistic Integrity:** Maintain a factual tone. If information is missing for a match, provide a one-sentence summary of the result only rather than hallucinating details.
+5. **No Cutoffs:** Ensure the article concludes with a brief "Closing Thoughts" sentence to signal the end of the report.
 
 Example format:
 # {normalize_text(self.league)} Match Summary - {self.match_date}
