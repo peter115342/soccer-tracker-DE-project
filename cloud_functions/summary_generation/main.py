@@ -32,25 +32,31 @@ class MatchSummaryPrompt(BaseModel):
     # TODO: move to config file
     def generate_prompt(self) -> str:
         prompt = f"""
-Generate a narrative match summary article for {normalize_text(self.league)} matches on {self.match_date}.
+Generate a narrative match summary for ALL {normalize_text(self.league)} matches on {self.match_date}. 
+Do not stop early.
 
 ### STRICTURES (Follow strictly):
-1. **Uniformity:** Each match summary MUST be roughly the same length. Do not favor the first matches with more detail than the last.
-2. **Conciseness:** Limit each match summary to a total of 150-200 words. 
-3. **Content Requirements:**
-   - Paragraph 1: Result, significance, and impact of weather (if applicable).
+1. **Uniformity & Length:** Write exactly two concise paragraphs (approx. 100-150 words total) for each match. Do not write long essays for the first matches.
+2. **Content Requirements:**
+   - Paragraph 1: Match result, its significance, and the impact of weather conditions (if applicable).
    - Paragraph 2: Current form of both teams and one representative fan sentiment from Reddit.
-4. **Journalistic Integrity:** Maintain a factual tone. If information is missing for a match, provide a one-sentence summary of the result only rather than hallucinating details.
-5. **No Cutoffs:** Ensure the article concludes with a brief "Closing Thoughts" sentence to signal the end of the report.
+3. **Journalistic Integrity:** Maintain a factual tone. If any specific data point (like weather or Reddit reactions) is missing for a match, simply omit it and focus on the result and form. Do not hallucinate.
 
-Example format:
+### REQUIRED FORMAT:
 # {normalize_text(self.league)} Match Summary - {self.match_date}
 
 ## [Home Team] vs [Away Team]
-[2-3 paragraphs incorporating all available data into a flowing narrative about the match, weather impact, team forms, and fan reactions. Focus on telling the story of what happened.]
+[Paragraph 1]
 
-[Continue for each match...]
+[Paragraph 2]
+
+---
+*(Repeat the above ## section for EVERY match provided in the data)*
+
+
+### 
 """
+
         for match in self.matches:
             home_team = normalize_text(match["homeTeam"]["name"])
             away_team = normalize_text(match["awayTeam"]["name"])
@@ -160,7 +166,7 @@ def generate_match_summary(event, context):
             generate_content_config = types.GenerateContentConfig(
                 temperature=0.3,
                 top_p=0.8,
-                max_output_tokens=2048,
+                max_output_tokens=65535,
                 response_modalities=["TEXT"],
                 safety_settings=[
                     types.SafetySetting(
