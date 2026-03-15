@@ -166,7 +166,7 @@ def generate_match_summary(event, context):
             generate_content_config = types.GenerateContentConfig(
                 temperature=0.3,
                 top_p=0.8,
-                max_output_tokens=65535,
+                max_output_tokens=24256,
                 response_modalities=["TEXT"],
                 safety_settings=[
                     types.SafetySetting(
