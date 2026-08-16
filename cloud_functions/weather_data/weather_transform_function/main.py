@@ -23,6 +23,7 @@ def trigger_dataform_workflow():
     project_id = os.environ["GCP_PROJECT_ID"]
     location = "europe-central2"
     repository_id = os.environ["DATAFORM_REPOSITORY"]
+    service_account = os.environ["DATAFORM_SERVICE_ACCOUNT"]
 
     repository = client.repository_path(
         project=project_id,
@@ -37,7 +38,10 @@ def trigger_dataform_workflow():
 
     workflow_invocation = {
         "compilation_result": compile_response.name,
-        "invocation_config": {"included_tags": ["weather"]},
+        "invocation_config": {
+            "included_tags": ["weather"],
+            "service_account": service_account,
+        },
     }
 
     invocation_response = client.create_workflow_invocation(

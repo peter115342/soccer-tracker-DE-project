@@ -75,7 +75,7 @@ variable "dataform_workspace" {
 }
 
 variable "service_account_email" {
-  description = "Service Account Email for Pub/Sub push authentication"
+  description = "Service account for Cloud Functions, Pub/Sub push authentication, and Dataform workflow invocations"
   type        = string
   sensitive = true
   default     = ""

@@ -325,6 +325,7 @@ resource "google_cloudfunctions2_function" "transform_matches" {
       GCP_PROJECT_ID       = var.project_id
       DATAFORM_REPOSITORY  = var.dataform_repository
       DATAFORM_WORKSPACE   = var.dataform_workspace
+      DATAFORM_SERVICE_ACCOUNT = var.service_account_email
     }
   }
 
@@ -362,6 +363,7 @@ resource "google_cloudfunctions2_function" "transform_weather" {
       GCP_PROJECT_ID       = var.project_id
       DATAFORM_REPOSITORY  = var.dataform_repository
       DATAFORM_WORKSPACE   = var.dataform_workspace
+      DATAFORM_SERVICE_ACCOUNT = var.service_account_email
     }
   }
 
@@ -508,6 +510,7 @@ resource "google_cloudfunctions2_function" "transform_standings" {
       GCP_PROJECT_ID       = var.project_id
       DATAFORM_REPOSITORY  = var.dataform_repository
       DATAFORM_WORKSPACE   = var.dataform_workspace
+      DATAFORM_SERVICE_ACCOUNT = var.service_account_email
     }
   }
 
@@ -693,6 +696,7 @@ resource "google_cloudfunctions2_function" "transform_reddit" {
       GCP_PROJECT_ID       = var.project_id
       DATAFORM_REPOSITORY  = var.dataform_repository
       DATAFORM_WORKSPACE   = var.dataform_workspace
+      DATAFORM_SERVICE_ACCOUNT = var.service_account_email
     }
   }
 
