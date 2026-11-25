@@ -94,6 +94,14 @@
 </script>
 
 <div class="container mx-auto p-4">
+	<aside
+		aria-label="Reddit data notice"
+		class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950"
+	>
+		<p>
+			Reddit data is available through 24.5.2026. Fetching newer data is currently failing.
+		</p>
+	</aside>
 	<div class="grid gap-8 md:grid-cols-[400px_1fr]">
 		<div class="space-y-4">
 			<Card>
